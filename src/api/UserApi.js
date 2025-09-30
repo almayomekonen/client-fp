@@ -1,5 +1,7 @@
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+
 export async function fetchUsersFromServer() {
-  const res = await fetch("http://localhost:5000/api/users", {
+  const res = await fetch(`${API_BASE_URL}/api/users`, {
     credentials: "include",
   });
   const data = await res.json();
@@ -7,7 +9,7 @@ export async function fetchUsersFromServer() {
 }
 
 export async function deleteUserFromServer(userId) {
-  const res = await fetch(`http://localhost:5000/api/users/${userId}`, {
+  const res = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
     method: "DELETE",
     credentials: "include",
   });
@@ -19,7 +21,7 @@ export async function deleteUserFromServer(userId) {
 }
 
 export const updateUserOnServer = async (userId, updateFields) => {
-  const res = await fetch(`http://localhost:5000/api/users/${userId}`, {
+  const res = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -34,7 +36,7 @@ export const updateUserOnServer = async (userId, updateFields) => {
 // login
 export async function login(username, password) {
   try {
-    const res = await fetch("http://localhost:5000/api/auth/login", {
+    const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -51,7 +53,7 @@ export async function login(username, password) {
 
 export async function logout(setCurrentUser) {
   try {
-    await fetch("http://localhost:5000/api/auth/logout", {
+    await fetch(`${API_BASE_URL}/api/auth/logout`, {
       method: "POST",
       credentials: "include",
     });
@@ -68,7 +70,7 @@ export async function logout(setCurrentUser) {
 
 export async function checkAuth() {
   try {
-    const res = await fetch("http://localhost:5000/api/auth/me", {
+    const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
       method: "GET",
       credentials: "include",
     });
