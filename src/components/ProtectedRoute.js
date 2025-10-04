@@ -25,7 +25,7 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
 
   // אם אין משתמש מחובר, הפנה להתחברות
   if (!currentUser) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   // אם נדרש תפקיד ספציפי ולמשתמש אין אותו
