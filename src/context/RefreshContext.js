@@ -88,7 +88,6 @@ export function RefreshProvider({ children }) {
   }, [setTaskMessages]);
 
   useEffect(() => {
-    // רק אם האותנטיקציה נבדקה והמשתמש מחובר
     if (isAuthChecked && currentUser) {
       refreshCopies();
       refreshTasks();
