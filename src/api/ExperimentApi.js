@@ -20,7 +20,10 @@ export const deleteExperimentFromServer = async (experimentId) => {
     method: "DELETE",
   });
 
-  if (!res.ok) throw new Error("שגיאה במחיקת ניסוי");
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.message || "שגיאה במחיקת ניסוי");
+  }
   return await res.json();
 };
 

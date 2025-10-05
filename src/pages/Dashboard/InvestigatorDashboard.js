@@ -132,12 +132,15 @@ export default function InvestigatorHomePage() {
 
   const handleDeleteExperiment = async (experimentId) => {
     if (window.confirm("Are you sure you want to delete the experiment?")) {
-      const success = await deleteExperiment(experimentId);
-      if (success) {
+      const result = await deleteExperiment(experimentId);
+
+      if (result.success) {
         setRelevantExperiments((prev) =>
           prev.filter((exp) => exp._id !== experimentId)
         );
         if (expandedExperimentId === experimentId) setGroups([]);
+      } else {
+        alert(result.message);
       }
     }
   };
