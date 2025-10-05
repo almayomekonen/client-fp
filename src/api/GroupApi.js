@@ -24,7 +24,10 @@ export const deleteGroupFromServer = async (groupId) => {
     method: "DELETE",
   });
 
-  if (!res.ok) throw new Error("שגיאה במחיקת קבוצה");
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.message || "שגיאה במחיקת קבוצה");
+  }
   return await res.json();
 };
 
