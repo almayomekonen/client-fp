@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 export default function ResetPasswordForm({ onSubmit }) {
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (newPassword !== confirmNewPassword) {
-      alert('הסיסמאות אינן תואמות');
+      alert("Passwords do not match");
       return;
     }
     onSubmit(newPassword);
@@ -16,7 +16,8 @@ export default function ResetPasswordForm({ onSubmit }) {
   return (
     <form onSubmit={handleSubmit}>
       <div>
-        <label>סיסמה חדשה</label><br />
+        <label>New Password</label>
+        <br />
         <input
           type="password"
           value={newPassword}
@@ -25,7 +26,8 @@ export default function ResetPasswordForm({ onSubmit }) {
       </div>
 
       <div>
-        <label>אימות סיסמה חדשה</label><br />
+        <label>Confirm New Password</label>
+        <br />
         <input
           type="password"
           value={confirmNewPassword}
@@ -33,7 +35,7 @@ export default function ResetPasswordForm({ onSubmit }) {
         />
       </div>
 
-      <button type="submit">שנה סיסמה</button>
+      <button type="submit">Change Password</button>
     </form>
   );
 }

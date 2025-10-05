@@ -10,7 +10,7 @@ export const addTaskForCopy = async ({
   coderId,
 }) => {
   try {
-    // יצירת עותק חדש לוקאלי (ואולי גם שליחה לשרת אם זה חלק מהזרימה שלך)
+    // Create new local copy (and possibly send to server if it's part of your flow)
     const r = await createCopyOnServer({
       statementId,
       groupId,
@@ -18,7 +18,7 @@ export const addTaskForCopy = async ({
       coderId,
     });
     const copyForTaskId = r.newCopy._id;
-    // יצירת משימה חדשה מול השרת
+    // Create new task against server
     const response = await fetch(`${API_BASE_URL}/api/tasks`, {
       method: "POST",
       headers: {

@@ -1,119 +1,121 @@
-import React, { useState } from 'react';
-import { useUsers } from '../../context/UserContext';
-import { useEmailVerification } from '../../context/EmailVerificationContext';
-import { useNavigate } from 'react-router-dom';
-import ResetPasswordForm from '../../components/Auth/ResetPasswordForm';
-import { useData } from '../../context/DataContext';
+import React, { useState } from "react";
+import { useUsers } from "../../context/UserContext";
+import { useEmailVerification } from "../../context/EmailVerificationContext";
+import { useNavigate } from "react-router-dom";
+import ResetPasswordForm from "../../components/Auth/ResetPasswordForm";
+import { useData } from "../../context/DataContext";
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
   const { users } = useData();
-  const { resetPassword } = useUsers(); // ניגשים ל-users כדי למצוא את המייל
+  const { resetPassword } = useUsers(); // Access users to find the email
   const { sendVerificationCode, verifyCode } = useEmailVerification();
 
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [message, setMessage] = useState('');
-  const [codeFromUser, setCodeFromUser] = useState('');
-  const [step, setStep] = useState('enterUsername'); // enterUsername -> waitingForCode -> verified
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [codeFromUser, setCodeFromUser] = useState("");
+  const [step, setStep] = useState("enterUsername"); // enterUsername -> waitingForCode -> verified
 
   const handleSendCode = async () => {
     if (!username) {
-      setMessage('נא להזין שם משתמש');
+      setMessage("Please enter username");
       return;
     }
 
-    // מוצאים את המייל לפי שם המשתמש
-    const user = users.find(u => u.username === username);
+    // Find the email by username
+    const user = users.find((u) => u.username === username);
     if (!user) {
-      setMessage('שם משתמש לא קיים');
+      setMessage("Username does not exist");
       return;
     }
     const userEmail = user.email;
     setEmail(userEmail);
 
-    // שולחים את הקוד למייל
+    // Send the code to email
     const result = await sendVerificationCode(userEmail);
     setMessage(result.message);
     if (result.success) {
-      setStep('waitingForCode');
+      setStep("waitingForCode");
     }
   };
 
   const handleVerifyCode = async () => {
     if (!codeFromUser) {
-      setMessage('נא להזין קוד');
+      setMessage("Please enter code");
       return;
     }
 
     const result = await verifyCode(email, codeFromUser);
     setMessage(result.message);
     if (result.success) {
-      setStep('verified');
+      setStep("verified");
     }
   };
 
   const handlePasswordReset = async (newPassword) => {
-    const user = users.find(u => u.username === username);
+    const user = users.find((u) => u.username === username);
     if (!user) {
-      setMessage('משתמש לא נמצא');
+      setMessage("User not found");
       return;
     }
 
-    const result = await resetPassword(user._id, newPassword); // שולח userId
+    const result = await resetPassword(user._id, newPassword); // Send userId
     setMessage(result.message);
     if (result.success) {
-      setTimeout(() => navigate('/'), 2000);
+      setTimeout(() => navigate("/"), 2000);
     }
   };
 
   return (
     <div className="reset-password-page">
-      <h2>שחזור סיסמה</h2>
+      <h2>Password Recovery</h2>
 
-      {step === 'enterUsername' && (
+      {step === "enterUsername" && (
         <>
-          <label>שם משתמש:</label>
+          <label>Username:</label>
           <input
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
           />
-          <button onClick={handleSendCode}>שלח קוד למייל</button>
+          <button onClick={handleSendCode}>Send Code to Email</button>
         </>
       )}
 
-      {step === 'waitingForCode' && (
+      {step === "waitingForCode" && (
         <div>
-          <p>נשלח קוד אימות למייל: <strong>{email}</strong></p>
-          <label>קוד אימות:</label>
+          <p>
+            Verification code sent to email: <strong>{email}</strong>
+          </p>
+          <label>Verification Code:</label>
           <input
             type="text"
             value={codeFromUser}
             onChange={(e) => setCodeFromUser(e.target.value)}
           />
-          <button onClick={handleVerifyCode}>אמת קוד</button>
+          <button onClick={handleVerifyCode}>Verify Code</button>
         </div>
       )}
 
-      {step === 'verified' && (
+      {step === "verified" && (
         <ResetPasswordForm onSubmit={handlePasswordReset} />
       )}
 
       {message && <p className="form-message">{message}</p>}
 
       <button
-        onClick={() => navigate('/')}
+        onClick={() => navigate("/")}
         style={{
-          marginTop: '10px',
-          padding: '6px 12px',
-          backgroundColor: '#ccc',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer'
+          marginTop: "10px",
+          padding: "6px 12px",
+          backgroundColor: "#ccc",
+          border: "none",
+          borderRadius: "4px",
+          cursor: "pointer",
         }}
       >
-        בטל
+        Cancel
       </button>
     </div>
   );

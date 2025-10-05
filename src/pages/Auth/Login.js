@@ -44,7 +44,7 @@ export default function LoginPage() {
 
   return (
     <div className="login-page">
-      <h2>התחברות</h2>
+      <h2>Login</h2>
 
       <LoginForm
         onSubmit={handleLogin}
@@ -54,7 +54,8 @@ export default function LoginPage() {
       {message && <p className="form-message">{message}</p>}
 
       <p>
-        אין לך חשבון? <Link to="/register">לחץ כאן להרשמה</Link>
+        Don't have an account?{" "}
+        <Link to="/register">Click here to register</Link>
       </p>
     </div>
   );

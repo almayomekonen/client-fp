@@ -48,7 +48,7 @@ export default function CoderHomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
-  // טען מידע על ניסויים
+  // Load experiment information
   useEffect(() => {
     const fetchExperimentsInfo = async () => {
       const coderCopiesByExperiment = copiesForExperimentByCoderId(
@@ -63,11 +63,11 @@ export default function CoderHomePage() {
             experiment._id
           );
           map[experiment._id] = {
-            name: expData?.name || `ניסוי ${experiment._id}`,
-            investigatorName: investigatorName || "לא ידוע",
+            name: expData?.name || `Experiment ${experiment._id}`,
+            investigatorName: investigatorName || "Unknown",
           };
         } catch (err) {
-          console.warn(`לא ניתן לטעון ניסוי ${experiment._id}:`, err);
+          console.warn(`Cannot load experiment ${experiment._id}:`, err);
         }
       }
       setExperimentsMap(map);
@@ -77,7 +77,7 @@ export default function CoderHomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
-  // טען הצהרות אסינכרוני
+  // Load statements asynchronously
   useEffect(() => {
     const fetchStatements = async () => {
       const coderCopies = copiesForExperimentByCoderId(
@@ -97,7 +97,7 @@ export default function CoderHomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
-  // אם עדיין בודקים אותנטיקציה, הצג טעינה
+  // If still checking authentication, show loading
   if (!isAuthChecked) {
     return (
       <div
@@ -109,7 +109,7 @@ export default function CoderHomePage() {
           fontSize: "18px",
         }}
       >
-        <div>טוען...</div>
+        <div>Loading...</div>
       </div>
     );
   }
@@ -128,11 +128,11 @@ export default function CoderHomePage() {
 
   return (
     <div style={{ direction: "rtl", padding: 20 }}>
-      <h1>ברוך הבא, {currentUser?.username}</h1>
-      <h2>הניסויים שלך:</h2>
+      <h1>Welcome, {currentUser?.username}</h1>
+      <h2>Your Experiments:</h2>
 
       {coderCopiesByExperiment.length === 0 ? (
-        <p>לא נמצאו ניסויים עבורך.</p>
+        <p>No experiments found for you.</p>
       ) : (
         coderCopiesByExperiment.map(({ experiment, copies }) => {
           const expInfo = experimentsMap[experiment._id] || {};
@@ -146,8 +146,8 @@ export default function CoderHomePage() {
               <h3>
                 {experimentName} –{" "}
                 <span style={{ fontSize: "0.9em", color: "gray" }}>
-                  השלמה: {completion}% | עדכון אחרון: {lastUpdate || "—"} |
-                  חוקר: {investigatorName}
+                  Completion: {completion}% | Last Update: {lastUpdate || "—"} |
+                  Investigator: {investigatorName}
                 </span>
               </h3>
               <ul>
@@ -170,11 +170,12 @@ export default function CoderHomePage() {
                       }}
                     >
                       <div>
-                        <strong>הצהרה:</strong> {statement?.name || "טוען..."}
+                        <strong>Statement:</strong>{" "}
+                        {statement?.name || "Loading..."}
                         <br />
-                        <strong>התקדמות:</strong> {copy.status}
+                        <strong>Progress:</strong> {copy.status}
                         <br />
-                        <strong>עדכון אחרון:</strong>{" "}
+                        <strong>Last Update:</strong>{" "}
                         {copy.lastUpdate
                           ? new Date(copy.lastUpdate).toLocaleString()
                           : "—"}
@@ -188,7 +189,7 @@ export default function CoderHomePage() {
                             }
                             style={{ marginTop: 8, marginLeft: 10 }}
                           >
-                            ערוך הצהרה
+                            Edit Statement
                           </button>
 
                           <button
@@ -203,7 +204,7 @@ export default function CoderHomePage() {
                               marginRight: 10,
                             }}
                           >
-                            צ'אט
+                            Chat
                             {unreadCount > 0 && (
                               <span
                                 style={{ marginRight: 5, color: "#f87171" }}
@@ -220,7 +221,9 @@ export default function CoderHomePage() {
                           <button
                             onClick={async () => {
                               handleUpdateCopyStatus(copy._id, "in progress");
-                              alert("הקידוד סומן כלא הושלם. תוכל לערוך שוב.");
+                              alert(
+                                "Coding marked as incomplete. You can edit again."
+                              );
                             }}
                             style={{
                               marginTop: 8,
@@ -232,7 +235,7 @@ export default function CoderHomePage() {
                               marginRight: 10,
                             }}
                           >
-                            תקן קידוד
+                            Fix Coding
                           </button>
 
                           <button
@@ -247,7 +250,7 @@ export default function CoderHomePage() {
                               marginRight: 10,
                             }}
                           >
-                            צ'אט
+                            Chat
                             {unreadCount > 0 && (
                               <span
                                 style={{ marginRight: 5, color: "#f87171" }}
@@ -272,7 +275,7 @@ export default function CoderHomePage() {
                                 marginRight: 10,
                               }}
                             >
-                              השווה עם עותקים
+                              Compare with Copies
                             </button>
                           )}
                         </>

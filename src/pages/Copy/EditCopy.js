@@ -55,12 +55,12 @@ export default function StatementEditor() {
   const [styleSettings, setStyleSettings] = useState({});
   const [statementsMap, setStatementsMap] = useState({});
 
-  // בדיקת משתמש
+  // User check
   useEffect(() => {
     if (isAuthChecked && !currentUser) navigate("/", { replace: true });
   }, [currentUser, isAuthChecked, navigate]);
 
-  // טעינת Style Settings
+  // Load Style Settings
   useEffect(() => {
     const loadStyle = async () => {
       const data = await getStyleSetting();
@@ -69,26 +69,26 @@ export default function StatementEditor() {
     loadStyle();
   }, [getStyleSetting]);
 
-  // טעינת צבעים
+  // Load colors
   useEffect(() => {
     const loadColors = async () => {
       try {
         const fetchedColors = await getColors();
         setColors(fetchedColors);
       } catch (err) {
-        console.error("שגיאה בטעינת צבעים", err);
+        console.error("Error loading colors", err);
       }
     };
     loadColors();
   }, [getColors]);
 
-  // טעינת נתוני Copy והצהרה אסינכרונית
+  // Load Copy data and statement asynchronously
   useEffect(() => {
     const loadData = async () => {
       const copy = copyById(copyId);
       if (!copy) return;
 
-      // קבלת ההצהרה מהשרת אם היא לא קיימת ב-state
+      // Get statement from server if it doesn't exist in state
       let statement = statementsMap[copy.statementId];
       if (!statement) {
         statement = await statementById(copy.statementId);
@@ -132,7 +132,7 @@ export default function StatementEditor() {
     calculateWordCounts,
   ]);
 
-  // חישוב offset גלובלי
+  // Calculate global offset
   const getGlobalOffsetFromValue = (value, anchorPath, anchorOffset) => {
     let globalOffset = 0;
     const traverse = (nodes, path = []) => {
@@ -216,13 +216,13 @@ export default function StatementEditor() {
     setValue(decoratedText);
     setCommentKey((prev) => prev + 1);
     setWordCounts(calculateWordCounts(decoratedText));
-    alert("השינויים נשמרו בהצלחה!");
+    alert("Changes saved successfully!");
   };
 
   const handleCloseCoding = async () => {
     if (!copy) return;
     await updateCopyStatus(copy._id, "completed");
-    alert("הקידוד הושלם!");
+    alert("Coding completed!");
     if (currentUser?.role === "admin") navigate("/adminHome");
     else if (currentUser?.role === "investigator")
       navigate("/investigatorHome");
@@ -231,8 +231,11 @@ export default function StatementEditor() {
   };
 
   const handleAddComment = async () => {
-    if (!editor.selection) return alert("יש לבחור מיקום בטקסט לפני הוספת הערה");
-    if (!newComment) return alert("יש להזין טקסט להערה");
+    if (!editor.selection)
+      return alert(
+        "Please select a location in the text before adding a comment"
+      );
+    if (!newComment) return alert("Please enter comment text");
     const { anchor } = editor.selection;
     const offset = getGlobalOffsetFromValue(value, anchor.path, anchor.offset);
     const createdComment = await addComment(
@@ -299,11 +302,11 @@ export default function StatementEditor() {
     setActiveComment(null);
   };
 
-  if (!value) return <div>טוען טקסט...</div>;
+  if (!value) return <div>Loading text...</div>;
 
   return (
     <div style={{ padding: 20, direction: "rtl" }}>
-      <h2>עריכת הצהרה</h2>
+      <h2>Edit Statement</h2>
 
       <div style={{ marginBottom: 10, display: "flex", alignItems: "center" }}>
         {colors.map((c) => (
@@ -325,21 +328,21 @@ export default function StatementEditor() {
           onClick={() => removeFormatting(editor)}
           style={{ marginRight: 5 }}
         >
-          בטל כל סימון
+          Clear All Markings
         </button>
         {styleSettings.underlineEnabled && (
           <button
             onClick={() => markUnderline(editor)}
             style={{ marginRight: 5 }}
           >
-            קו תחתון
+            Underline
           </button>
         )}
         {styleSettings.boldEnabled && (
-          <button onClick={() => markBold(editor)}>בולד</button>
+          <button onClick={() => markBold(editor)}>Bold</button>
         )}
         {styleSettings.italicEnabled && (
-          <button onClick={() => markItalic(editor)}>איטליק</button>
+          <button onClick={() => markItalic(editor)}>Italic</button>
         )}
       </div>
 
@@ -347,7 +350,7 @@ export default function StatementEditor() {
         onClick={() => calculateSelectionCounts(editor, setSelectionCounts)}
         style={{ marginBottom: 10 }}
       >
-        הצג סימונים בטקסט המסומן
+        Show Markings in Selected Text
       </button>
       <button
         onClick={() =>
@@ -355,7 +358,7 @@ export default function StatementEditor() {
         }
         style={{ marginBottom: 10, marginInlineStart: 10 }}
       >
-        הצג מילים בטקסט המסומן
+        Show Words in Selected Text
       </button>
 
       <Slate
@@ -367,25 +370,25 @@ export default function StatementEditor() {
       >
         <Editable
           renderLeaf={renderLeaf}
-          placeholder="ערוך כאן..."
+          placeholder="Edit here..."
           readOnly={true}
           style={{ minHeight: 300, border: "1px solid #ccc", padding: 10 }}
         />
       </Slate>
 
       <button onClick={handleSave} style={{ marginTop: 15 }}>
-        שמור שינויים
+        Save Changes
       </button>
       <button
         onClick={handleCloseCoding}
         style={{ marginTop: 15, marginLeft: 10 }}
       >
-        סגור קידוד
+        Close Coding
       </button>
 
       {/* תצוגת counts, wordCounts, selectionCounts, selectionWordCounts */}
       <div style={{ marginTop: 20 }}>
-        <h4>כמות סימונים כללית:</h4>
+        <h4>Total Markings Count:</h4>
         {Object.entries(counts).map(([key, num]) => (
           <div
             key={key}
@@ -397,7 +400,7 @@ export default function StatementEditor() {
       </div>
 
       <div style={{ marginTop: 20 }}>
-        <h4>ספירת מילים בטקסט כולו:</h4>
+        <h4>Word Count in Entire Text:</h4>
         {Object.entries(wordCounts).map(([key, num]) => (
           <div
             key={key}
@@ -410,7 +413,7 @@ export default function StatementEditor() {
 
       {selectionCounts && (
         <div style={{ marginTop: 20 }}>
-          <h4>כמות סימונים בטקסט המסומן:</h4>
+          <h4>Markings Count in Selected Text:</h4>
           {Object.entries(selectionCounts).map(([key, num]) => (
             <div
               key={key}
@@ -424,12 +427,12 @@ export default function StatementEditor() {
 
       {selectionWordCounts && (
         <div style={{ marginTop: 20 }}>
-          <h4>ספירת מילים בטקסט המסומן:</h4>
+          <h4>Word Count in Selected Text:</h4>
           <div
             style={{ display: "flex", alignItems: "center", marginBottom: 4 }}
           >
             {renderKeyLabel(
-              "מילים צבועות בצבע כלשהו",
+              "Words colored in any color",
               selectionWordCounts.totalColor || 0
             )}
           </div>
@@ -444,23 +447,23 @@ export default function StatementEditor() {
         </div>
       )}
 
-      {/* הוספת הערה */}
+      {/* Add Comment */}
       <div style={{ marginTop: 20 }}>
-        <h4>הוספת הערה:</h4>
+        <h4>Add Comment:</h4>
         {!isAddingComment && (
-          <button onClick={() => setIsAddingComment(true)}>הוסף הערה</button>
+          <button onClick={() => setIsAddingComment(true)}>Add Comment</button>
         )}
         {isAddingComment && (
           <div>
             <textarea
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              placeholder="הוסף הערה כאן"
+              placeholder="Add comment here"
               style={{ width: "100%", height: "80px" }}
             />
             <div style={{ marginTop: 10 }}>
               <button onClick={handleAddComment} style={{ marginRight: 5 }}>
-                שמור
+                Save
               </button>
               <button
                 onClick={() => {
@@ -468,14 +471,14 @@ export default function StatementEditor() {
                   setNewComment("");
                 }}
               >
-                ביטול
+                Cancel
               </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* הצגת הערות פעילות */}
+      {/* Display Active Comments */}
       {activeComment && (
         <div
           style={{
@@ -489,7 +492,7 @@ export default function StatementEditor() {
             zIndex: 1000,
           }}
         >
-          <h4>הערות לטקסט הנבחר:</h4>
+          <h4>Comments for Selected Text:</h4>
           <ul style={{ listStyle: "none", padding: 0 }}>
             {activeComment.map((c) => (
               <li key={c._id} style={{ marginBottom: 5 }}>
@@ -505,13 +508,13 @@ export default function StatementEditor() {
                       cursor: "pointer",
                     }}
                   >
-                    מחק
+                    Delete
                   </button>
                 )}
               </li>
             ))}
           </ul>
-          <button onClick={() => setActiveComment(null)}>סגור</button>
+          <button onClick={() => setActiveComment(null)}>Close</button>
         </div>
       )}
     </div>

@@ -31,38 +31,38 @@ function Navbar() {
     if (role === "admin") {
       links.push(
         <Link key="adminHome" to="/adminHome" style={{ marginLeft: "10px" }}>
-          בית
+          Home
         </Link>,
         <Link
           key="investigatorHome"
           to="/investigatorHome"
           style={{ marginLeft: "10px" }}
         >
-          הניסויים שלי
+          My Experiments
         </Link>,
         <Link key="coderHome" to="/coderHome" style={{ marginLeft: "10px" }}>
-          הקידודים שלי
+          My Codings
         </Link>,
         <Link
           key="admin-panel"
           to="/admin-panel"
           style={{ marginLeft: "10px" }}
         >
-          ניהול משתמשים
+          User Management
         </Link>,
         <Link
           key="task-management"
           to="/task-management"
           style={{ marginLeft: "10px" }}
         >
-          כל המשימות
+          All Tasks
         </Link>,
         <Link
           key="task-investigator"
           to="/task-investigator"
           style={{ marginLeft: "10px" }}
         >
-          המשימות שיצרתי
+          Tasks I Created
         </Link>,
         <Link
           key="manage-colors"
@@ -70,10 +70,10 @@ function Navbar() {
           style={{ marginLeft: "10px" }}
         >
           {" "}
-          ניהול צבעים
+          Color Management
         </Link>,
         <Link key="task-coder" to="/task-coder" style={{ marginLeft: "10px" }}>
-          המשימות שלי
+          My Tasks
         </Link>
       );
     }
@@ -85,20 +85,20 @@ function Navbar() {
           to="/investigatorHome"
           style={{ marginLeft: "10px" }}
         >
-          בית
+          Home
         </Link>,
         <Link key="coderHome" to="/coderHome" style={{ marginLeft: "10px" }}>
-          הקידודים שלי
+          My Codings
         </Link>,
         <Link
           key="task-investigator"
           to="/task-investigator"
           style={{ marginLeft: "10px" }}
         >
-          המשימות שיצרתי
+          Tasks I Created
         </Link>,
         <Link key="task-coder" to="/task-coder" style={{ marginLeft: "10px" }}>
-          המשימות שלי
+          My Tasks
         </Link>
       );
     }
@@ -106,10 +106,10 @@ function Navbar() {
     if (role === "coder") {
       links.push(
         <Link key="coderHome" to="/coderHome" style={{ marginLeft: "10px" }}>
-          בית
+          Home
         </Link>,
         <Link key="task-coder" to="/task-coder" style={{ marginLeft: "10px" }}>
-          המשימות שלי
+          My Tasks
         </Link>
       );
     }
@@ -133,7 +133,7 @@ function Navbar() {
           onClick={handleLogout}
           style={{ marginLeft: "auto", padding: "5px 10px" }}
         >
-          התנתק
+          Logout
         </button>
       )}
     </nav>

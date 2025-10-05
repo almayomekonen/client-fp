@@ -1,11 +1,11 @@
 // src/components/Auth/LoginForm.jsx
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 export default function LoginForm({ onSubmit, onForgotPassword }) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleSubmit = e => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(username, password);
   };
@@ -13,26 +13,30 @@ export default function LoginForm({ onSubmit, onForgotPassword }) {
   return (
     <form onSubmit={handleSubmit}>
       <div>
-        <label>שם משתמש</label><br />
+        <label>Username</label>
+        <br />
         <input
           type="text"
           value={username}
-          onChange={e => setUsername(e.target.value)}
+          onChange={(e) => setUsername(e.target.value)}
         />
       </div>
 
       <div>
-        <label>סיסמה</label><br />
+        <label>Password</label>
+        <br />
         <input
           type="password"
           value={password}
-          onChange={e => setPassword(e.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
         />
       </div>
 
-      <button type="submit">התחבר</button><br /><br />
+      <button type="submit">Login</button>
+      <br />
+      <br />
       <button type="button" onClick={onForgotPassword}>
-        שכחתי סיסמה
+        Forgot Password
       </button>
     </form>
   );
