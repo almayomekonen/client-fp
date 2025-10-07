@@ -1,5 +1,5 @@
 import React, { createContext, useContext } from "react";
-
+import { useRefresh } from "./RefreshContext";
 import {
   deleteExperimentFromServer,
   fetchExperimentsFromServer,
@@ -15,6 +15,8 @@ const ExperimentContext = createContext();
 export const useExperiment = () => useContext(ExperimentContext);
 
 export function ExperimentProvider({ children }) {
+  const { refreshCopies, refreshTasks } = useRefresh();
+
   // יצירת ניסוי חדש
   const addExperiment = async (name, description, investigatorId) => {
     const r = await addExperimentService({ name, description, investigatorId });
@@ -42,6 +44,9 @@ export function ExperimentProvider({ children }) {
   const deleteExperiment = async (experimentId) => {
     try {
       await deleteExperimentFromServer(experimentId);
+      // ✅ רענן את כל הדאטה אחרי מחיקת ניסוי
+      await refreshCopies();
+      await refreshTasks();
       return { success: true };
     } catch (error) {
       return {

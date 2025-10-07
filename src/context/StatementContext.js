@@ -1,6 +1,7 @@
 // StatementContext.js
 
 import React, { createContext, useContext } from "react";
+import { useRefresh } from "./RefreshContext";
 import {
   createStatementOnServer as createStatementOnServerService,
   deleteStatementFromServer as deleteStatementFromServerService,
@@ -12,6 +13,8 @@ const StatementContext = createContext();
 export const useStatement = () => useContext(StatementContext);
 
 export function StatementProvider({ children }) {
+  const { refreshCopies } = useRefresh();
+
   // --- Create statement ---
   const addStatement = async (name, text, groupId, experimentId) => {
     return await createStatementOnServerService({
@@ -35,6 +38,8 @@ export function StatementProvider({ children }) {
   // --- Delete statement ---
   const deleteStatement = async (id) => {
     await deleteStatementFromServerService(id);
+    // ✅ רענן את רשימת ה-copies אחרי המחיקה
+    await refreshCopies();
   };
 
   return (

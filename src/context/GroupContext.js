@@ -1,6 +1,7 @@
 //GroupContext.js
 
 import React, { createContext, useContext } from "react";
+import { useRefresh } from "./RefreshContext";
 import {
   createGroupOnServer as createGroupOnServerpService,
   deleteGroupFromServer as deleteGroupFromServerService,
@@ -11,6 +12,8 @@ const GroupContext = createContext();
 export const useGroup = () => useContext(GroupContext);
 
 export function GroupProvider({ children }) {
+  const { refreshCopies } = useRefresh();
+
   //יצירת קבוצה
   const addGroup = async (experimentId, name, description) => {
     return await createGroupOnServerpService({
@@ -28,6 +31,8 @@ export function GroupProvider({ children }) {
   const deleteGroup = async (id) => {
     try {
       await deleteGroupFromServerService(id);
+      // ✅ רענן את רשימת ה-copies אחרי המחיקה
+      await refreshCopies();
       return { success: true };
     } catch (error) {
       return {
