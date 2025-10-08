@@ -90,6 +90,7 @@ export default function StatementEditor() {
 
       // Get statement from server if it doesn't exist in state
       let statement = statementsMap[copy.statementId];
+
       if (!statement) {
         statement = await statementById(copy.statementId);
         setStatementsMap((prev) => ({
@@ -98,9 +99,10 @@ export default function StatementEditor() {
         }));
       }
 
-      const baseText = statement?.text || [
+      const baseText = statement?.slateText || [
         { type: "paragraph", children: [{ text: "" }] },
       ];
+
       const highlights = copy?.highlights || [];
       const commentsForCopy = await fetchCommentsByCopyId(copyId);
 
@@ -203,7 +205,7 @@ export default function StatementEditor() {
       statement = await statementById(copy.statementId);
       setStatementsMap((prev) => ({ ...prev, [copy.statementId]: statement }));
     }
-    const baseText = statement?.text || [
+    const baseText = statement?.slateText || [
       { type: "paragraph", children: [{ text: "" }] },
     ];
     const decoratedText = applyHighlightsToText(
@@ -254,7 +256,7 @@ export default function StatementEditor() {
       statement = await statementById(copy.statementId);
       setStatementsMap((prev) => ({ ...prev, [copy.statementId]: statement }));
     }
-    const baseText = statement?.text || [
+    const baseText = statement?.slateText || [
       { type: "paragraph", children: [{ text: "" }] },
     ];
     const { highlights, colorCounts } = extractHighlightsFromValue(value);
@@ -285,7 +287,7 @@ export default function StatementEditor() {
       statement = await statementById(copy.statementId);
       setStatementsMap((prev) => ({ ...prev, [copy.statementId]: statement }));
     }
-    const baseText = statement?.text || [
+    const baseText = statement?.slateText || [
       { type: "paragraph", children: [{ text: "" }] },
     ];
     const { highlights, colorCounts } = extractHighlightsFromValue(value);
