@@ -1,32 +1,35 @@
-import React, { createContext, useContext } from "react";
-import { useRefresh } from "./RefreshContext";
-import {
+import React, { createContext, useContext, useEffect } from 'react';
+
+import { useRefresh } from './RefreshContext';
+
+import { 
   deleteExperimentFromServer,
   fetchExperimentsFromServer,
   updateExperimentOnServer,
   fetchExperimentById,
   fetchExperimentsByInvestigatorId,
-  fetchInvestigatorNameByExperimentId,
-} from "../api/ExperimentApi";
+  fetchInvestigatorNameByExperimentId
+} from '../api/ExperimentApi';
 
-import { addExperiment as addExperimentService } from "../services/ExperimentService";
+import {
+  addExperiment as addExperimentService
+} from '../services/ExperimentService';
 
 const ExperimentContext = createContext();
 export const useExperiment = () => useContext(ExperimentContext);
 
 export function ExperimentProvider({ children }) {
-  const { refreshCopies, refreshTasks } = useRefresh();
 
+  
   // יצירת ניסוי חדש
   const addExperiment = async (name, description, investigatorId) => {
     const r = await addExperimentService({ name, description, investigatorId });
     return r.newExperiment;
   };
 
-  const fetchExperiments = async () => {
+    const fetchExperiments = async () => {
     return await fetchExperimentsFromServer();
   };
-
   // ניסוי לפי מזהה
   const experimentById = async (experimentId) => {
     return await fetchExperimentById(experimentId);
@@ -37,29 +40,20 @@ export function ExperimentProvider({ children }) {
     return await fetchExperimentsByInvestigatorId(investigatorId);
   };
 
+
+
+  // שם החוקר לפי ניסוי
   const investigatorNameByExperimentId = async (experimentId) => {
     return await fetchInvestigatorNameByExperimentId(experimentId);
   };
 
-  const deleteExperiment = async (experimentId) => {
-    try {
-      await deleteExperimentFromServer(experimentId);
-      // ✅ רענן את כל הדאטה אחרי מחיקת ניסוי
-      await refreshCopies();
-      await refreshTasks();
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message || "שגיאה במחיקת ניסוי",
-      };
-    }
+  const deleteExperiment = async (id) => {
+    return await deleteExperimentFromServer(id);
   };
 
   const updateExperiment = async (experimentId, updateFields) => {
     return await updateExperimentOnServer(experimentId, updateFields);
   };
-
   return (
     <ExperimentContext.Provider
       value={{
@@ -69,7 +63,7 @@ export function ExperimentProvider({ children }) {
         deleteExperiment,
         investigatorNameByExperimentId,
         fetchExperiments,
-        updateExperiment,
+        updateExperiment
       }}
     >
       {children}

@@ -1,57 +1,51 @@
 //TaskService.js
 import { createCopyOnServer } from "../api/CopyApi";
 import { createTaskOnServer } from "../api/TaskApi";
-import { fetchStatementsByExperimentId } from "../api/StatementApi";
+import {fetchStatementsByExperimentId} from "../api/StatementApi";
 
-export const addTask = async (
+export const addTask = async ( 
   copies,
-  { experimentId, investigatorId, coderId, percent }
+  { experimentId,  investigatorId, coderId, percent }
 ) => {
-  const newCopyIds = await copiesForTask(copies, {
-    experimentId,
-    coderId,
-    percent,
-  });
+  const  newCopyIds = await copiesForTask(copies,  { experimentId, coderId, percent });
 
-  await createTaskOnServer({
+   await createTaskOnServer({
     experimentId,
     copiesId: newCopyIds,
     investigatorId,
     coderId,
   });
 
-  return { success: true, message: "Task added successfully" };
+  return { success: true, message: 'המשימה התווספה בהצלחה' };
 };
 
 export const tasksByInvestigatorId = (tasks, { investigatorId }) => {
-  return tasks.filter((task) => task.investigatorId === investigatorId);
+    return tasks.filter(task => task.investigatorId === investigatorId);
 };
 
 export const tasksByCoderId = (tasks, { coderId }) => {
-  return tasks.filter((task) => task.coderId === coderId);
+    return tasks.filter(task => task.coderId === coderId);
 };
 
 export const copiesForTask = async (
   copies,
-
+ 
   { experimentId, coderId, percent }
 ) => {
-  const statementsInExperiment = await fetchStatementsByExperimentId(
-    experimentId
-  ); // ← New function in StatementContext
+  const statementsInExperiment = await fetchStatementsByExperimentId(experimentId); // ← פונקציה חדשה ב-StatementContext
 
   const totalStatementsCount = statementsInExperiment.length;
 
   if (totalStatementsCount === 0) {
-    return [];
+    return  [];
   }
 
-  if (percent === 0) {
+    if (percent === 0) {
     return [];
   }
 
   let bestCount = 1;
-  let bestDiff = Math.abs((1 / totalStatementsCount) * 100 - percent);
+  let bestDiff = Math.abs(1 / totalStatementsCount * 100 - percent);
 
   for (let i = 2; i <= totalStatementsCount; i++) {
     const pct = (i / totalStatementsCount) * 100;
@@ -66,7 +60,7 @@ export const copiesForTask = async (
   const copyCountsByStatementId = {};
 
   for (const s of statementsInExperiment) {
-    const copyCount = copies.filter((c) => c.statementId === s._id).length;
+    const copyCount = copies.filter(c => c.statementId === s._id).length;
     copyCountsByStatementId[s._id] = copyCount;
   }
 
@@ -75,7 +69,7 @@ export const copiesForTask = async (
 
   for (const s of statementsInExperiment) {
     const hasCopyForCoder = copies.some(
-      (c) => c.statementId === s._id && c.coderId === coderId
+      c => c.statementId === s._id && c.coderId === coderId
     );
     if (!hasCopyForCoder) {
       statementsWithoutCoderCopy.push(s);
@@ -85,7 +79,7 @@ export const copiesForTask = async (
   }
 
   const groupCounters = {};
-  statementsInExperiment.forEach((s) => {
+  statementsInExperiment.forEach(s => {
     groupCounters[s.groupId] = 0;
   });
 
@@ -99,10 +93,7 @@ export const copiesForTask = async (
     });
   };
 
-  let availableStatements = [
-    ...statementsWithoutCoderCopy,
-    ...statementsWithCoderCopy,
-  ];
+  let availableStatements = [...statementsWithoutCoderCopy, ...statementsWithCoderCopy];
   const newCopyIds = [];
 
   while (newCopyIds.length < desiredCount) {
@@ -112,55 +103,58 @@ export const copiesForTask = async (
     const s = sorted[0];
 
     const result = await createCopyOnServer({
-      statementId: s._id,
+      statementId: s._id, 
       groupId: s.groupId,
       experimentId,
-      coderId,
-    });
+      coderId
+  });
 
     if (result.success && result.newCopy) {
       newCopyIds.push(result.newCopy._id);
 
       groupCounters[s.groupId] = (groupCounters[s.groupId] || 0) + 1;
-      availableStatements = availableStatements.filter(
-        (st) => st._id !== s._id
-      );
+      availableStatements = availableStatements.filter(st => st._id !== s._id);
     } else {
-      availableStatements = availableStatements.filter(
-        (st) => st._id !== s._id
-      );
+      availableStatements = availableStatements.filter(st => st._id !== s._id);
     }
   }
 
-  return newCopyIds;
+  return  newCopyIds;
 };
 
-export const experimentPercent = async (copies, tasks, { taskId }) => {
-  const task = tasks.find((t) => t._id === taskId);
-  if (!task.copiesId || task.copiesId.length === 0) return 0;
 
-  // כל ההצהרות של הניסוי הזה
-  const expId = task.experimentId;
-  const statementsInExperiment = await fetchStatementsByExperimentId(expId);
 
-  // מוצאים את כל העתקי ההצהרות שקשורים למשימה
-  const taskCopies = copies.filter((c) => task.copiesId.includes(c._id));
 
-  // מזהים את כל ההצהרות הייחודיות במשימה
-  const statementIdsInTask = [...new Set(taskCopies.map((c) => c.statementId))];
 
-  if (statementsInExperiment.length === 0) return 0;
+export const experimentPercent = async(copies,  tasks, { taskId }) => {
+    const task = tasks.find(t => t._id === taskId);
+    if (!task.copiesId || task.copiesId.length === 0) return 0;
+  
+    // כל ההצהרות של הניסוי הזה
+    const expId = task.experimentId;
+     const statementsInExperiment = await fetchStatementsByExperimentId(expId);
+  
+    // מוצאים את כל העתקי ההצהרות שקשורים למשימה
+    const taskCopies = copies.filter(c => task.copiesId.includes(c._id));
 
-  // אחוז ההצהרות מתוך כלל הצהרות הניסוי
-  const percent =
-    (statementIdsInTask.length / statementsInExperiment.length) * 100;
-  return percent.toFixed(0);
+  
+    // מזהים את כל ההצהרות הייחודיות במשימה
+    const statementIdsInTask = [...new Set(taskCopies.map(c => c.statementId))];
+    
+  
+    if (statementsInExperiment.length === 0) return 0;
+  
+    // אחוז ההצהרות מתוך כלל הצהרות הניסוי
+    const percent = (statementIdsInTask.length / statementsInExperiment.length) * 100;
+    return percent.toFixed(0);
 };
+
+
 
 export const taskProgress = (copies, tasks, { taskId }) => {
-  const task = tasks.find((t) => t._id === taskId);
-  if (!task.copiesId || task.copiesId.length === 0) return 0;
-  const taskCopies = copies.filter((c) => task.copiesId.includes(c._id));
-  const completed = taskCopies.filter((c) => c.status === "completed").length;
-  return ((completed / task.copiesId.length) * 100).toFixed(0);
+    const task = tasks.find(t => t._id === taskId);
+    if (!task.copiesId || task.copiesId.length === 0) return 0;
+    const taskCopies = copies.filter(c => task.copiesId.includes(c._id));
+    const completed = taskCopies.filter(c => c.status === 'completed').length;
+    return ((completed / task.copiesId.length) * 100).toFixed(0);
 };

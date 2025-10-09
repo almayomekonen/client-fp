@@ -41,34 +41,26 @@ export default function TaskManagementPage() {
     };
 
     if (tasks.length > 0) fetchExperiments();
-  }, [tasks]);
+  }, [tasks, experimentById, experimentNames]);
 
   // --- טעינת הצהרות עבור כל המשימות ---
   useEffect(() => {
     const fetchStatementsForTasks = async () => {
-      const newCache = {};
-      let hasNewStatements = false;
-
+      const newCache = { ...statementsCache };
       for (const task of tasks) {
         const copies = copiesByTaskId(task._id);
         for (const copy of copies) {
-          if (!statementsCache[copy.statementId]) {
+          if (!newCache[copy.statementId]) {
             const stmt = await statementById(copy.statementId);
-            if (stmt) {
-              newCache[copy.statementId] = stmt;
-              hasNewStatements = true;
-            }
+            if (stmt) newCache[copy.statementId] = stmt;
           }
         }
       }
-
-      if (hasNewStatements) {
-        setStatementsCache((prev) => ({ ...prev, ...newCache }));
-      }
+      setStatementsCache(newCache);
     };
 
     if (tasks.length > 0) fetchStatementsForTasks();
-  }, [tasks]);
+  }, [tasks, copiesByTaskId, statementById, statementsCache]);
 
   // --- חישוב אחוזי ניסוי אסינכרוניים ---
   useEffect(() => {
@@ -82,7 +74,7 @@ export default function TaskManagementPage() {
     };
 
     if (tasks.length > 0) fetchPercents();
-  }, [tasks]);
+  }, [tasks, copiesByTaskId, experimentPercent]);
 
   if (!isAuthChecked) {
     return (
@@ -105,17 +97,7 @@ export default function TaskManagementPage() {
     users.find((u) => u._id === coderId)?.username || "משתמש לא נמצא";
 
   const handleDeleteTask = async (taskId) => {
-    if (!window.confirm("האם אתה בטוח שברצונך למחוק את המשימה?")) {
-      return;
-    }
-
-    try {
-      await deleteTask(taskId);
-      alert("המשימה נמחקה בהצלחה");
-    } catch (error) {
-      console.error("Error deleting task:", error);
-      alert("שגיאה במחיקת המשימה: " + error.message);
-    }
+    await deleteTask(taskId);
   };
 
   const renderCopies = (taskId) => {

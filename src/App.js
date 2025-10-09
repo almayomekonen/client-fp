@@ -35,7 +35,6 @@ import { RefreshProvider } from "./context/RefreshContext";
 import { ColorProvider } from "./context/ColorContext";
 import { StyleSettingProvider } from "./context/StyleSettingContext";
 import { RegistrationProvider } from "./context/RegistrationContext";
-import ProtectedRoute from "./components/ProtectedRoute";
 import { ComparisonProvider } from "./context/ComparisonContext";
 import { EmailVerificationProvider } from "./context/EmailVerificationContext";
 import { EditProvider } from "./context/EditContext";
@@ -79,35 +78,19 @@ function App() {
                                             />
                                             <Route
                                               path="/admin-panel"
-                                              element={
-                                                <ProtectedRoute requiredRole="admin">
-                                                  <AdminPanel />
-                                                </ProtectedRoute>
-                                              }
+                                              element={<AdminPanel />}
                                             />
                                             <Route
                                               path="/coderHome"
-                                              element={
-                                                <ProtectedRoute>
-                                                  <CoderHomePage />
-                                                </ProtectedRoute>
-                                              }
+                                              element={<CoderHomePage />}
                                             />
                                             <Route
                                               path="/investigatorHome"
-                                              element={
-                                                <ProtectedRoute>
-                                                  <InvestigatorHomePage />
-                                                </ProtectedRoute>
-                                              }
+                                              element={<InvestigatorHomePage />}
                                             />
                                             <Route
                                               path="/adminHome"
-                                              element={
-                                                <ProtectedRoute requiredRole="admin">
-                                                  <AdminHomePage />
-                                                </ProtectedRoute>
-                                              }
+                                              element={<AdminHomePage />}
                                             />
                                             <Route
                                               path="/edit-statement/:copyId"
@@ -119,19 +102,11 @@ function App() {
                                             />
                                             <Route
                                               path="/task-management"
-                                              element={
-                                                <ProtectedRoute requiredRole="admin">
-                                                  <TaskManagementPage />
-                                                </ProtectedRoute>
-                                              }
+                                              element={<TaskManagementPage />}
                                             />
                                             <Route
                                               path="/task-investigator"
-                                              element={
-                                                <ProtectedRoute>
-                                                  <TaskForInvestigator />
-                                                </ProtectedRoute>
-                                              }
+                                              element={<TaskForInvestigator />}
                                             />
                                             <Route
                                               path="/coder-compare/:copyId"
@@ -143,19 +118,11 @@ function App() {
                                             />
                                             <Route
                                               path="/manage-colors"
-                                              element={
-                                                <ProtectedRoute requiredRole="admin">
-                                                  <ManageColors />
-                                                </ProtectedRoute>
-                                              }
+                                              element={<ManageColors />}
                                             />
                                             <Route
                                               path="/task-coder"
-                                              element={
-                                                <ProtectedRoute>
-                                                  <TaskForCoder />
-                                                </ProtectedRoute>
-                                              }
+                                              element={<TaskForCoder />}
                                             />
                                             <Route
                                               path="/task-chat/:taskId"

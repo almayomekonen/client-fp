@@ -25,13 +25,13 @@ export default function AdminHomePage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Only after authentication check is completed
+    // רק אחרי שבדיקת האותנטיקציה הושלמה
     if (isAuthChecked && !currentUser) {
       navigate("/", { replace: true });
     }
   }, [currentUser, isAuthChecked, navigate]);
 
-  // Load experiments
+  // טעינת ניסויים
   useEffect(() => {
     const loadExperiments = async () => {
       try {
@@ -39,18 +39,18 @@ export default function AdminHomePage() {
         const dataWithInvestigatorNames = await Promise.all(
           data.map(async (exp) => {
             const name = await investigatorNameByExperimentId(exp._id);
-            return { ...exp, investigatorName: name || "Unknown" };
+            return { ...exp, investigatorName: name || "לא ידוע" };
           })
         );
         setExperiments(dataWithInvestigatorNames);
       } catch {
-        alert("❌ Error loading experiments");
+        alert("❌ שגיאה בטעינת ניסויים");
       }
     };
     loadExperiments();
   }, [fetchExperiments, investigatorNameByExperimentId]);
 
-  // If still checking authentication, show loading
+  // אם עדיין בודקים אותנטיקציה, הצג טעינה
   if (!isAuthChecked) {
     return (
       <div
@@ -62,14 +62,14 @@ export default function AdminHomePage() {
           fontSize: "18px",
         }}
       >
-        <div>Loading...</div>
+        <div>טוען...</div>
       </div>
     );
   }
 
   if (!currentUser) return null;
 
-  // Open/close experiment
+  // פתיחת/סגירת ניסוי
   const toggleExperiment = async (id) => {
     if (expandedExperimentId === id) {
       setExpandedExperimentId(null);
@@ -82,11 +82,11 @@ export default function AdminHomePage() {
       const loadedGroups = await groupsByExperimentId(id);
       setGroups(loadedGroups);
     } catch {
-      alert("❌ Error loading groups");
+      alert("❌ שגיאה בטעינת קבוצות");
     }
   };
 
-  // Open/close group → load statements from server
+  // פתיחת/סגירת קבוצה → טענת הצהרות מהשרת
   const toggleGroup = async (id) => {
     if (expandedGroupId === id) {
       setExpandedGroupId(null);
@@ -99,7 +99,7 @@ export default function AdminHomePage() {
       const loadedStatements = await statementsByGroupId(id);
       setStatements(loadedStatements);
     } catch {
-      alert("❌ Error loading statements");
+      alert("❌ שגיאה בטעינת הצהרות");
     }
   };
 
@@ -109,9 +109,7 @@ export default function AdminHomePage() {
 
   return (
     <div className="p-4">
-      <h1 className="text-xl font-bold mb-4">
-        Experiment Management (Read Only)
-      </h1>
+      <h1 className="text-xl font-bold mb-4">ניהול ניסויים (קריאה בלבד)</h1>
 
       <ul className="mt-4">
         {experiments.map((exp) => (
@@ -123,7 +121,7 @@ export default function AdminHomePage() {
               {exp.name}
               <span className="text-sm text-gray-500">
                 {" "}
-                (Investigator: {exp.investigatorName || "Unknown"})
+                (חוקר: {exp.investigatorName || "לא ידוע"})
               </span>
             </div>
 
@@ -159,7 +157,7 @@ export default function AdminHomePage() {
                                     }
                                     className="text-sm text-blue-500 hover:text-blue-700 underline"
                                   >
-                                    Compare Codings
+                                    השווה קידודים
                                   </button>
                                 )}
                                 <button
@@ -170,7 +168,7 @@ export default function AdminHomePage() {
                                   }
                                   className="text-sm text-green-500 hover:text-green-700 underline"
                                 >
-                                  Statement Summary
+                                  סיכום הצהרה
                                 </button>
                               </div>
                             </div>
@@ -191,7 +189,7 @@ export default function AdminHomePage() {
                                             );
                                           } else {
                                             alert(
-                                              "Cannot view statement before coding is completed"
+                                              "לא ניתן לצפות בהצהרה לפני שהקידוד הושלם"
                                             );
                                           }
                                         }}
@@ -203,7 +201,7 @@ export default function AdminHomePage() {
                                       >
                                         {users.find(
                                           (user) => user._id === copy.coderId
-                                        )?.username || "Unknown"}
+                                        )?.username || "לא ידוע"}
                                       </div>
 
                                       <div className="flex items-center space-x-2">
@@ -213,7 +211,7 @@ export default function AdminHomePage() {
                                           }
                                           className="text-blue-500 text-xs"
                                         >
-                                          Chat
+                                          צ'אט
                                         </button>
 
                                         <span className="text-xs text-red-600">
@@ -222,7 +220,7 @@ export default function AdminHomePage() {
                                             copy._id,
                                             currentUser?._id
                                           )}{" "}
-                                          unread)
+                                          לא נקראו)
                                         </span>
                                       </div>
                                     </div>

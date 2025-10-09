@@ -12,19 +12,19 @@ export default function ManageColors() {
   const [colors, setColors] = useState([]);
   const [styleSettings, setStyleSettings] = useState({});
 
-  // Load from server
+  // טוען מהשרת
   useEffect(() => {
     const loadStyle = async () => {
       try {
         const data = await getStyleSetting();
         setStyleSettings(data);
       } catch (err) {
-        alert("❌ Error loading style settings");
+        alert("❌ שגיאה בטעינת הגדרות עיצוב");
       }
     };
     loadStyle();
   }, []);
-  // Load colors from server when loading
+  // טוען צבעים מהשרת כשעולים
   useEffect(() => {
     loadColors();
   }, []);
@@ -34,50 +34,50 @@ export default function ManageColors() {
       const data = await getColors();
       setColors(data);
     } catch (err) {
-      alert("❌ Error loading colors");
+      alert("❌ שגיאה בטעינת צבעים");
     }
   };
 
-  // ➕ Add color
+  // ➕ הוספת צבע
   const handleAddColor = async () => {
     try {
       const newColor = await addColor(pickedColor, pickedColor);
-      setColors([...colors, newColor]); // Add to local list
-      alert(`✅ Color ${pickedColor} added successfully!`);
+      setColors([...colors, newColor]); // מוסיף לרשימה המקומית
+      alert(`✅ הצבע ${pickedColor} נוסף בהצלחה!`);
     } catch (err) {
-      alert("❌ Error adding color");
+      alert("❌ שגיאה בהוספת צבע");
     }
   };
 
-  // ➖ Delete color
+  // ➖ מחיקת צבע
   const handleRemoveColor = async (color) => {
     try {
       await deleteColor(color._id);
       setColors(colors.filter((c) => c._id !== color._id));
-      alert(`🗑️ Color ${color.name} removed`);
+      alert(`🗑️ הצבע ${color.name} הוסר`);
     } catch (err) {
-      alert("❌ Error deleting color");
+      alert("❌ שגיאה במחיקת צבע");
     }
   };
 
-  // ✍️ Change style options (still against DB through StyleSetting Context)
+  // ✍️ שינוי אפשרויות עיצוב (עדיין מול DB דרך ה־Context של StyleSetting)
   const toggleStyle = async (field) => {
     try {
       const updated = { ...styleSettings, [field]: !styleSettings[field] };
       await updateStyleSetting(updated);
       setStyleSettings(updated);
     } catch (err) {
-      alert("❌ Error updating settings");
+      alert("❌ שגיאה בעדכון ההגדרות");
     }
   };
 
   return (
     <div style={{ padding: 20, direction: "rtl" }}>
-      <h2>Color and Options Management</h2>
+      <h2>ניהול צבעים ואפשרויות</h2>
 
-      {/* 🎨 Existing colors */}
+      {/* 🎨 צבעים קיימים */}
       <div style={{ marginBottom: 20 }}>
-        <h4>Existing Colors:</h4>
+        <h4>צבעים קיימים:</h4>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
           {colors.map((color) => (
             <div key={color._id} style={{ textAlign: "center" }}>
@@ -102,16 +102,16 @@ export default function ManageColors() {
                   fontSize: "0.8rem",
                 }}
               >
-                Remove
+                הסר
               </button>
             </div>
           ))}
         </div>
       </div>
 
-      {/* ➕ Add color */}
+      {/* ➕ הוספת צבע */}
       <div style={{ marginBottom: 20 }}>
-        <h4>Add New Color:</h4>
+        <h4>הוסף צבע חדש:</h4>
         <SketchPicker
           color={pickedColor}
           onChange={(color) => setPickedColor(color.hex)}
@@ -120,20 +120,20 @@ export default function ManageColors() {
           onClick={handleAddColor}
           style={{ marginTop: 10, padding: "5px 10px" }}
         >
-          Add Color to List
+          הוסף צבע לרשימה
         </button>
       </div>
 
-      {/* ✍️ Style options */}
+      {/* ✍️ אפשרויות עיצוב */}
       <div>
-        <h4>Style Options:</h4>
+        <h4>אפשרויות עיצוב:</h4>
         <label>
           <input
             type="checkbox"
             checked={styleSettings.boldEnabled || false}
             onChange={() => toggleStyle("boldEnabled")}
           />{" "}
-          Enable Bold
+          אפשר בולד
         </label>
         <br />
         <label>
@@ -142,7 +142,7 @@ export default function ManageColors() {
             checked={styleSettings.italicEnabled || false}
             onChange={() => toggleStyle("italicEnabled")}
           />{" "}
-          Enable Italic
+          אפשר איטליק
         </label>
         <br />
         <label>
@@ -151,7 +151,7 @@ export default function ManageColors() {
             checked={styleSettings.underlineEnabled || false}
             onChange={() => toggleStyle("underlineEnabled")}
           />{" "}
-          Enable Underline
+          אפשר קו תחתון
         </label>
       </div>
     </div>
