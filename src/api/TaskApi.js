@@ -1,4 +1,4 @@
-//TaskService.js
+import { API_BASE_URL } from "./config";
 import { createCopyOnServer } from "./CopyApi";
 
 export const addTaskForCopy = async ({
@@ -9,7 +9,6 @@ export const addTaskForCopy = async ({
   coderId,
 }) => {
   try {
-    // יצירת עותק חדש לוקאלי (ואולי גם שליחה לשרת אם זה חלק מהזרימה שלך)
     const r = await createCopyOnServer({
       statementId,
       groupId,
@@ -17,8 +16,8 @@ export const addTaskForCopy = async ({
       coderId,
     });
     const copyForTaskId = r.newCopy._id;
-    // יצירת משימה חדשה מול השרת
-    const response = await fetch("http://localhost:5000/api/tasks", {
+
+    const response = await fetch(`${API_BASE_URL}/api/tasks`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -53,7 +52,7 @@ export const createTaskOnServer = async ({
   investigatorId,
   coderId,
 }) => {
-  const res = await fetch("http://localhost:5000/api/tasks", {
+  const res = await fetch(`${API_BASE_URL}/api/tasks`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -64,7 +63,7 @@ export const createTaskOnServer = async ({
 };
 
 export const fetchTasksFromServer = async () => {
-  const res = await fetch("http://localhost:5000/api/tasks", {
+  const res = await fetch(`${API_BASE_URL}/api/tasks`, {
     credentials: "include",
   });
   if (!res.ok) throw new Error("שגיאה בקבלת משימות");
@@ -72,7 +71,7 @@ export const fetchTasksFromServer = async () => {
 };
 
 export const deleteTaskFromServer = async (taskId) => {
-  const res = await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
+  const res = await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {
     method: "DELETE",
     credentials: "include",
   });
@@ -81,7 +80,7 @@ export const deleteTaskFromServer = async (taskId) => {
 };
 
 export const updateTaskOnServer = async (taskId, updateFields) => {
-  const res = await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
+  const res = await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
