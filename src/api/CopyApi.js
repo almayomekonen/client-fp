@@ -55,3 +55,12 @@ export const UpdateCopyOnServer = async (copyId, updateFields) => {
   if (!res.ok) throw new Error("שגיאה בעדכון העתק");
   return await res.json();
 };
+
+export const fetchColorsFromServer = async () => {
+  const res = await fetch(`${API_BASE_URL}/api/colors`, {
+    method: "GET",
+    credentials: "include", // ← הוסף
+  });
+  if (!res.ok) throw new Error("שגיאה בקבלת צבעים");
+  return await res.json();
+};

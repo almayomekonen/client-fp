@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useData } from "../../context/DataContext";
@@ -22,6 +22,11 @@ export default function TaskForInvestigator() {
   const [statementsCache, setStatementsCache] = useState({});
   const [experimentPercentMap, setExperimentPercentMap] = useState({});
 
+  // Use refs to track what we've already fetched
+  const fetchedStatements = useRef(new Set());
+  const fetchedExperiments = useRef(new Set());
+  const fetchedPercents = useRef(new Set());
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,50 +41,89 @@ export default function TaskForInvestigator() {
   useEffect(() => {
     const fetchExperiments = async () => {
       const names = {};
-      for (const task of researcherTasks) {
-        if (!experimentNames[task.experimentId]) {
-          const exp = await experimentById(task.experimentId);
-          names[task.experimentId] = exp?.name || "ניסוי לא נמצא";
+      const promises = [];
+
+      researcherTasks.forEach((task) => {
+        if (!fetchedExperiments.current.has(task.experimentId)) {
+          fetchedExperiments.current.add(task.experimentId);
+          promises.push(
+            experimentById(task.experimentId).then((exp) => {
+              if (exp) names[task.experimentId] = exp.name || "ניסוי לא נמצא";
+            })
+          );
         }
-      }
-      if (Object.keys(names).length > 0) {
+      });
+
+      if (promises.length > 0) {
+        await Promise.all(promises);
         setExperimentNames((prev) => ({ ...prev, ...names }));
       }
     };
-    if (researcherTasks.length > 0) fetchExperiments();
+
+    if (researcherTasks.length > 0) {
+      fetchExperiments();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [researcherTasks, experimentById]);
+  }, [researcherTasks.length]);
 
   useEffect(() => {
     const fetchStatementsForTasks = async () => {
-      const newCache = { ...statementsCache };
-      for (const task of researcherTasks) {
+      const newCache = {};
+      const promises = [];
+
+      researcherTasks.forEach((task) => {
         const copies = copiesByTaskId(task._id);
-        for (const copy of copies) {
-          if (!newCache[copy.statementId]) {
-            const stmt = await statementById(copy.statementId);
-            if (stmt) newCache[copy.statementId] = stmt;
+        copies.forEach((copy) => {
+          if (!fetchedStatements.current.has(copy.statementId)) {
+            fetchedStatements.current.add(copy.statementId);
+            promises.push(
+              statementById(copy.statementId).then((stmt) => {
+                if (stmt) newCache[copy.statementId] = stmt;
+              })
+            );
           }
-        }
+        });
+      });
+
+      if (promises.length > 0) {
+        await Promise.all(promises);
+        setStatementsCache((prev) => ({ ...prev, ...newCache }));
       }
-      setStatementsCache(newCache);
     };
-    if (researcherTasks.length > 0) fetchStatementsForTasks();
+
+    if (researcherTasks.length > 0) {
+      fetchStatementsForTasks();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [researcherTasks, copiesByTaskId, statementById]);
+  }, [researcherTasks.length]);
 
   useEffect(() => {
     const fetchPercents = async () => {
       const newMap = {};
-      for (const task of researcherTasks) {
-        const percent = await experimentPercent(task._id);
-        newMap[task._id] = percent;
+      const promises = [];
+
+      researcherTasks.forEach((task) => {
+        if (!fetchedPercents.current.has(task._id)) {
+          fetchedPercents.current.add(task._id);
+          promises.push(
+            experimentPercent(task._id).then((percent) => {
+              newMap[task._id] = percent;
+            })
+          );
+        }
+      });
+
+      if (promises.length > 0) {
+        await Promise.all(promises);
+        setExperimentPercentMap((prev) => ({ ...prev, ...newMap }));
       }
-      setExperimentPercentMap(newMap);
     };
-    if (researcherTasks.length > 0) fetchPercents();
+
+    if (researcherTasks.length > 0) {
+      fetchPercents();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [researcherTasks, experimentPercent]);
+  }, [researcherTasks.length]);
 
   if (!isAuthChecked) {
     return (

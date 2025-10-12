@@ -18,24 +18,25 @@ export function DataProvider({ children }) {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const savedUser = localStorage.getItem("currentUser");
-        if (savedUser) {
-          const userData = JSON.parse(savedUser);
-          setCurrentUser(userData);
-        } else {
-        }
+        console.log("🔍 Checking authentication...");
 
+        // 🔥 תמיד בודק עם השרת, לא תלוי ב-localStorage
         const authResult = await checkAuth();
 
         if (authResult.success) {
+          console.log("✅ User authenticated:", authResult.user);
           setCurrentUser(authResult.user);
+          // שמור ב-localStorage רק לשיפור UX (לא מקור האמת!)
           localStorage.setItem("currentUser", JSON.stringify(authResult.user));
         } else {
+          console.log("❌ User not authenticated");
           setCurrentUser(null);
           localStorage.removeItem("currentUser");
         }
       } catch (error) {
         console.error("💥 Error checking auth:", error);
+        setCurrentUser(null);
+        localStorage.removeItem("currentUser");
       } finally {
         setIsAuthChecked(true);
       }

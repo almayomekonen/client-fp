@@ -11,6 +11,7 @@ export async function sendVerificationCode(email) {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ email }),
       }
     );
@@ -36,6 +37,7 @@ export async function verifyCode(email, code) {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ email, code }),
       }
     );

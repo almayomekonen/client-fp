@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useData } from "../../context/DataContext";
 import { useCopy } from "../../context/CopyContext";
@@ -20,6 +20,11 @@ export default function TaskForCoder() {
   const [statementsCache, setStatementsCache] = useState({});
   const [experimentPercentMap, setExperimentPercentMap] = useState({}); // אחוזי ניסוי
 
+  // Use refs to track what we've already fetched
+  const fetchedStatements = useRef(new Set());
+  const fetchedExperiments = useRef(new Set());
+  const fetchedPercents = useRef(new Set());
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,61 +41,90 @@ export default function TaskForCoder() {
 
   useEffect(() => {
     const fetchStatementsForTasks = async () => {
-      const newCache = { ...statementsCache };
-      await Promise.all(
-        researcherTasks.map(async (task) => {
-          const copies = copiesByTaskId(task._id);
-          await Promise.all(
-            copies.map(async (copy) => {
-              if (!newCache[copy.statementId]) {
-                const stmt = await statementById(copy.statementId);
+      const newCache = {};
+      const promises = [];
+
+      researcherTasks.forEach((task) => {
+        const copies = copiesByTaskId(task._id);
+        copies.forEach((copy) => {
+          if (!fetchedStatements.current.has(copy.statementId)) {
+            fetchedStatements.current.add(copy.statementId);
+            promises.push(
+              statementById(copy.statementId).then((stmt) => {
                 if (stmt) newCache[copy.statementId] = stmt;
-              }
-            })
-          );
-        })
-      );
-      setStatementsCache(newCache);
+              })
+            );
+          }
+        });
+      });
+
+      if (promises.length > 0) {
+        await Promise.all(promises);
+        setStatementsCache((prev) => ({ ...prev, ...newCache }));
+      }
     };
 
-    if (currentUser && researcherTasks.length > 0) fetchStatementsForTasks();
+    if (currentUser && researcherTasks.length > 0) {
+      fetchStatementsForTasks();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [researcherTasks, copiesByTaskId, statementById]);
+  }, [researcherTasks.length, currentUser?._id]);
 
   useEffect(() => {
     const fetchExperiments = async () => {
       const names = {};
-      await Promise.all(
-        researcherTasks.map(async (task) => {
-          if (!experimentNames[task.experimentId]) {
-            const exp = await experimentById(task.experimentId);
-            names[task.experimentId] = exp?.name || "ניסוי לא נמצא";
-          }
-        })
-      );
-      if (Object.keys(names).length > 0)
+      const promises = [];
+
+      researcherTasks.forEach((task) => {
+        if (!fetchedExperiments.current.has(task.experimentId)) {
+          fetchedExperiments.current.add(task.experimentId);
+          promises.push(
+            experimentById(task.experimentId).then((exp) => {
+              if (exp) names[task.experimentId] = exp.name || "ניסוי לא נמצא";
+            })
+          );
+        }
+      });
+
+      if (promises.length > 0) {
+        await Promise.all(promises);
         setExperimentNames((prev) => ({ ...prev, ...names }));
+      }
     };
 
-    if (researcherTasks.length > 0) fetchExperiments();
+    if (researcherTasks.length > 0) {
+      fetchExperiments();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [researcherTasks, experimentById]);
+  }, [researcherTasks.length]);
 
   useEffect(() => {
     const fetchExperimentPercents = async () => {
       const newMap = {};
-      await Promise.all(
-        researcherTasks.map(async (task) => {
-          const percent = await experimentPercent(task._id);
-          newMap[task._id] = percent;
-        })
-      );
-      setExperimentPercentMap(newMap);
+      const promises = [];
+
+      researcherTasks.forEach((task) => {
+        if (!fetchedPercents.current.has(task._id)) {
+          fetchedPercents.current.add(task._id);
+          promises.push(
+            experimentPercent(task._id).then((percent) => {
+              newMap[task._id] = percent;
+            })
+          );
+        }
+      });
+
+      if (promises.length > 0) {
+        await Promise.all(promises);
+        setExperimentPercentMap((prev) => ({ ...prev, ...newMap }));
+      }
     };
 
-    if (researcherTasks.length > 0) fetchExperimentPercents();
+    if (researcherTasks.length > 0) {
+      fetchExperimentPercents();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [researcherTasks, experimentPercent]);
+  }, [researcherTasks.length]);
 
   if (!isAuthChecked) {
     return (

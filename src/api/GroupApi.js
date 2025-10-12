@@ -12,6 +12,7 @@ export const createGroupOnServer = async ({
   const res = await fetch(`${API_BASE_URL}/api/groups`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({ name, description, experimentId }),
   });
 
@@ -22,6 +23,7 @@ export const createGroupOnServer = async ({
 export const deleteGroupFromServer = async (groupId) => {
   const res = await fetch(`${API_BASE_URL}/api/groups/${groupId}`, {
     method: "DELETE",
+    credentials: "include",
   });
 
   if (!res.ok) throw new Error("שגיאה במחיקת קבוצה");
@@ -29,14 +31,19 @@ export const deleteGroupFromServer = async (groupId) => {
 };
 
 export const fetchGroupsFromServer = async () => {
-  const res = await fetch(`${API_BASE_URL}/api/groups`);
+  const res = await fetch(`${API_BASE_URL}/api/groups`, {
+    credentials: "include",
+  });
   if (!res.ok) throw new Error("שגיאה בקבלת קבוצות");
   return await res.json();
 };
 
 export const fetchGroupsByExperimentId = async (experimentId) => {
   const res = await fetch(
-    `${API_BASE_URL}/api/groups/byExperiment/${experimentId}`
+    `${API_BASE_URL}/api/groups/byExperiment/${experimentId}`,
+    {
+      credentials: "include",
+    }
   );
   if (!res.ok) {
     throw new Error("Failed to fetch groups");

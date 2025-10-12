@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCopy } from "../../context/CopyContext";
 import { useStatement } from "../../context/StatementContext";
@@ -25,6 +25,12 @@ export default function CoderHomePage() {
   const [experimentsMap, setExperimentsMap] = useState({});
   const [statementsMap, setStatementsMap] = useState({});
 
+  // Use refs to track what we've already fetched
+  const fetchedComparisons = useRef(new Set());
+  const fetchedExperiments = useRef(new Set());
+  const fetchedStatements = useRef(new Set());
+  const hasFetched = useRef(false);
+
   useEffect(() => {
     if (isAuthChecked && !currentUser) {
       navigate("/", { replace: true });
@@ -37,16 +43,31 @@ export default function CoderHomePage() {
         currentUser?._id
       ).flatMap((c) => c.copies);
       const map = {};
-      for (const copy of coderCopies) {
-        const comparisons = await getComparisonsForCopy(copy._id);
-        map[copy._id] = comparisons;
+      const promises = [];
+
+      coderCopies.forEach((copy) => {
+        if (!fetchedComparisons.current.has(copy._id)) {
+          fetchedComparisons.current.add(copy._id);
+          promises.push(
+            getComparisonsForCopy(copy._id).then((comparisons) => {
+              map[copy._id] = comparisons;
+            })
+          );
+        }
+      });
+
+      if (promises.length > 0) {
+        await Promise.all(promises);
+        setComparisonsMap((prev) => ({ ...prev, ...map }));
       }
-      setComparisonsMap(map);
     };
 
-    if (currentUser) fetchComparisons();
+    if (currentUser && !hasFetched.current) {
+      hasFetched.current = true;
+      fetchComparisons();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser]);
+  }, [currentUser?._id]);
 
   // טען מידע על ניסויים
   useEffect(() => {
@@ -55,27 +76,40 @@ export default function CoderHomePage() {
         currentUser?._id
       );
       const map = {};
-      for (const { experiment } of coderCopiesByExperiment) {
-        if (!experiment) continue;
-        try {
-          const expData = await experimentById(experiment._id);
-          const investigatorName = await investigatorNameByExperimentId(
-            experiment._id
-          );
-          map[experiment._id] = {
-            name: expData?.name || `ניסוי ${experiment._id}`,
-            investigatorName: investigatorName || "לא ידוע",
-          };
-        } catch (err) {
-          console.warn(`לא ניתן לטעון ניסוי ${experiment._id}:`, err);
-        }
+      const promises = [];
+
+      coderCopiesByExperiment.forEach(({ experiment }) => {
+        if (!experiment || fetchedExperiments.current.has(experiment._id))
+          return;
+
+        fetchedExperiments.current.add(experiment._id);
+        promises.push(
+          (async () => {
+            try {
+              const expData = await experimentById(experiment._id);
+              const investigatorName = await investigatorNameByExperimentId(
+                experiment._id
+              );
+              map[experiment._id] = {
+                name: expData?.name || `ניסוי ${experiment._id}`,
+                investigatorName: investigatorName || "לא ידוע",
+              };
+            } catch (err) {
+              console.warn(`לא ניתן לטעון ניסוי ${experiment._id}:`, err);
+            }
+          })()
+        );
+      });
+
+      if (promises.length > 0) {
+        await Promise.all(promises);
+        setExperimentsMap((prev) => ({ ...prev, ...map }));
       }
-      setExperimentsMap(map);
     };
 
     if (currentUser) fetchExperimentsInfo();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser]);
+  }, [currentUser?._id]);
 
   // טען הצהרות אסינכרוני
   useEffect(() => {
@@ -84,18 +118,28 @@ export default function CoderHomePage() {
         currentUser?._id
       ).flatMap((c) => c.copies);
       const map = {};
-      for (const copy of coderCopies) {
-        if (!map[copy.statementId]) {
-          const stmt = await statementById(copy.statementId);
-          if (stmt) map[copy.statementId] = stmt;
+      const promises = [];
+
+      coderCopies.forEach((copy) => {
+        if (!fetchedStatements.current.has(copy.statementId)) {
+          fetchedStatements.current.add(copy.statementId);
+          promises.push(
+            statementById(copy.statementId).then((stmt) => {
+              if (stmt) map[copy.statementId] = stmt;
+            })
+          );
         }
+      });
+
+      if (promises.length > 0) {
+        await Promise.all(promises);
+        setStatementsMap((prev) => ({ ...prev, ...map }));
       }
-      setStatementsMap(map);
     };
 
     if (currentUser) fetchStatements();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser]);
+  }, [currentUser?._id]);
 
   // אם עדיין בודקים אותנטיקציה, הצג טעינה
   if (!isAuthChecked) {

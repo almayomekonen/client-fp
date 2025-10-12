@@ -9,6 +9,7 @@ export const createExperimentOnServer = async ({
   const res = await fetch(`${API_BASE_URL}/api/experiments`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({ name, description, investigatorId, defaultTaskId }),
   });
 
@@ -19,6 +20,7 @@ export const createExperimentOnServer = async ({
 export const deleteExperimentFromServer = async (experimentId) => {
   const res = await fetch(`${API_BASE_URL}/api/experiments/${experimentId}`, {
     method: "DELETE",
+    credentials: "include",
   });
 
   if (!res.ok) throw new Error("שגיאה במחיקת ניסוי");
@@ -26,7 +28,9 @@ export const deleteExperimentFromServer = async (experimentId) => {
 };
 
 export const fetchExperimentsFromServer = async () => {
-  const res = await fetch(`${API_BASE_URL}/api/experiments`);
+  const res = await fetch(`${API_BASE_URL}/api/experiments`, {
+    credentials: "include",
+  });
   if (!res.ok) throw new Error("שגיאה בקבלת ניסויים");
   return await res.json();
 };
@@ -37,6 +41,7 @@ export async function updateExperimentOnServer(experimentId, updateFields) {
     {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(updateFields),
     }
   );
@@ -49,14 +54,19 @@ export async function updateExperimentOnServer(experimentId, updateFields) {
 }
 
 export const fetchExperimentById = async (experimentId) => {
-  const res = await fetch(`${API_BASE_URL}/api/experiments/${experimentId}`);
+  const res = await fetch(`${API_BASE_URL}/api/experiments/${experimentId}`, {
+    credentials: "include",
+  });
   if (!res.ok) throw new Error("שגיאה בקבלת ניסוי");
   return await res.json();
 };
 
 export const fetchExperimentsByInvestigatorId = async (investigatorId) => {
   const res = await fetch(
-    `${API_BASE_URL}/api/experiments/by-investigator-id/${investigatorId}`
+    `${API_BASE_URL}/api/experiments/by-investigator-id/${investigatorId}`,
+    {
+      credentials: "include",
+    }
   );
   if (!res.ok) throw new Error("שגיאה בקבלת ניסויים של החוקר");
   return await res.json();
@@ -64,7 +74,10 @@ export const fetchExperimentsByInvestigatorId = async (investigatorId) => {
 
 export const fetchInvestigatorNameByExperimentId = async (experimentId) => {
   const res = await fetch(
-    `${API_BASE_URL}/api/experiments/${experimentId}/investigatorName`
+    `${API_BASE_URL}/api/experiments/${experimentId}/investigatorName`,
+    {
+      credentials: "include",
+    }
   );
   if (!res.ok) throw new Error("שגיאה בקבלת שם החוקר");
   return await res.json();

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useData } from "../../context/DataContext";
 import { useTask } from "../../context/TaskContext";
@@ -20,6 +20,11 @@ export default function TaskManagementPage() {
   const [statementsCache, setStatementsCache] = useState({});
   const [experimentPercentMap, setExperimentPercentMap] = useState({});
 
+  // Use refs to track what we've already fetched
+  const fetchedExperiments = useRef(new Set());
+  const fetchedStatements = useRef(new Set());
+  const fetchedPercents = useRef(new Set());
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,52 +34,92 @@ export default function TaskManagementPage() {
   useEffect(() => {
     const fetchExperiments = async () => {
       const expNames = {};
-      for (const task of tasks) {
-        if (!experimentNames[task.experimentId]) {
-          const exp = await experimentById(task.experimentId);
-          expNames[task.experimentId] = exp?.name || "ניסוי לא נמצא";
+      const promises = [];
+
+      tasks.forEach((task) => {
+        if (!fetchedExperiments.current.has(task.experimentId)) {
+          fetchedExperiments.current.add(task.experimentId);
+          promises.push(
+            experimentById(task.experimentId).then((exp) => {
+              if (exp)
+                expNames[task.experimentId] = exp.name || "ניסוי לא נמצא";
+            })
+          );
         }
-      }
-      if (Object.keys(expNames).length > 0) {
+      });
+
+      if (promises.length > 0) {
+        await Promise.all(promises);
         setExperimentNames((prev) => ({ ...prev, ...expNames }));
       }
     };
 
-    if (tasks.length > 0) fetchExperiments();
-  }, [tasks, experimentById, experimentNames]);
+    if (tasks.length > 0) {
+      fetchExperiments();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tasks.length]);
 
   // --- טעינת הצהרות עבור כל המשימות ---
   useEffect(() => {
     const fetchStatementsForTasks = async () => {
-      const newCache = { ...statementsCache };
-      for (const task of tasks) {
+      const newCache = {};
+      const promises = [];
+
+      tasks.forEach((task) => {
         const copies = copiesByTaskId(task._id);
-        for (const copy of copies) {
-          if (!newCache[copy.statementId]) {
-            const stmt = await statementById(copy.statementId);
-            if (stmt) newCache[copy.statementId] = stmt;
+        copies.forEach((copy) => {
+          if (!fetchedStatements.current.has(copy.statementId)) {
+            fetchedStatements.current.add(copy.statementId);
+            promises.push(
+              statementById(copy.statementId).then((stmt) => {
+                if (stmt) newCache[copy.statementId] = stmt;
+              })
+            );
           }
-        }
+        });
+      });
+
+      if (promises.length > 0) {
+        await Promise.all(promises);
+        setStatementsCache((prev) => ({ ...prev, ...newCache }));
       }
-      setStatementsCache(newCache);
     };
 
-    if (tasks.length > 0) fetchStatementsForTasks();
-  }, [tasks, copiesByTaskId, statementById, statementsCache]);
+    if (tasks.length > 0) {
+      fetchStatementsForTasks();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tasks.length]);
 
   // --- חישוב אחוזי ניסוי אסינכרוניים ---
   useEffect(() => {
     const fetchPercents = async () => {
       const newMap = {};
-      for (const task of tasks) {
-        const percent = await experimentPercent(task._id);
-        newMap[task._id] = percent;
+      const promises = [];
+
+      tasks.forEach((task) => {
+        if (!fetchedPercents.current.has(task._id)) {
+          fetchedPercents.current.add(task._id);
+          promises.push(
+            experimentPercent(task._id).then((percent) => {
+              newMap[task._id] = percent;
+            })
+          );
+        }
+      });
+
+      if (promises.length > 0) {
+        await Promise.all(promises);
+        setExperimentPercentMap((prev) => ({ ...prev, ...newMap }));
       }
-      setExperimentPercentMap(newMap);
     };
 
-    if (tasks.length > 0) fetchPercents();
-  }, [tasks, copiesByTaskId, experimentPercent]);
+    if (tasks.length > 0) {
+      fetchPercents();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tasks.length]);
 
   if (!isAuthChecked) {
     return (

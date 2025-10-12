@@ -19,6 +19,7 @@ export async function register(
     const res = await fetch(`${API_BASE_URL}/api/registration`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ username, password, role, email }),
     });
 
@@ -34,16 +35,22 @@ export async function register(
 export async function approveRegistration(id) {
   await fetch(`${API_BASE_URL}/api/registration/${id}/approve`, {
     method: "POST",
+    credentials: "include",
   });
 }
 
 export async function rejectRegistration(id) {
-  await fetch(`${API_BASE_URL}/api/registration/${id}`, { method: "DELETE" });
+  await fetch(`${API_BASE_URL}/api/registration/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
 }
 
 export async function fetchRegistrationRequests() {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/registration`);
+    const res = await fetch(`${API_BASE_URL}/api/registration`, {
+      credentials: "include",
+    });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || "שגיאה בשרת");
     return data;

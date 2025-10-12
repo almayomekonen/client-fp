@@ -20,6 +20,7 @@ export const createStatementOnServer = async ({
   const res = await fetch(`${API_BASE_URL}/api/statements`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({ name, slateText, groupId, experimentId }),
   });
 
@@ -30,6 +31,7 @@ export const createStatementOnServer = async ({
 export const deleteStatementFromServer = async (id) => {
   const res = await fetch(`${API_BASE_URL}/api/statements/${id}`, {
     method: "DELETE",
+    credentials: "include",
   });
 
   if (!res.ok) throw new Error("שגיאה במחיקת הצהרה");
@@ -37,21 +39,27 @@ export const deleteStatementFromServer = async (id) => {
 };
 
 export const fetchStatementsFromServer = async () => {
-  const res = await fetch(`${API_BASE_URL}/api/statements`);
+  const res = await fetch(`${API_BASE_URL}/api/statements`, {
+    credentials: "include",
+  });
   if (!res.ok) throw new Error("שגיאה בקבלת הצהרות");
   return await res.json();
 };
 
 // מחזיר את כל ההצהרות של קבוצה ספציפית
 export const fetchStatementsByGroupId = async (groupId) => {
-  const res = await fetch(`${API_BASE_URL}/api/statements/group/${groupId}`);
+  const res = await fetch(`${API_BASE_URL}/api/statements/group/${groupId}`, {
+    credentials: "include",
+  });
   if (!res.ok) throw new Error("שגיאה בטעינת הצהרות הקבוצה");
   return await res.json();
 };
 
 // מחזיר הצהרה לפי ID
 export const fetchStatementById = async (statementId) => {
-  const res = await fetch(`${API_BASE_URL}/api/statements/${statementId}`);
+  const res = await fetch(`${API_BASE_URL}/api/statements/${statementId}`, {
+    credentials: "include",
+  });
   if (!res.ok) throw new Error("שגיאה בטעינת הצהרה");
   return await res.json();
 };
@@ -59,7 +67,10 @@ export const fetchStatementById = async (statementId) => {
 // מחזיר את כל ההצהרות של ניסוי ספציפי
 export const fetchStatementsByExperimentId = async (experimentId) => {
   const res = await fetch(
-    `${API_BASE_URL}/api/statements/experiment/${experimentId}`
+    `${API_BASE_URL}/api/statements/experiment/${experimentId}`,
+    {
+      credentials: "include",
+    }
   );
   if (!res.ok) throw new Error("שגיאה בטעינת הצהרות הניסוי");
   return await res.json();

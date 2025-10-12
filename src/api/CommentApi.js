@@ -7,6 +7,7 @@ export const createCommentOnServer = async (userId, copyId, text, offset) => {
   const res = await fetch(`${API_BASE_URL}/api/comments`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({ userId, copyId, text, offset }),
   });
 
@@ -18,6 +19,7 @@ export const createCommentOnServer = async (userId, copyId, text, offset) => {
 export const deleteCommentFromServer = async (commentId) => {
   const res = await fetch(`${API_BASE_URL}/api/comments/${commentId}`, {
     method: "DELETE",
+    credentials: "include",
   });
 
   if (!res.ok) throw new Error("שגיאה במחיקת הערה");
@@ -25,13 +27,17 @@ export const deleteCommentFromServer = async (commentId) => {
 };
 
 export const fetchCommentsFromServer = async () => {
-  const res = await fetch(`${API_BASE_URL}/api/comments`);
+  const res = await fetch(`${API_BASE_URL}/api/comments`, {
+    credentials: "include",
+  });
   if (!res.ok) throw new Error("שגיאה בקבלת הערות");
   return await res.json();
 };
 
 export const fetchCommentsByCopyId = async (copyId) => {
-  const res = await fetch(`${API_BASE_URL}/api/comments/copy/${copyId}`);
+  const res = await fetch(`${API_BASE_URL}/api/comments/copy/${copyId}`, {
+    credentials: "include",
+  });
   if (!res.ok) throw new Error("שגיאה בקבלת הערות לפי העתק");
   return await res.json();
 };
