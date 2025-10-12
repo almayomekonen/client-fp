@@ -38,7 +38,10 @@ const { refreshCopies }= useRefresh();
 };
 
   const deleteCopy = async (id) => {
-    return await deleteCopyFromServerService(id);
+    const result = await deleteCopyFromServerService(id);
+    // ✅ Refresh ALL related data after deletion
+    await refreshCopies();
+    return result;
   };
 
 

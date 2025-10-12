@@ -1,33 +1,36 @@
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext } from "react";
 
-import { useRefresh } from './RefreshContext';
+import { useRefresh } from "./RefreshContext";
 
-import { 
+import {
   deleteExperimentFromServer,
   fetchExperimentsFromServer,
   updateExperimentOnServer,
   fetchExperimentById,
   fetchExperimentsByInvestigatorId,
-  fetchInvestigatorNameByExperimentId
-} from '../api/ExperimentApi';
+  fetchInvestigatorNameByExperimentId,
+} from "../api/ExperimentApi";
 
-import {
-  addExperiment as addExperimentService
-} from '../services/ExperimentService';
+import { addExperiment as addExperimentService } from "../services/ExperimentService";
 
 const ExperimentContext = createContext();
 export const useExperiment = () => useContext(ExperimentContext);
 
 export function ExperimentProvider({ children }) {
+  const {
+    refreshCopies,
+    refreshTasks,
+    refreshCopyMessages,
+    refreshTaskMessages,
+  } = useRefresh();
 
-  
   // יצירת ניסוי חדש
   const addExperiment = async (name, description, investigatorId) => {
     const r = await addExperimentService({ name, description, investigatorId });
     return r.newExperiment;
   };
 
-    const fetchExperiments = async () => {
+  const fetchExperiments = async () => {
     return await fetchExperimentsFromServer();
   };
   // ניסוי לפי מזהה
@@ -40,15 +43,21 @@ export function ExperimentProvider({ children }) {
     return await fetchExperimentsByInvestigatorId(investigatorId);
   };
 
-
-
   // שם החוקר לפי ניסוי
   const investigatorNameByExperimentId = async (experimentId) => {
     return await fetchInvestigatorNameByExperimentId(experimentId);
   };
 
   const deleteExperiment = async (id) => {
-    return await deleteExperimentFromServer(id);
+    const result = await deleteExperimentFromServer(id);
+    // ✅ Refresh ALL related data after deletion
+    await Promise.all([
+      refreshCopies(),
+      refreshTasks(),
+      refreshCopyMessages(),
+      refreshTaskMessages(),
+    ]);
+    return result;
   };
 
   const updateExperiment = async (experimentId, updateFields) => {
@@ -63,7 +72,7 @@ export function ExperimentProvider({ children }) {
         deleteExperiment,
         investigatorNameByExperimentId,
         fetchExperiments,
-        updateExperiment
+        updateExperiment,
       }}
     >
       {children}
