@@ -1,54 +1,72 @@
 // src/pages/RequestsApprovalPanel.jsx
-import React, { useEffect } from 'react';
-import { useUsers } from '../../context/UserContext';
-import { useData } from '../../context/DataContext';
-import { useNavigate } from 'react-router-dom';
-
-import RegistrationRequestsList from '../../components/Admin/RegistrationRequestsList';
-import UserListForDeletion from '../../components/Admin/UserListForDeletion';
-import { useRegistrations } from '../../context/RegistrationContext';
+import React, { useEffect } from "react";
+import { useUsers } from "../../context/UserContext";
+import { useData } from "../../context/DataContext";
+import { useNavigate } from "react-router-dom";
+import { FaUsers, FaUserCheck, FaUserTimes } from "react-icons/fa";
+import RegistrationRequestsList from "../../components/Admin/RegistrationRequestsList";
+import UserListForDeletion from "../../components/Admin/UserListForDeletion";
+import { useRegistrations } from "../../context/RegistrationContext";
+import "../../styles/Dashboard.css";
 
 export default function RequestsApprovalPanel() {
-  const {
+  const { deleteUser, updateUserRole } = useUsers();
 
-    deleteUser,
-    updateUserRole
-  } = useUsers();
+  const { approveRegistration, rejectRegistration } = useRegistrations();
 
-  const {
-    approveRegistration,
-    rejectRegistration,
-  } = useRegistrations();
+  const { users, registrationRequests, currentUser, isAuthChecked } = useData();
 
-  const { users, registrationRequests, currentUser } = useData();
+  const deletableUsers = users.filter((u) => u.role !== "admin");
 
-  const deletableUsers = users.filter((u) => u.role !== 'admin'); 
+  const navigate = useNavigate();
 
-    const navigate = useNavigate();
-
-   useEffect(() => {
-      if (!currentUser) {
-        navigate('/', { replace: true });
-      }
-    }, [currentUser, navigate]);
+  useEffect(() => {
+    // Only redirect after auth check is complete
+    if (isAuthChecked && !currentUser) {
+      navigate("/", { replace: true });
+    }
+  }, [currentUser, isAuthChecked, navigate]);
 
   return (
-    <div>
-      <h2>בקשות הרשמה ממתינות</h2>
-      <RegistrationRequestsList
-        registrationRequests={registrationRequests}
-        onApprove={approveRegistration}
-        onReject={rejectRegistration}
-      />
+    <div className="dashboard-container">
+      <div className="dashboard-header">
+        <h1 className="dashboard-title">
+          <FaUsers /> ניהול משתמשים
+        </h1>
+        <p className="dashboard-subtitle">
+          אישור בקשות הרשמה וניהול משתמשים קיימים
+        </p>
+      </div>
 
-      <hr />
+      <div className="dashboard-card">
+        <div className="card-header">
+          <h2 className="card-title">
+            <FaUserCheck /> בקשות הרשמה ממתינות
+          </h2>
+        </div>
+        <div className="card-content">
+          <RegistrationRequestsList
+            registrationRequests={registrationRequests}
+            onApprove={approveRegistration}
+            onReject={rejectRegistration}
+          />
+        </div>
+      </div>
 
-      <h2>מחיקת משתמשים ושינוי תפקיד</h2>
-      <UserListForDeletion
-        users={deletableUsers}
-        onDelete={deleteUser}
-        onUpdateRole={updateUserRole}
-      />
+      <div className="dashboard-card">
+        <div className="card-header">
+          <h2 className="card-title">
+            <FaUserTimes /> ניהול משתמשים קיימים
+          </h2>
+        </div>
+        <div className="card-content">
+          <UserListForDeletion
+            users={deletableUsers}
+            onDelete={deleteUser}
+            onUpdateRole={updateUserRole}
+          />
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,3 @@
-// UserContext.js
-
 import React, { createContext, useContext } from "react";
 import { useData } from "./DataContext";
 import { useRefresh } from "./RefreshContext";
@@ -15,15 +13,11 @@ const UserContext = createContext();
 export function UserProvider({ children }) {
   const { refreshUsers } = useRefresh();
 
-  //ייבוא דאטה
   const { users, setCurrentUser } = useData();
-
-  //התחברות
 
   const login = async (username, password) => {
     const result = await loginService(username, password);
 
-    // 🔥 אם הצליח, שמור את המשתמש
     if (result.success) {
       setCurrentUser(result.user);
       localStorage.setItem("currentUser", JSON.stringify(result.user));
@@ -39,13 +33,14 @@ export function UserProvider({ children }) {
     return result;
   };
 
-  //התנתקות
   const logout = () => {
     logoutService(setCurrentUser);
   };
 
   const deleteUser = async (id) => {
-    return await deleteUserFromServerService(id);
+    const result = await deleteUserFromServerService(id);
+    await refreshUsers();
+    return result;
   };
 
   const userById = (userId) => {

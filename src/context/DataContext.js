@@ -1,6 +1,7 @@
 //DataContext.js
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { checkAuth } from "../api/UserApi";
+import { roleChangeDetector } from "../services/RoleChangeDetector";
 
 const DataContext = createContext();
 export const useData = () => useContext(DataContext);
@@ -14,6 +15,20 @@ export function DataProvider({ children }) {
   const [taskMessages, setTaskMessages] = useState([]);
   const [copyMessages, setCopyMessages] = useState([]);
   const [isAuthChecked, setIsAuthChecked] = useState(false);
+
+  // ✅ Start role change detection when user logs in
+  useEffect(() => {
+    if (currentUser && currentUser.role) {
+      roleChangeDetector.start(currentUser.role);
+    } else {
+      roleChangeDetector.stop();
+    }
+
+    // Cleanup on unmount
+    return () => {
+      roleChangeDetector.stop();
+    };
+  }, [currentUser]);
 
   useEffect(() => {
     const initAuth = async () => {

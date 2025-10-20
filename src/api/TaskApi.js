@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "./config";
 import { createCopyOnServer } from "./CopyApi";
+import { fetchWithRoleCheck } from "./fetchWithRoleCheck";
 
 export const addTaskForCopy = async ({
   experimentId,
@@ -17,7 +18,7 @@ export const addTaskForCopy = async ({
     });
     const copyForTaskId = r.newCopy._id;
 
-    const response = await fetch(`${API_BASE_URL}/api/tasks`, {
+    const response = await fetchWithRoleCheck(`${API_BASE_URL}/api/tasks`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -52,7 +53,7 @@ export const createTaskOnServer = async ({
   investigatorId,
   coderId,
 }) => {
-  const res = await fetch(`${API_BASE_URL}/api/tasks`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/tasks`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -63,7 +64,7 @@ export const createTaskOnServer = async ({
 };
 
 export const fetchTasksFromServer = async () => {
-  const res = await fetch(`${API_BASE_URL}/api/tasks`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/tasks`, {
     credentials: "include",
   });
   if (!res.ok) throw new Error("שגיאה בקבלת משימות");
@@ -71,16 +72,22 @@ export const fetchTasksFromServer = async () => {
 };
 
 export const deleteTaskFromServer = async (taskId) => {
-  const res = await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/tasks/${taskId}`, {
     method: "DELETE",
     credentials: "include",
   });
-  if (!res.ok) throw new Error("שגיאה במחיקת משימה");
+  if (!res.ok) {
+    const errorData = await res
+      .json()
+      .catch(() => ({ message: "Unknown error" }));
+    console.error("Delete task failed:", res.status, errorData);
+    throw new Error(errorData.message || "שגיאה במחיקת משימה");
+  }
   return await res.json();
 };
 
 export const updateTaskOnServer = async (taskId, updateFields) => {
-  const res = await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/tasks/${taskId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     credentials: "include",

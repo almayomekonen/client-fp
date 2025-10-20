@@ -1,7 +1,8 @@
 import { API_BASE_URL } from "./config";
+import { fetchWithRoleCheck } from "./fetchWithRoleCheck";
 
 export const removeAllComparisons = async (copyId) => {
-  const res = await fetch(
+  const res = await fetchWithRoleCheck(
     `${API_BASE_URL}/api/comparisons/remove-all-comparisons`,
     {
       method: "POST",
@@ -15,7 +16,7 @@ export const removeAllComparisons = async (copyId) => {
 };
 
 export const deleteComparison = async (copyId1, copyId2) => {
-  const res = await fetch(`${API_BASE_URL}/api/comparisons/remove-comparison`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/comparisons/remove-comparison`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -26,7 +27,7 @@ export const deleteComparison = async (copyId1, copyId2) => {
 };
 
 export const createComparison = async (copyId1, copyId2) => {
-  const res = await fetch(`${API_BASE_URL}/api/comparisons`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/comparisons`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -37,7 +38,7 @@ export const createComparison = async (copyId1, copyId2) => {
 };
 
 export const fetchComparisonsFromServer = async () => {
-  const res = await fetch(`${API_BASE_URL}/api/comparisons`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/comparisons`, {
     method: "GET",
     credentials: "include",
   });
@@ -46,7 +47,7 @@ export const fetchComparisonsFromServer = async () => {
 };
 
 export const getComparisonsForCopyFromServer = async (copyId) => {
-  const res = await fetch(`${API_BASE_URL}/api/comparisons/copy/${copyId}`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/comparisons/copy/${copyId}`, {
     credentials: "include",
   });
   if (!res.ok) throw new Error("שגיאה בקבלת השוואות מהשרת");
@@ -54,7 +55,7 @@ export const getComparisonsForCopyFromServer = async (copyId) => {
 };
 
 export const checkComparisonExists = async (copyId1, copyId2) => {
-  const res = await fetch(`${API_BASE_URL}/api/comparisons/check-exists`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/comparisons/check-exists`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",

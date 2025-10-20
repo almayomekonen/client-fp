@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useUsers } from "../context/UserContext";
 import { useData } from "../context/DataContext";
+import "./Navbar.css";
 
 function Navbar() {
   const navigate = useNavigate();
@@ -24,56 +25,62 @@ function Navbar() {
     logout();
   };
 
+  const getRoleName = (role) => {
+    if (role === "admin") return "👑 מנהל";
+    if (role === "investigator") return "🔬 חוקר";
+    if (role === "coder") return "✏️ מקודד";
+    return "";
+  };
+
   const renderLinks = () => {
     const role = currentUser?.role;
     const links = [];
 
     if (role === "admin") {
       links.push(
-        <Link key="adminHome" to="/adminHome" style={{ marginLeft: "10px" }}>
-          בית
+        <Link key="adminHome" to="/adminHome" className="navbar-link">
+          <span className="navbar-icon">🏠</span>
+          <span className="navbar-text">בית</span>
         </Link>,
         <Link
           key="investigatorHome"
           to="/investigatorHome"
-          style={{ marginLeft: "10px" }}
+          className="navbar-link"
         >
-          הניסויים שלי
+          <span className="navbar-icon">🔬</span>
+          <span className="navbar-text">הניסויים שלי</span>
         </Link>,
-        <Link key="coderHome" to="/coderHome" style={{ marginLeft: "10px" }}>
-          הקידודים שלי
+        <Link key="coderHome" to="/coderHome" className="navbar-link">
+          <span className="navbar-icon">✏️</span>
+          <span className="navbar-text">הקידודים שלי</span>
         </Link>,
-        <Link
-          key="admin-panel"
-          to="/admin-panel"
-          style={{ marginLeft: "10px" }}
-        >
-          ניהול משתמשים
+        <Link key="admin-panel" to="/admin-panel" className="navbar-link">
+          <span className="navbar-icon">👥</span>
+          <span className="navbar-text">ניהול משתמשים</span>
         </Link>,
         <Link
           key="task-management"
           to="/task-management"
-          style={{ marginLeft: "10px" }}
+          className="navbar-link"
         >
-          כל המשימות
+          <span className="navbar-icon">📋</span>
+          <span className="navbar-text">כל המשימות</span>
         </Link>,
         <Link
           key="task-investigator"
           to="/task-investigator"
-          style={{ marginLeft: "10px" }}
+          className="navbar-link"
         >
-          המשימות שיצרתי
+          <span className="navbar-icon">📊</span>
+          <span className="navbar-text">המשימות שיצרתי</span>
         </Link>,
-        <Link
-          key="manage-colors"
-          to="/manage-colors"
-          style={{ marginLeft: "10px" }}
-        >
-          {" "}
-          ניהול צבעים
+        <Link key="manage-colors" to="/manage-colors" className="navbar-link">
+          <span className="navbar-icon">🎨</span>
+          <span className="navbar-text">ניהול צבעים</span>
         </Link>,
-        <Link key="task-coder" to="/task-coder" style={{ marginLeft: "10px" }}>
-          המשימות שלי
+        <Link key="task-coder" to="/task-coder" className="navbar-link">
+          <span className="navbar-icon">📝</span>
+          <span className="navbar-text">המשימות שלי</span>
         </Link>
       );
     }
@@ -83,33 +90,39 @@ function Navbar() {
         <Link
           key="investigatorHome"
           to="/investigatorHome"
-          style={{ marginLeft: "10px" }}
+          className="navbar-link"
         >
-          בית
+          <span className="navbar-icon">🏠</span>
+          <span className="navbar-text">בית</span>
         </Link>,
-        <Link key="coderHome" to="/coderHome" style={{ marginLeft: "10px" }}>
-          הקידודים שלי
+        <Link key="coderHome" to="/coderHome" className="navbar-link">
+          <span className="navbar-icon">✏️</span>
+          <span className="navbar-text">הקידודים שלי</span>
         </Link>,
         <Link
           key="task-investigator"
           to="/task-investigator"
-          style={{ marginLeft: "10px" }}
+          className="navbar-link"
         >
-          המשימות שיצרתי
+          <span className="navbar-icon">📊</span>
+          <span className="navbar-text">המשימות שיצרתי</span>
         </Link>,
-        <Link key="task-coder" to="/task-coder" style={{ marginLeft: "10px" }}>
-          המשימות שלי
+        <Link key="task-coder" to="/task-coder" className="navbar-link">
+          <span className="navbar-icon">📝</span>
+          <span className="navbar-text">המשימות שלי</span>
         </Link>
       );
     }
 
     if (role === "coder") {
       links.push(
-        <Link key="coderHome" to="/coderHome" style={{ marginLeft: "10px" }}>
-          בית
+        <Link key="coderHome" to="/coderHome" className="navbar-link">
+          <span className="navbar-icon">🏠</span>
+          <span className="navbar-text">בית</span>
         </Link>,
-        <Link key="task-coder" to="/task-coder" style={{ marginLeft: "10px" }}>
-          המשימות שלי
+        <Link key="task-coder" to="/task-coder" className="navbar-link">
+          <span className="navbar-icon">📝</span>
+          <span className="navbar-text">המשימות שלי</span>
         </Link>
       );
     }
@@ -118,24 +131,32 @@ function Navbar() {
   };
 
   return (
-    <nav
-      style={{
-        padding: "10px",
-        background: "#eee",
-        display: "flex",
-        alignItems: "center",
-      }}
-    >
-      {renderLinks()}
+    <nav className="navbar">
+      <div className="navbar-container">
+        <div className="navbar-logo">
+          <span className="logo-icon">📊</span>
+          <span className="logo-text">מערכת קידוד</span>
+        </div>
 
-      {currentUser && (
-        <button
-          onClick={handleLogout}
-          style={{ marginLeft: "auto", padding: "5px 10px" }}
-        >
-          התנתק
-        </button>
-      )}
+        <div className="navbar-links">{renderLinks()}</div>
+
+        <div className="navbar-user">
+          {currentUser && (
+            <>
+              <div className="navbar-user-info">
+                <span className="navbar-username">{currentUser.username}</span>
+                <span className="navbar-role">
+                  {getRoleName(currentUser.role)}
+                </span>
+              </div>
+              <button onClick={handleLogout} className="navbar-logout-btn">
+                <span className="navbar-icon">🚪</span>
+                <span className="navbar-text">התנתק</span>
+              </button>
+            </>
+          )}
+        </div>
+      </div>
     </nav>
   );
 }

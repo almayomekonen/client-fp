@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "./config";
+import { fetchWithRoleCheck } from "./fetchWithRoleCheck";
 
 export const createCopyMessageOnServer = async (
   copyId,
@@ -6,7 +7,7 @@ export const createCopyMessageOnServer = async (
   text,
   replyToMessageId = null
 ) => {
-  const res = await fetch(`${API_BASE_URL}/api/copyMessages`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/copyMessages`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -17,7 +18,7 @@ export const createCopyMessageOnServer = async (
 };
 
 export const fetchCopyMessagesFromServer = async () => {
-  const res = await fetch(`${API_BASE_URL}/api/copyMessages`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/copyMessages`, {
     credentials: "include",
   });
   if (!res.ok) throw new Error("שגיאה בקבלת הודעות");
@@ -25,7 +26,7 @@ export const fetchCopyMessagesFromServer = async () => {
 };
 
 export const deleteCopyMessageFromServer = async (messageId) => {
-  const res = await fetch(`${API_BASE_URL}/api/copyMessages/${messageId}`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/copyMessages/${messageId}`, {
     method: "DELETE",
     credentials: "include",
   });
@@ -34,7 +35,7 @@ export const deleteCopyMessageFromServer = async (messageId) => {
 };
 
 export const updateCopyMessageOnServer = async (messageId, updateFields) => {
-  const res = await fetch(`${API_BASE_URL}/api/copyMessages/${messageId}`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/copyMessages/${messageId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -46,7 +47,7 @@ export const updateCopyMessageOnServer = async (messageId, updateFields) => {
 };
 
 export const fetchMessagesForCopy = async (copyId) => {
-  const res = await fetch(`${API_BASE_URL}/api/copyMessages/byCopy/${copyId}`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/copyMessages/byCopy/${copyId}`, {
     credentials: "include",
   });
   if (!res.ok) throw new Error("שגיאה בקבלת הודעות להעתק");
@@ -54,7 +55,7 @@ export const fetchMessagesForCopy = async (copyId) => {
 };
 
 export const fetchUnreadCount = async (copyId, userId) => {
-  const res = await fetch(
+  const res = await fetchWithRoleCheck(
     `${API_BASE_URL}/api/copyMessages/unreadCount/${copyId}/${userId}`,
     {
       credentials: "include",
@@ -65,7 +66,7 @@ export const fetchUnreadCount = async (copyId, userId) => {
 };
 
 export const fetchMessageById = async (messageId) => {
-  const res = await fetch(
+  const res = await fetchWithRoleCheck(
     `${API_BASE_URL}/api/copyMessages/byId/${messageId}`,
     {
       credentials: "include",

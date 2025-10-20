@@ -1,38 +1,51 @@
 // src/components/Auth/LoginForm.jsx
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import { FaSignInAlt, FaKey } from "react-icons/fa";
 
 export default function LoginForm({ onSubmit, onForgotPassword }) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleSubmit = e => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(username, password);
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div>
-        <label>שם משתמש</label><br />
+    <form onSubmit={handleSubmit} className="auth-form">
+      <div className="auth-form-group">
         <input
           type="text"
           value={username}
-          onChange={e => setUsername(e.target.value)}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="שם משתמש"
+          className="auth-input"
+          required
         />
       </div>
 
-      <div>
-        <label>סיסמה</label><br />
+      <div className="auth-form-group">
         <input
           type="password"
           value={password}
-          onChange={e => setPassword(e.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="סיסמה"
+          className="auth-input"
+          required
         />
       </div>
 
-      <button type="submit">התחבר</button><br /><br />
-      <button type="button" onClick={onForgotPassword}>
-        שכחתי סיסמה
+      <button type="submit" className="auth-btn">
+        <FaSignInAlt /> התחבר
+      </button>
+
+      <button
+        type="button"
+        onClick={onForgotPassword}
+        className="auth-btn"
+        style={{ marginTop: "12px", background: "#666666" }}
+      >
+        <FaKey /> שכחתי סיסמה
       </button>
     </form>
   );

@@ -1,7 +1,8 @@
 import { API_BASE_URL } from "./config";
+import { fetchWithRoleCheck } from "./fetchWithRoleCheck";
 
 export const fetchColorsFromServer = async () => {
-  const res = await fetch(`${API_BASE_URL}/api/colors`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/colors`, {
     method: "GET",
     credentials: "include",
   });
@@ -13,7 +14,7 @@ export const addColorToServer = async (name, code) => {
   if (!name || !code) {
     return { success: false, message: "נא לבחור צבע" };
   }
-  const res = await fetch(`${API_BASE_URL}/api/colors`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/colors`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -24,7 +25,7 @@ export const addColorToServer = async (name, code) => {
 };
 
 export const deleteColorFromServer = async (id) => {
-  const res = await fetch(`${API_BASE_URL}/api/colors/${id}`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/colors/${id}`, {
     method: "DELETE",
     credentials: "include",
   });

@@ -6,10 +6,22 @@ import { useData } from "../../context/DataContext";
 import { useExperiment } from "../../context/ExperimentContext";
 import { useCopyMessage } from "../../context/CopyMessageContext";
 import { useComparison } from "../../context/ComparisonContext";
+import {
+  FaEdit,
+  FaMicroscope,
+  FaFileAlt,
+  FaComments,
+  FaEnvelope,
+  FaBalanceScale,
+  FaChartPie,
+  FaCheckCircle,
+  FaClock,
+} from "react-icons/fa";
+import "../../styles/Dashboard.css";
 
 export default function CoderHomePage() {
   const navigate = useNavigate();
-  const { currentUser, isAuthChecked } = useData();
+  const { currentUser, isAuthChecked, copies } = useData();
   const {
     copiesForExperimentByCoderId,
     calculateCompletionPercentage,
@@ -25,11 +37,9 @@ export default function CoderHomePage() {
   const [experimentsMap, setExperimentsMap] = useState({});
   const [statementsMap, setStatementsMap] = useState({});
 
-  // Use refs to track what we've already fetched
   const fetchedComparisons = useRef(new Set());
   const fetchedExperiments = useRef(new Set());
   const fetchedStatements = useRef(new Set());
-  const hasFetched = useRef(false);
 
   useEffect(() => {
     if (isAuthChecked && !currentUser) {
@@ -39,9 +49,14 @@ export default function CoderHomePage() {
 
   useEffect(() => {
     const fetchComparisons = async () => {
-      const coderCopies = copiesForExperimentByCoderId(
-        currentUser?._id
-      ).flatMap((c) => c.copies);
+      if (!currentUser || !copies || copies.length === 0) return;
+
+      const coderCopies = copiesForExperimentByCoderId(currentUser._id).flatMap(
+        (c) => c.copies
+      );
+
+      if (coderCopies.length === 0) return;
+
       const map = {};
       const promises = [];
 
@@ -62,19 +77,21 @@ export default function CoderHomePage() {
       }
     };
 
-    if (currentUser && !hasFetched.current) {
-      hasFetched.current = true;
-      fetchComparisons();
-    }
+    fetchComparisons();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser?._id]);
+  }, [currentUser?._id, copies]);
 
   // טען מידע על ניסויים
   useEffect(() => {
     const fetchExperimentsInfo = async () => {
+      if (!currentUser || !copies || copies.length === 0) return;
+
       const coderCopiesByExperiment = copiesForExperimentByCoderId(
-        currentUser?._id
+        currentUser._id
       );
+
+      if (coderCopiesByExperiment.length === 0) return;
+
       const map = {};
       const promises = [];
 
@@ -96,6 +113,11 @@ export default function CoderHomePage() {
               };
             } catch (err) {
               console.warn(`לא ניתן לטעון ניסוי ${experiment._id}:`, err);
+
+              map[experiment._id] = {
+                name: `ניסוי ${experiment._id}`,
+                investigatorName: "לא ידוע",
+              };
             }
           })()
         );
@@ -107,16 +129,21 @@ export default function CoderHomePage() {
       }
     };
 
-    if (currentUser) fetchExperimentsInfo();
+    fetchExperimentsInfo();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser?._id]);
+  }, [currentUser?._id, copies]);
 
   // טען הצהרות אסינכרוני
   useEffect(() => {
     const fetchStatements = async () => {
-      const coderCopies = copiesForExperimentByCoderId(
-        currentUser?._id
-      ).flatMap((c) => c.copies);
+      if (!currentUser || !copies || copies.length === 0) return;
+
+      const coderCopies = copiesForExperimentByCoderId(currentUser._id).flatMap(
+        (c) => c.copies
+      );
+
+      if (coderCopies.length === 0) return;
+
       const map = {};
       const promises = [];
 
@@ -124,9 +151,20 @@ export default function CoderHomePage() {
         if (!fetchedStatements.current.has(copy.statementId)) {
           fetchedStatements.current.add(copy.statementId);
           promises.push(
-            statementById(copy.statementId).then((stmt) => {
-              if (stmt) map[copy.statementId] = stmt;
-            })
+            statementById(copy.statementId)
+              .then((stmt) => {
+                if (stmt) map[copy.statementId] = stmt;
+              })
+              .catch((err) => {
+                console.warn(
+                  `Failed to load statement ${copy.statementId}:`,
+                  err
+                );
+                map[copy.statementId] = {
+                  name: "הצהרה נמחקה",
+                  _id: copy.statementId,
+                };
+              })
           );
         }
       });
@@ -137,9 +175,9 @@ export default function CoderHomePage() {
       }
     };
 
-    if (currentUser) fetchStatements();
+    fetchStatements();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser?._id]);
+  }, [currentUser?._id, copies]);
 
   // אם עדיין בודקים אותנטיקציה, הצג טעינה
   if (!isAuthChecked) {

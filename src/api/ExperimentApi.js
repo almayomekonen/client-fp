@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "./config";
+import { fetchWithRoleCheck } from "./fetchWithRoleCheck";
 
 export const createExperimentOnServer = async ({
   name,
@@ -6,7 +7,7 @@ export const createExperimentOnServer = async ({
   investigatorId,
   defaultTaskId,
 }) => {
-  const res = await fetch(`${API_BASE_URL}/api/experiments`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/experiments`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -18,7 +19,7 @@ export const createExperimentOnServer = async ({
 };
 
 export const deleteExperimentFromServer = async (experimentId) => {
-  const res = await fetch(`${API_BASE_URL}/api/experiments/${experimentId}`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/experiments/${experimentId}`, {
     method: "DELETE",
     credentials: "include",
   });
@@ -28,7 +29,7 @@ export const deleteExperimentFromServer = async (experimentId) => {
 };
 
 export const fetchExperimentsFromServer = async () => {
-  const res = await fetch(`${API_BASE_URL}/api/experiments`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/experiments`, {
     credentials: "include",
   });
   if (!res.ok) throw new Error("שגיאה בקבלת ניסויים");
@@ -36,7 +37,7 @@ export const fetchExperimentsFromServer = async () => {
 };
 
 export async function updateExperimentOnServer(experimentId, updateFields) {
-  const response = await fetch(
+  const response = await fetchWithRoleCheck(
     `${API_BASE_URL}/api/experiments/${experimentId}`,
     {
       method: "PUT",
@@ -54,7 +55,7 @@ export async function updateExperimentOnServer(experimentId, updateFields) {
 }
 
 export const fetchExperimentById = async (experimentId) => {
-  const res = await fetch(`${API_BASE_URL}/api/experiments/${experimentId}`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/experiments/${experimentId}`, {
     credentials: "include",
   });
   if (!res.ok) throw new Error("שגיאה בקבלת ניסוי");
@@ -62,7 +63,7 @@ export const fetchExperimentById = async (experimentId) => {
 };
 
 export const fetchExperimentsByInvestigatorId = async (investigatorId) => {
-  const res = await fetch(
+  const res = await fetchWithRoleCheck(
     `${API_BASE_URL}/api/experiments/by-investigator-id/${investigatorId}`,
     {
       credentials: "include",
@@ -73,7 +74,7 @@ export const fetchExperimentsByInvestigatorId = async (investigatorId) => {
 };
 
 export const fetchInvestigatorNameByExperimentId = async (experimentId) => {
-  const res = await fetch(
+  const res = await fetchWithRoleCheck(
     `${API_BASE_URL}/api/experiments/${experimentId}/investigatorName`,
     {
       credentials: "include",

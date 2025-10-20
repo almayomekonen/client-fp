@@ -7,6 +7,22 @@ import { useTask } from "../../context/TaskContext";
 import { useNavigate } from "react-router-dom";
 import { useData } from "../../context/DataContext";
 import { useCopyMessage } from "../../context/CopyMessageContext";
+import {
+  FaMicroscope,
+  FaChevronRight,
+  FaFolderOpen,
+  FaFileAlt,
+  FaBalanceScale,
+  FaChartLine,
+  FaComments,
+  FaPlus,
+  FaTrash,
+  FaTimes,
+  FaSave,
+  FaUsers,
+} from "react-icons/fa";
+import "../../styles/Dashboard.css";
+import "./InvestigatorDashboard.css";
 
 export default function InvestigatorHomePage() {
   const {
@@ -102,16 +118,9 @@ export default function InvestigatorHomePage() {
   // אם עדיין בודקים אותנטיקציה, הצג טעינה
   if (!isAuthChecked) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-          fontSize: "18px",
-        }}
-      >
-        <div>טוען...</div>
+      <div className="loading-container">
+        <div>טוען</div>
+        <div className="loading-spinner"></div>
       </div>
     );
   }
@@ -231,184 +240,189 @@ export default function InvestigatorHomePage() {
 
   // --- JSX ---
   return (
-    <div className="p-4">
-      <h1 className="text-xl font-bold mb-4">הניסויים שלי</h1>
+    <div className="dashboard-container">
+      <div className="dashboard-header">
+        <h1 className="dashboard-title">
+          <FaMicroscope /> הניסויים שלי
+        </h1>
+        <p className="dashboard-subtitle">ניהול וצפייה בכל הניסויים שיצרתי</p>
+      </div>
 
       {!showExpForm ? (
         <button
           onClick={() => setShowExpForm(true)}
-          className="bg-blue-500 text-white px-4 py-2 rounded"
+          className="investigator-add-btn"
         >
-          הוסף ניסוי
+          <FaPlus /> הוסף ניסוי חדש
         </button>
       ) : (
-        <form
-          onSubmit={handleCreateExperiment}
-          className="bg-gray-100 p-4 rounded shadow-md w-80 mb-4"
-        >
-          <label className="block text-sm font-semibold">שם הניסוי</label>
-          <input
-            value={expName}
-            onChange={(e) => setExpName(e.target.value)}
-            className="border w-full mb-2 px-2 py-1 rounded"
-          />
-          <label className="block text-sm font-semibold">תיאור הניסוי</label>
-          <textarea
-            value={expDesc}
-            onChange={(e) => setExpDesc(e.target.value)}
-            className="border w-full mb-2 px-2 py-1 rounded"
-          />
-          <div className="flex justify-end space-x-2">
+        <form onSubmit={handleCreateExperiment} className="investigator-form">
+          <div className="investigator-form-group">
+            <label className="form-label">שם הניסוי</label>
+            <input
+              value={expName}
+              onChange={(e) => setExpName(e.target.value)}
+              className="investigator-form-input"
+              placeholder="הכנס שם לניסוי"
+            />
+          </div>
+          <div className="investigator-form-group">
+            <label className="form-label">תיאור הניסוי</label>
+            <textarea
+              value={expDesc}
+              onChange={(e) => setExpDesc(e.target.value)}
+              className="investigator-form-textarea"
+              placeholder="הכנס תיאור לניסוי"
+            />
+          </div>
+          <div className="investigator-form-actions">
+            <button type="submit" className="investigator-add-btn">
+              <FaSave /> שמור
+            </button>
             <button
               type="button"
               onClick={() => setShowExpForm(false)}
-              className="px-3 py-1 bg-gray-300 rounded"
+              className="btn-secondary"
             >
-              ביטול
-            </button>
-            <button
-              type="submit"
-              className="px-3 py-1 bg-green-500 text-white rounded"
-            >
-              שמור
+              <FaTimes /> ביטול
             </button>
           </div>
         </form>
       )}
 
-      <ul className="mt-4">
+      <ul className="investigator-experiments-list">
         {relevantExperiments.map((exp) => (
-          <li key={exp._id} className="mt-2 border p-2">
-            <div className="flex justify-between items-center">
+          <li key={exp._id} className="investigator-experiment-item">
+            <div className="investigator-experiment-header">
               <div
                 onClick={() => toggleExperiment(exp._id)}
-                className="cursor-pointer font-semibold hover:text-blue-600"
+                className="investigator-experiment-title"
               >
-                {exp.name}
+                <FaFileAlt /> {exp.name}
               </div>
               <button
                 onClick={() => handleDeleteExperiment(exp._id)}
-                className="text-red-500 text-sm ml-2"
+                className="investigator-delete-btn"
               >
-                מחק ניסוי
+                <FaTrash /> מחק ניסוי
               </button>
             </div>
 
             {expandedExperimentId === exp._id && (
-              <div className="ml-4 mt-2">
+              <div className="mt-4">
                 {showGroupForm !== exp._id ? (
                   <button
                     onClick={() => setShowGroupForm(exp._id)}
-                    className="text-green-600 text-sm"
+                    className="investigator-add-btn"
                   >
-                    הוסף קבוצה
+                    <FaFolderOpen /> הוסף קבוצה
                   </button>
                 ) : (
                   <form
                     onSubmit={(e) => handleCreateGroup(e, exp._id)}
-                    className="bg-gray-100 p-2 rounded shadow-md w-72 mb-2"
+                    className="investigator-form"
                   >
                     <input
                       value={groupName}
                       onChange={(e) => setGroupName(e.target.value)}
+                      className="investigator-form-input"
                       placeholder="שם הקבוצה"
-                      className="border w-full mb-1 px-2 py-1 rounded text-sm"
                     />
                     <textarea
                       value={groupDesc}
                       onChange={(e) => setGroupDesc(e.target.value)}
+                      className="investigator-form-textarea"
                       placeholder="תיאור"
-                      className="border w-full mb-1 px-2 py-1 rounded text-sm"
                     />
-                    <div className="flex justify-end space-x-2">
+                    <div className="investigator-form-actions">
+                      <button type="submit" className="investigator-add-btn">
+                        <FaSave /> שמור
+                      </button>
                       <button
                         type="button"
                         onClick={() => setShowGroupForm(null)}
-                        className="px-2 py-1 bg-gray-300 text-xs rounded"
+                        className="btn-secondary"
                       >
-                        ביטול
-                      </button>
-                      <button
-                        type="submit"
-                        className="px-2 py-1 bg-green-500 text-white text-xs rounded"
-                      >
-                        שמור
+                        <FaTimes /> ביטול
                       </button>
                     </div>
                   </form>
                 )}
 
                 {groups.map((group) => (
-                  <div key={group._id} className="mt-1 ml-2">
-                    <div className="flex justify-between">
+                  <div key={group._id} className="investigator-group-item">
+                    <div className="investigator-group-header">
                       <div
                         onClick={() => toggleGroup(group._id)}
-                        className="cursor-pointer hover:text-blue-600"
+                        className="investigator-experiment-title"
                       >
-                        {group.name}
+                        <FaChevronRight /> {group.name}
                       </div>
                       <button
                         onClick={() => handleDeleteGroup(group._id)}
-                        className="text-red-500 text-sm"
+                        className="investigator-delete-btn"
                       >
-                        מחק קבוצה
+                        <FaTrash /> מחק קבוצה
                       </button>
                     </div>
 
                     {expandedGroupId === group._id && (
-                      <div className="ml-4 mt-1">
+                      <div className="mt-4">
                         {showStatementForm !== group._id ? (
                           <button
                             onClick={() => setShowStatementForm(group._id)}
-                            className="text-green-600 text-sm"
+                            className="investigator-add-btn"
                           >
-                            הוסף הצהרה
+                            <FaFileAlt /> הוסף הצהרה
                           </button>
                         ) : (
                           <form
                             onSubmit={(e) =>
                               handleCreateStatement(e, exp._id, group._id)
                             }
-                            className="bg-gray-100 p-2 rounded shadow-md w-72 mb-2"
+                            className="investigator-form"
                           >
                             <input
                               value={statementName}
                               onChange={(e) => setStatementName(e.target.value)}
+                              className="investigator-form-input"
                               placeholder="שם ההצהרה"
-                              className="border w-full mb-1 px-2 py-1 rounded text-sm"
                             />
                             <textarea
                               value={statementText}
                               onChange={(e) => setStatementText(e.target.value)}
+                              className="investigator-form-textarea"
                               placeholder="תוכן ההצהרה"
-                              className="border w-full mb-1 px-2 py-1 rounded text-sm"
                             />
-                            <div className="flex justify-end space-x-2">
+                            <div className="investigator-form-actions">
+                              <button
+                                type="submit"
+                                className="investigator-add-btn"
+                              >
+                                <FaSave /> שמור
+                              </button>
                               <button
                                 type="button"
                                 onClick={() => setShowStatementForm(null)}
-                                className="px-2 py-1 bg-gray-300 text-xs rounded"
+                                className="btn-secondary"
                               >
-                                ביטול
-                              </button>
-                              <button
-                                type="submit"
-                                className="px-2 py-1 bg-green-500 text-white text-xs rounded"
-                              >
-                                שמור
+                                <FaTimes /> ביטול
                               </button>
                             </div>
                           </form>
                         )}
 
                         {statements.map((statement) => (
-                          <div key={statement._id} className="mt-1 ml-2">
-                            <div className="flex justify-between items-center">
+                          <div
+                            key={statement._id}
+                            className="investigator-statement-item"
+                          >
+                            <div className="investigator-group-header">
                               <div
                                 onClick={() => toggleStatement(statement._id)}
-                                className="cursor-pointer hover:text-blue-600"
+                                className="investigator-experiment-title"
                               >
-                                {statement.name}
+                                <FaBalanceScale /> {statement.name}
                               </div>
                               <div className="flex items-center space-x-2">
                                 {copiesByStatementId(statement._id).filter(
@@ -418,9 +432,9 @@ export default function InvestigatorHomePage() {
                                     onClick={() =>
                                       navigate(`/compare/${statement._id}`)
                                     }
-                                    className="text-sm text-blue-500 hover:text-blue-700 underline"
+                                    className="text-blue-500 hover:text-blue-700 underline"
                                   >
-                                    השווה קידודים
+                                    <FaChartLine /> השווה קידודים
                                   </button>
                                 )}
                                 <button
@@ -429,29 +443,29 @@ export default function InvestigatorHomePage() {
                                       `/statement-summary/${statement._id}`
                                     )
                                   }
-                                  className="text-sm text-green-500 hover:text-green-700 underline"
+                                  className="text-green-500 hover:text-green-700 underline"
                                 >
-                                  סיכום הצהרה
+                                  <FaFileAlt /> סיכום הצהרה
                                 </button>
                                 <button
                                   onClick={() =>
                                     handleDeleteStatement(statement._id)
                                   }
-                                  className="text-red-500 text-sm"
+                                  className="investigator-delete-btn text-sm"
                                 >
-                                  מחק הצהרה
+                                  <FaTrash /> מחק
                                 </button>
                               </div>
                             </div>
 
                             {expandedStatementId === statement._id && (
-                              <div className="ml-4 mt-1">
+                              <div className="mt-4">
                                 <select
                                   value={selectedUserIdForCopy}
                                   onChange={(e) =>
                                     setSelectedUserIdForCopy(e.target.value)
                                   }
-                                  className="border text-sm px-2 py-1 rounded"
+                                  className="investigator-select"
                                 >
                                   <option value="">בחר מקודד</option>
                                   {users.map((user) => (
@@ -468,16 +482,16 @@ export default function InvestigatorHomePage() {
                                       statement._id
                                     )
                                   }
-                                  className="text-green-600 text-sm ml-2"
+                                  className="investigator-add-btn"
                                 >
-                                  הוסף העתק
+                                  <FaPlus /> הוסף העתק
                                 </button>
 
                                 {copiesByStatementId(statement._id).map(
                                   (copy) => (
                                     <div
                                       key={copy._id}
-                                      className="flex justify-between items-center ml-2"
+                                      className="investigator-copy-item"
                                     >
                                       <div
                                         onClick={() => {
@@ -505,25 +519,23 @@ export default function InvestigatorHomePage() {
                                           onClick={() =>
                                             navigate(`/copy-chat/${copy._id}`)
                                           }
-                                          className="text-blue-500 text-xs"
+                                          className="text-blue-500 text-sm"
                                         >
-                                          צ'אט
+                                          <FaComments /> צ'אט
                                         </button>
-                                        <span className="text-xs text-red-600">
-                                          (
+                                        <span className="investigator-unread-count">
                                           {getUnreadCount(
                                             copy._id,
                                             currentUser._id
-                                          )}{" "}
-                                          לא נקראו)
+                                          )}
                                         </span>
                                         <button
                                           onClick={() =>
                                             handleDeleteCopy(copy._id)
                                           }
-                                          className="text-red-500 text-xs"
+                                          className="investigator-delete-btn text-sm"
                                         >
-                                          מחק העתק
+                                          <FaTrash /> מחק
                                         </button>
                                       </div>
                                     </div>
@@ -534,13 +546,13 @@ export default function InvestigatorHomePage() {
                           </div>
                         ))}
 
-                        <div className="mt-2">
+                        <div className="mt-4">
                           <select
                             value={selectedUserIdForTask}
                             onChange={(e) =>
                               setSelectedUserIdForTask(e.target.value)
                             }
-                            className="border text-sm px-2 py-1 rounded"
+                            className="investigator-select"
                           >
                             <option value="">בחר מקודד למשימה</option>
                             {users.map((user) => (
@@ -551,9 +563,9 @@ export default function InvestigatorHomePage() {
                           </select>
                           <button
                             onClick={() => handleCreateTask(exp._id)}
-                            className="bg-purple-500 text-white px-2 py-1 rounded text-sm ml-2"
+                            className="btn-primary"
                           >
-                            צור משימה לניסוי
+                            <FaUsers /> צור משימה לניסוי
                           </button>
                         </div>
                       </div>

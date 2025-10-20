@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "./config";
+import { fetchWithRoleCheck } from "./fetchWithRoleCheck";
 
 export const createGroupOnServer = async ({
   name,
@@ -9,7 +10,7 @@ export const createGroupOnServer = async ({
     return { success: false, message: "נא למלא את כל שדות החובה" };
   }
 
-  const res = await fetch(`${API_BASE_URL}/api/groups`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/groups`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -21,7 +22,7 @@ export const createGroupOnServer = async ({
 };
 
 export const deleteGroupFromServer = async (groupId) => {
-  const res = await fetch(`${API_BASE_URL}/api/groups/${groupId}`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/groups/${groupId}`, {
     method: "DELETE",
     credentials: "include",
   });
@@ -31,7 +32,7 @@ export const deleteGroupFromServer = async (groupId) => {
 };
 
 export const fetchGroupsFromServer = async () => {
-  const res = await fetch(`${API_BASE_URL}/api/groups`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/groups`, {
     credentials: "include",
   });
   if (!res.ok) throw new Error("שגיאה בקבלת קבוצות");
@@ -39,7 +40,7 @@ export const fetchGroupsFromServer = async () => {
 };
 
 export const fetchGroupsByExperimentId = async (experimentId) => {
-  const res = await fetch(
+  const res = await fetchWithRoleCheck(
     `${API_BASE_URL}/api/groups/byExperiment/${experimentId}`,
     {
       credentials: "include",

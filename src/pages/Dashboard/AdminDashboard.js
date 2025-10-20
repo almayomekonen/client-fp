@@ -6,6 +6,17 @@ import { useCopy } from "../../context/CopyContext";
 import { useData } from "../../context/DataContext";
 import { useNavigate } from "react-router-dom";
 import { useCopyMessage } from "../../context/CopyMessageContext";
+import {
+  FaMicroscope,
+  FaChevronRight,
+  FaFolderOpen,
+  FaFileAlt,
+  FaBalanceScale,
+  FaChartLine,
+  FaComments,
+  FaEnvelope,
+} from "react-icons/fa";
+import "./AdminDashboard.css";
 
 export default function AdminHomePage() {
   const { users, currentUser, isAuthChecked } = useData();
@@ -53,16 +64,9 @@ export default function AdminHomePage() {
   // אם עדיין בודקים אותנטיקציה, הצג טעינה
   if (!isAuthChecked) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-          fontSize: "18px",
-        }}
-      >
-        <div>טוען...</div>
+      <div className="loading-container">
+        <div>טוען</div>
+        <div className="loading-spinner"></div>
       </div>
     );
   }
@@ -108,137 +112,169 @@ export default function AdminHomePage() {
   };
 
   return (
-    <div className="p-4">
-      <h1 className="text-xl font-bold mb-4">ניהול ניסויים (קריאה בלבד)</h1>
+    <div className="admin-dashboard">
+      <div className="dashboard-header">
+        <h1 className="dashboard-title">
+          <FaMicroscope /> ניהול ניסויים
+        </h1>
+        <p className="dashboard-subtitle">צפייה וניהול של כל הניסויים במערכת</p>
+      </div>
 
-      <ul className="mt-4">
-        {experiments.map((exp) => (
-          <li key={exp._id} className="mt-2 border p-2">
-            <div
-              onClick={() => toggleExperiment(exp._id)}
-              className="cursor-pointer font-semibold hover:text-blue-600"
-            >
-              {exp.name}
-              <span className="text-sm text-gray-500">
-                {" "}
-                (חוקר: {exp.investigatorName || "לא ידוע"})
-              </span>
-            </div>
+      {experiments.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-state-icon">📊</div>
+          <p className="empty-state-text">אין ניסויים במערכת</p>
+        </div>
+      ) : (
+        <ul className="experiments-list">
+          {experiments.map((exp) => (
+            <li key={exp._id} className="experiment-card">
+              <div
+                onClick={() => toggleExperiment(exp._id)}
+                className="experiment-header"
+              >
+                <div className="experiment-info">
+                  <div className="experiment-name">{exp.name}</div>
+                  <div className="experiment-investigator">
+                    חוקר: {exp.investigatorName || "לא ידוע"}
+                  </div>
+                </div>
+                <div
+                  className={`expand-icon ${
+                    expandedExperimentId === exp._id ? "expanded" : ""
+                  }`}
+                >
+                  <FaChevronRight />
+                </div>
+              </div>
 
-            {expandedExperimentId === exp._id && (
-              <div className="ml-4 mt-2">
-                {groups.map((group) => (
-                  <div key={group._id} className="mt-1 ml-2">
-                    <div
-                      onClick={() => toggleGroup(group._id)}
-                      className="cursor-pointer hover:text-blue-600"
-                    >
-                      {group.name}
-                    </div>
+              {expandedExperimentId === exp._id && (
+                <div className="groups-container">
+                  {groups.map((group) => (
+                    <div key={group._id} className="group-item">
+                      <div
+                        onClick={() => toggleGroup(group._id)}
+                        className="group-header"
+                      >
+                        <FaFolderOpen /> {group.name}
+                      </div>
 
-                    {expandedGroupId === group._id && (
-                      <div className="ml-4 mt-1">
-                        {statements.map((statement) => (
-                          <div key={statement._id} className="mt-1 ml-2">
-                            <div className="flex justify-between items-center">
-                              <div
-                                onClick={() => toggleStatement(statement._id)}
-                                className="cursor-pointer hover:text-blue-600"
-                              >
-                                {statement.name}
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                {copiesByStatementId(statement._id).filter(
-                                  (copy) => copy.status === "completed"
-                                ).length >= 2 && (
+                      {expandedGroupId === group._id && (
+                        <div className="statements-container">
+                          {statements.map((statement) => (
+                            <div key={statement._id} className="statement-item">
+                              <div className="statement-header">
+                                <div
+                                  onClick={() => toggleStatement(statement._id)}
+                                  className="statement-name"
+                                >
+                                  <FaFileAlt
+                                    style={{
+                                      display: "inline",
+                                      marginLeft: "8px",
+                                    }}
+                                  />
+                                  {statement.name}
+                                </div>
+                                <div className="statement-actions">
+                                  {copiesByStatementId(statement._id).filter(
+                                    (copy) => copy.status === "completed"
+                                  ).length >= 2 && (
+                                    <button
+                                      onClick={() =>
+                                        navigate(`/compare/${statement._id}`)
+                                      }
+                                      className="btn-dashboard btn-compare"
+                                    >
+                                      <FaBalanceScale /> השווה קידודים
+                                    </button>
+                                  )}
                                   <button
                                     onClick={() =>
-                                      navigate(`/compare/${statement._id}`)
+                                      navigate(
+                                        `/statement-summary/${statement._id}`
+                                      )
                                     }
-                                    className="text-sm text-blue-500 hover:text-blue-700 underline"
+                                    className="btn-dashboard btn-summary"
                                   >
-                                    השווה קידודים
+                                    <FaChartLine /> סיכום הצהרה
                                   </button>
-                                )}
-                                <button
-                                  onClick={() =>
-                                    navigate(
-                                      `/statement-summary/${statement._id}`
-                                    )
-                                  }
-                                  className="text-sm text-green-500 hover:text-green-700 underline"
-                                >
-                                  סיכום הצהרה
-                                </button>
+                                </div>
                               </div>
-                            </div>
 
-                            {expandedStatementId === statement._id && (
-                              <div className="ml-4 mt-1">
-                                {copiesByStatementId(statement._id).map(
-                                  (copy) => (
-                                    <div
-                                      key={copy._id}
-                                      className="flex justify-between items-center ml-2"
-                                    >
-                                      <div
-                                        onClick={() => {
-                                          if (copy.status === "completed") {
-                                            navigate(
-                                              `/view-statement/${copy._id}`
-                                            );
-                                          } else {
-                                            alert(
-                                              "לא ניתן לצפות בהצהרה לפני שהקידוד הושלם"
-                                            );
-                                          }
-                                        }}
-                                        className={`cursor-pointer ${
-                                          copy.status === "completed"
-                                            ? "text-gray-800 hover:text-purple-600"
-                                            : "text-gray-400 cursor-not-allowed"
-                                        }`}
-                                      >
-                                        {users.find(
-                                          (user) => user._id === copy.coderId
-                                        )?.username || "לא ידוע"}
-                                      </div>
-
-                                      <div className="flex items-center space-x-2">
-                                        <button
-                                          onClick={() =>
-                                            navigate(`/copy-chat/${copy._id}`)
-                                          }
-                                          className="text-blue-500 text-xs"
+                              {expandedStatementId === statement._id && (
+                                <div className="copies-container">
+                                  {copiesByStatementId(statement._id).map(
+                                    (copy) => (
+                                      <div key={copy._id} className="copy-item">
+                                        <div
+                                          onClick={() => {
+                                            if (copy.status === "completed") {
+                                              navigate(
+                                                `/view-statement/${copy._id}`
+                                              );
+                                            } else {
+                                              alert(
+                                                "לא ניתן לצפות בהצהרה לפני שהקידוד הושלם"
+                                              );
+                                            }
+                                          }}
+                                          className={`copy-name ${
+                                            copy.status === "completed"
+                                              ? "completed"
+                                              : "incomplete"
+                                          }`}
                                         >
-                                          צ'אט
-                                        </button>
+                                          {users.find(
+                                            (user) => user._id === copy.coderId
+                                          )?.username || "לא ידוע"}
+                                        </div>
 
-                                        <span className="text-xs text-red-600">
-                                          (
+                                        <div className="copy-actions">
+                                          <button
+                                            onClick={() =>
+                                              navigate(`/copy-chat/${copy._id}`)
+                                            }
+                                            className="btn-dashboard btn-chat"
+                                          >
+                                            <FaComments /> צ'אט
+                                          </button>
+
                                           {getUnreadCount(
                                             copy._id,
                                             currentUser?._id
-                                          )}{" "}
-                                          לא נקראו)
-                                        </span>
+                                          ) > 0 && (
+                                            <span className="unread-badge">
+                                              <FaEnvelope
+                                                style={{
+                                                  display: "inline",
+                                                  marginLeft: "4px",
+                                                }}
+                                              />
+                                              {getUnreadCount(
+                                                copy._id,
+                                                currentUser?._id
+                                              )}
+                                            </span>
+                                          )}
+                                        </div>
                                       </div>
-                                    </div>
-                                  )
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </li>
-        ))}
-      </ul>
+                                    )
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

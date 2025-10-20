@@ -7,7 +7,7 @@ import ResetPasswordPage from "./pages/Auth/ResetPassword";
 import CoderHomePage from "./pages/Dashboard/CoderDashboard";
 import InvestigatorHomePage from "./pages/Dashboard/InvestigatorDashboard";
 import AdminHomePage from "./pages/Dashboard/AdminDashboard";
-import Navbar from "./components/Navbar";
+import Layout from "./components/Layout";
 import StatementEditor from "./pages/Copy/EditCopy";
 import ComparePage from "./pages/Compare/ComparePage";
 import TaskManagementPage from "./pages/Task/TaskForAdmin";
@@ -61,86 +61,90 @@ function App() {
                                     <GroupProvider>
                                       <ExperimentProvider>
                                         <UserProvider>
-                                          <Navbar />
-
-                                          <Routes>
-                                            <Route
-                                              path="/"
-                                              element={<LoginPage />}
-                                            />
-                                            <Route
-                                              path="/register"
-                                              element={<RegisterPage />}
-                                            />
-                                            <Route
-                                              path="/reset-password"
-                                              element={<ResetPasswordPage />}
-                                            />
-                                            <Route
-                                              path="/admin-panel"
-                                              element={<AdminPanel />}
-                                            />
-                                            <Route
-                                              path="/coderHome"
-                                              element={<CoderHomePage />}
-                                            />
-                                            <Route
-                                              path="/investigatorHome"
-                                              element={<InvestigatorHomePage />}
-                                            />
-                                            <Route
-                                              path="/adminHome"
-                                              element={<AdminHomePage />}
-                                            />
-                                            <Route
-                                              path="/edit-statement/:copyId"
-                                              element={<StatementEditor />}
-                                            />
-                                            <Route
-                                              path="/compare/:statementId"
-                                              element={<ComparePage />}
-                                            />
-                                            <Route
-                                              path="/task-management"
-                                              element={<TaskManagementPage />}
-                                            />
-                                            <Route
-                                              path="/task-investigator"
-                                              element={<TaskForInvestigator />}
-                                            />
-                                            <Route
-                                              path="/coder-compare/:copyId"
-                                              element={<CoderCompare />}
-                                            />
-                                            <Route
-                                              path="/view-statement/:copyId"
-                                              element={<View />}
-                                            />
-                                            <Route
-                                              path="/manage-colors"
-                                              element={<ManageColors />}
-                                            />
-                                            <Route
-                                              path="/task-coder"
-                                              element={<TaskForCoder />}
-                                            />
-                                            <Route
-                                              path="/task-chat/:taskId"
-                                              element={<TaskChatPage />}
-                                            />
-                                            <Route
-                                              path="/copy-chat/:copyId"
-                                              element={<CopyChatPage />}
-                                            />
-                                            <Route
-                                              path="/task-summary/:taskId"
-                                              element={<TaskSummary />}
-                                            />
-                                            <Route
-                                              path="/statement-summary/:statementId"
-                                              element={<StatementSummary />}
-                                            />
-                                          </Routes>
+                                          <Layout>
+                                            <Routes>
+                                              <Route
+                                                path="/"
+                                                element={<LoginPage />}
+                                              />
+                                              <Route
+                                                path="/register"
+                                                element={<RegisterPage />}
+                                              />
+                                              <Route
+                                                path="/reset-password"
+                                                element={<ResetPasswordPage />}
+                                              />
+                                              <Route
+                                                path="/admin-panel"
+                                                element={<AdminPanel />}
+                                              />
+                                              <Route
+                                                path="/coderHome"
+                                                element={<CoderHomePage />}
+                                              />
+                                              <Route
+                                                path="/investigatorHome"
+                                                element={
+                                                  <InvestigatorHomePage />
+                                                }
+                                              />
+                                              <Route
+                                                path="/adminHome"
+                                                element={<AdminHomePage />}
+                                              />
+                                              <Route
+                                                path="/edit-statement/:copyId"
+                                                element={<StatementEditor />}
+                                              />
+                                              <Route
+                                                path="/compare/:statementId"
+                                                element={<ComparePage />}
+                                              />
+                                              <Route
+                                                path="/task-management"
+                                                element={<TaskManagementPage />}
+                                              />
+                                              <Route
+                                                path="/task-investigator"
+                                                element={
+                                                  <TaskForInvestigator />
+                                                }
+                                              />
+                                              <Route
+                                                path="/coder-compare/:copyId"
+                                                element={<CoderCompare />}
+                                              />
+                                              <Route
+                                                path="/view-statement/:copyId"
+                                                element={<View />}
+                                              />
+                                              <Route
+                                                path="/manage-colors"
+                                                element={<ManageColors />}
+                                              />
+                                              <Route
+                                                path="/task-coder"
+                                                element={<TaskForCoder />}
+                                              />
+                                              <Route
+                                                path="/task-chat/:taskId"
+                                                element={<TaskChatPage />}
+                                              />
+                                              <Route
+                                                path="/copy-chat/:copyId"
+                                                element={<CopyChatPage />}
+                                              />
+                                              <Route
+                                                path="/task-summary/:taskId"
+                                                element={<TaskSummary />}
+                                              />
+                                              <Route
+                                                path="/statement-summary/:statementId"
+                                                element={<StatementSummary />}
+                                              />
+                                            </Routes>
+                                          </Layout>
                                         </UserProvider>
                                       </ExperimentProvider>
                                     </GroupProvider>

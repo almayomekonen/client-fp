@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "./config";
+import { fetchWithRoleCheck } from "./fetchWithRoleCheck";
 
 export async function sendVerificationCode(email) {
   if (!email) {
@@ -6,7 +7,7 @@ export async function sendVerificationCode(email) {
   }
 
   try {
-    const res = await fetch(
+    const res = await fetchWithRoleCheck(
       `${API_BASE_URL}/api/email-verification/send-code`,
       {
         method: "POST",
@@ -32,7 +33,7 @@ export async function verifyCode(email, code) {
   }
 
   try {
-    const res = await fetch(
+    const res = await fetchWithRoleCheck(
       `${API_BASE_URL}/api/email-verification/verify-code`,
       {
         method: "POST",

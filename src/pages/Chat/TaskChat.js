@@ -1,7 +1,9 @@
-import React, { useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useData } from '../../context/DataContext';
-import TaskChat from '../../components/TaskChat';
+import React, { useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useData } from "../../context/DataContext";
+import { FaComments, FaArrowRight } from "react-icons/fa";
+import TaskChat from "../../components/TaskChat";
+import "../../styles/Chat.css";
 
 export default function TaskChatPage() {
   const { taskId } = useParams();
@@ -10,14 +12,26 @@ export default function TaskChatPage() {
 
   useEffect(() => {
     if (!currentUser) {
-      navigate('/', { replace: true });
+      navigate("/", { replace: true });
     }
   }, [currentUser, navigate]);
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">צ'אט למשימה</h2>
-      <TaskChat taskId={taskId} />
+    <div className="chat-page-container">
+      <button onClick={() => navigate(-1)} className="chat-back-btn">
+        <FaArrowRight /> חזרה
+      </button>
+
+      <div className="chat-page-header">
+        <h1 className="chat-page-title">
+          <FaComments /> צ'אט משימה
+        </h1>
+        <p className="chat-page-subtitle">שיחה על המשימה</p>
+      </div>
+
+      <div className="chat-wrapper">
+        <TaskChat taskId={taskId} />
+      </div>
     </div>
   );
 }

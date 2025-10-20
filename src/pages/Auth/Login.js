@@ -1,9 +1,9 @@
-// src/pages/LoginPage.jsx
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useUsers } from "../../context/UserContext";
 import { useData } from "../../context/DataContext";
 import LoginForm from "../../components/Auth/LoginForm";
+import "../../styles/Auth.css";
 
 export default function LoginPage() {
   const { login } = useUsers();
@@ -43,19 +43,33 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="login-page">
-      <h2>התחברות</h2>
+    <div className="auth-container">
+      <div className="auth-card">
+        <div className="auth-header">
+          <div className="auth-logo">🔐</div>
+          <h1 className="auth-title">התחברות</h1>
+          <p className="auth-subtitle">היכנס למערכת הקידוד</p>
+        </div>
 
-      <LoginForm
-        onSubmit={handleLogin}
-        onForgotPassword={handleForgotPassword}
-      />
+        <LoginForm
+          onSubmit={handleLogin}
+          onForgotPassword={handleForgotPassword}
+        />
 
-      {message && <p className="form-message">{message}</p>}
+        {message && (
+          <div
+            className={`auth-message ${
+              message.includes("שגיאה") ? "error" : "info"
+            }`}
+          >
+            {message}
+          </div>
+        )}
 
-      <p>
-        אין לך חשבון? <Link to="/register">לחץ כאן להרשמה</Link>
-      </p>
+        <div className="auth-link">
+          אין לך חשבון? <Link to="/register">לחץ כאן להרשמה</Link>
+        </div>
+      </div>
     </div>
   );
 }

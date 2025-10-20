@@ -1,7 +1,8 @@
 import { API_BASE_URL } from "./config";
+import { fetchWithRoleCheck } from "./fetchWithRoleCheck";
 
 export const fetchStyleSettingFromServer = async () => {
-  const res = await fetch(`${API_BASE_URL}/api/styles`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/styles`, {
     method: "GET",
     credentials: "include",
   });
@@ -13,7 +14,7 @@ export const updateStyleSettingOnServer = async (style) => {
   if (!style) {
     return { success: false, message: "נא להגדיר עיצוב" };
   }
-  const res = await fetch(`${API_BASE_URL}/api/styles`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/styles`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     credentials: "include",

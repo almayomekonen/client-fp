@@ -3,6 +3,15 @@ import React, { useEffect, useState } from "react";
 import { SketchPicker } from "react-color";
 import { useColor } from "../../context/ColorContext";
 import { useStyleSetting } from "../../context/StyleSettingContext";
+import {
+  FaPalette,
+  FaPlus,
+  FaTrash,
+  FaBold,
+  FaItalic,
+  FaUnderline,
+} from "react-icons/fa";
+import "../../styles/ManageColors.css";
 
 export default function ManageColors() {
   const { addColor, deleteColor, getColors } = useColor();
@@ -72,87 +81,109 @@ export default function ManageColors() {
   };
 
   return (
-    <div style={{ padding: 20, direction: "rtl" }}>
-      <h2>ניהול צבעים ואפשרויות</h2>
+    <div className="manage-colors-container">
+      <div className="manage-colors-header">
+        <h1 className="manage-colors-title">
+          <FaPalette /> ניהול צבעים ואפשרויות עיצוב
+        </h1>
+        <p className="manage-colors-subtitle">
+          הוספה ומחיקה של צבעים, והגדרת אפשרויות עיצוב למערכת
+        </p>
+      </div>
 
       {/* 🎨 צבעים קיימים */}
-      <div style={{ marginBottom: 20 }}>
-        <h4>צבעים קיימים:</h4>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-          {colors.map((color) => (
-            <div key={color._id} style={{ textAlign: "center" }}>
-              <div
-                style={{
-                  width: 30,
-                  height: 30,
-                  backgroundColor: color.code,
-                  border: "1px solid #ccc",
-                  marginBottom: 4,
-                }}
-                title={color.name}
-              />
-              <button
-                onClick={() => handleRemoveColor(color)}
-                style={{
-                  backgroundColor: "red",
-                  color: "white",
-                  border: "none",
-                  padding: "2px 6px",
-                  cursor: "pointer",
-                  fontSize: "0.8rem",
-                }}
-              >
-                הסר
-              </button>
-            </div>
-          ))}
-        </div>
+      <div className="colors-section">
+        <h3 className="colors-section-title">
+          <FaPalette /> צבעים קיימים
+        </h3>
+        {colors.length === 0 ? (
+          <div className="colors-empty-state">
+            <div className="colors-empty-icon">🎨</div>
+            <p className="colors-empty-text">אין צבעים במערכת</p>
+          </div>
+        ) : (
+          <div className="colors-grid">
+            {colors.map((color) => (
+              <div key={color._id} className="color-item">
+                <div
+                  className="color-box"
+                  style={{ backgroundColor: color.code }}
+                  title={color.name}
+                />
+                <span className="color-name">{color.code}</span>
+                <button
+                  onClick={() => handleRemoveColor(color)}
+                  className="color-remove-btn"
+                >
+                  <FaTrash /> הסר
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ➕ הוספת צבע */}
-      <div style={{ marginBottom: 20 }}>
-        <h4>הוסף צבע חדש:</h4>
-        <SketchPicker
-          color={pickedColor}
-          onChange={(color) => setPickedColor(color.hex)}
-        />
-        <button
-          onClick={handleAddColor}
-          style={{ marginTop: 10, padding: "5px 10px" }}
-        >
-          הוסף צבע לרשימה
-        </button>
+      <div className="add-color-section">
+        <h3 className="colors-section-title">
+          <FaPlus /> הוסף צבע חדש
+        </h3>
+        <div className="color-picker-container">
+          <div className="color-picker-wrapper">
+            <SketchPicker
+              color={pickedColor}
+              onChange={(color) => setPickedColor(color.hex)}
+            />
+          </div>
+          <button onClick={handleAddColor} className="add-color-btn">
+            <FaPlus /> הוסף צבע לרשימה
+          </button>
+        </div>
       </div>
 
       {/* ✍️ אפשרויות עיצוב */}
-      <div>
-        <h4>אפשרויות עיצוב:</h4>
-        <label>
-          <input
-            type="checkbox"
-            checked={styleSettings.boldEnabled || false}
-            onChange={() => toggleStyle("boldEnabled")}
-          />{" "}
-          אפשר בולד
-        </label>
-        <br />
-        <label>
-          <input
-            type="checkbox"
-            checked={styleSettings.italicEnabled || false}
-            onChange={() => toggleStyle("italicEnabled")}
-          />{" "}
-          אפשר איטליק
-        </label>
-        <br />
-        <label>
-          <input
-            type="checkbox"
-            checked={styleSettings.underlineEnabled || false}
-            onChange={() => toggleStyle("underlineEnabled")}
-          />{" "}
-          אפשר קו תחתון
-        </label>
+      <div className="style-settings-section">
+        <h3 className="colors-section-title">אפשרויות עיצוב</h3>
+        <div className="style-options">
+          <label className="style-option">
+            <input
+              type="checkbox"
+              className="style-checkbox"
+              checked={styleSettings.boldEnabled || false}
+              onChange={() => toggleStyle("boldEnabled")}
+            />
+            <span className="style-label">
+              <FaBold className="style-label-icon" />
+              אפשר בולד (מודגש)
+            </span>
+          </label>
+
+          <label className="style-option">
+            <input
+              type="checkbox"
+              className="style-checkbox"
+              checked={styleSettings.italicEnabled || false}
+              onChange={() => toggleStyle("italicEnabled")}
+            />
+            <span className="style-label">
+              <FaItalic className="style-label-icon" />
+              אפשר איטליק (נטוי)
+            </span>
+          </label>
+
+          <label className="style-option">
+            <input
+              type="checkbox"
+              className="style-checkbox"
+              checked={styleSettings.underlineEnabled || false}
+              onChange={() => toggleStyle("underlineEnabled")}
+            />
+            <span className="style-label">
+              <FaUnderline className="style-label-icon" />
+              אפשר קו תחתון
+            </span>
+          </label>
+        </div>
       </div>
     </div>
   );

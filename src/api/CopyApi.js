@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "./config";
+import { fetchWithRoleCheck } from "./fetchWithRoleCheck";
 
 export const createCopyOnServer = async ({
   statementId,
@@ -10,7 +11,7 @@ export const createCopyOnServer = async ({
     return { success: false, message: "נא למלא את כל שדות החובה" };
   }
 
-  const res = await fetch(`${API_BASE_URL}/api/copies`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/copies`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -24,7 +25,7 @@ export const createCopyOnServer = async ({
 };
 
 export const fetchCopiesFromServer = async () => {
-  const res = await fetch(`${API_BASE_URL}/api/copies`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/copies`, {
     credentials: "include",
   });
   if (!res.ok) throw new Error("שגיאה בקבלת עותקים");
@@ -32,7 +33,7 @@ export const fetchCopiesFromServer = async () => {
 };
 
 export const deleteCopyFromServer = async (copyId) => {
-  const res = await fetch(`${API_BASE_URL}/api/copies/${copyId}`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/copies/${copyId}`, {
     method: "DELETE",
     credentials: "include",
   });
@@ -45,7 +46,7 @@ export const deleteCopyFromServer = async (copyId) => {
 };
 
 export const UpdateCopyOnServer = async (copyId, updateFields) => {
-  const res = await fetch(`${API_BASE_URL}/api/copies/${copyId}`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/copies/${copyId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -57,7 +58,7 @@ export const UpdateCopyOnServer = async (copyId, updateFields) => {
 };
 
 export const fetchColorsFromServer = async () => {
-  const res = await fetch(`${API_BASE_URL}/api/colors`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/colors`, {
     method: "GET",
     credentials: "include", // ← הוסף
   });

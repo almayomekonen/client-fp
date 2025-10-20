@@ -1,7 +1,9 @@
-import React, { useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useData } from '../../context/DataContext';
-import CopyChat from '../../components/CopyChat';
+import React, { useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useData } from "../../context/DataContext";
+import { FaComments, FaArrowRight } from "react-icons/fa";
+import CopyChat from "../../components/CopyChat";
+import "../../styles/Chat.css";
 
 export default function CopyChatPage() {
   const { copyId } = useParams();
@@ -10,14 +12,26 @@ export default function CopyChatPage() {
 
   useEffect(() => {
     if (!currentUser) {
-      navigate('/', { replace: true });
+      navigate("/", { replace: true });
     }
   }, [currentUser, navigate]);
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">צ'אט להעתק</h2>
-      <CopyChat copyId={copyId} />
+    <div className="chat-page-container">
+      <button onClick={() => navigate(-1)} className="chat-back-btn">
+        <FaArrowRight /> חזרה
+      </button>
+
+      <div className="chat-page-header">
+        <h1 className="chat-page-title">
+          <FaComments /> צ'אט העתק
+        </h1>
+        <p className="chat-page-subtitle">שיחה על ההעתק</p>
+      </div>
+
+      <div className="chat-wrapper">
+        <CopyChat copyId={copyId} />
+      </div>
     </div>
   );
 }

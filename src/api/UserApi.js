@@ -1,7 +1,8 @@
 import { API_BASE_URL } from "./config";
+import { fetchWithRoleCheck } from "./fetchWithRoleCheck";
 
 export async function fetchUsersFromServer() {
-  const res = await fetch(`${API_BASE_URL}/api/users`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/users`, {
     credentials: "include",
   });
   const data = await res.json();
@@ -9,7 +10,7 @@ export async function fetchUsersFromServer() {
 }
 
 export async function deleteUserFromServer(userId) {
-  const res = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/users/${userId}`, {
     method: "DELETE",
     credentials: "include",
   });
@@ -21,7 +22,7 @@ export async function deleteUserFromServer(userId) {
 }
 
 export const updateUserOnServer = async (userId, updateFields) => {
-  const res = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/users/${userId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -38,7 +39,7 @@ export async function login(username, password) {
     console.log("🔐 Attempting login for:", username);
     console.log("📡 API_BASE_URL:", API_BASE_URL);
 
-    const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+    const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include", // ← וודא שזה קיים!
@@ -62,7 +63,7 @@ export async function login(username, password) {
 
 export async function logout(setCurrentUser) {
   try {
-    await fetch(`${API_BASE_URL}/api/auth/logout`, {
+    await fetchWithRoleCheck(`${API_BASE_URL}/api/auth/logout`, {
       method: "POST",
       credentials: "include",
     });
@@ -84,7 +85,7 @@ export async function checkAuth() {
     console.log("📡 Checking auth at:", `${API_BASE_URL}/api/auth/me`);
     console.log("🍪 Sending credentials: include");
 
-    const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
+    const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/auth/me`, {
       method: "GET",
       credentials: "include",
     });

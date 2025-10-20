@@ -1,10 +1,11 @@
 import { API_BASE_URL } from "./config";
+import { fetchWithRoleCheck } from "./fetchWithRoleCheck";
 
 export const createCommentOnServer = async (userId, copyId, text, offset) => {
   if (!text) {
     return { success: false, message: "נא למלא את כל שדות החובה" };
   }
-  const res = await fetch(`${API_BASE_URL}/api/comments`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/comments`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -17,7 +18,7 @@ export const createCommentOnServer = async (userId, copyId, text, offset) => {
 };
 
 export const deleteCommentFromServer = async (commentId) => {
-  const res = await fetch(`${API_BASE_URL}/api/comments/${commentId}`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/comments/${commentId}`, {
     method: "DELETE",
     credentials: "include",
   });
@@ -27,7 +28,7 @@ export const deleteCommentFromServer = async (commentId) => {
 };
 
 export const fetchCommentsFromServer = async () => {
-  const res = await fetch(`${API_BASE_URL}/api/comments`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/comments`, {
     credentials: "include",
   });
   if (!res.ok) throw new Error("שגיאה בקבלת הערות");
@@ -35,7 +36,7 @@ export const fetchCommentsFromServer = async () => {
 };
 
 export const fetchCommentsByCopyId = async (copyId) => {
-  const res = await fetch(`${API_BASE_URL}/api/comments/copy/${copyId}`, {
+  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/comments/copy/${copyId}`, {
     credentials: "include",
   });
   if (!res.ok) throw new Error("שגיאה בקבלת הערות לפי העתק");

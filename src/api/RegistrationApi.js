@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "./config";
+import { fetchWithRoleCheck } from "./fetchWithRoleCheck";
 
 export async function register(
   username,
@@ -16,7 +17,7 @@ export async function register(
   }
 
   try {
-    const res = await fetch(`${API_BASE_URL}/api/registration`, {
+    const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/registration`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -33,14 +34,14 @@ export async function register(
 }
 
 export async function approveRegistration(id) {
-  await fetch(`${API_BASE_URL}/api/registration/${id}/approve`, {
+  await fetchWithRoleCheck(`${API_BASE_URL}/api/registration/${id}/approve`, {
     method: "POST",
     credentials: "include",
   });
 }
 
 export async function rejectRegistration(id) {
-  await fetch(`${API_BASE_URL}/api/registration/${id}`, {
+  await fetchWithRoleCheck(`${API_BASE_URL}/api/registration/${id}`, {
     method: "DELETE",
     credentials: "include",
   });
@@ -48,7 +49,7 @@ export async function rejectRegistration(id) {
 
 export async function fetchRegistrationRequests() {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/registration`, {
+    const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/registration`, {
       credentials: "include",
     });
     const data = await res.json();
