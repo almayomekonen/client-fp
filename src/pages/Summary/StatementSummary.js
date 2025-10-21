@@ -53,7 +53,9 @@ export default function StatementSummary() {
       const stmt = await statementById(statementId);
       setStatement(stmt || null);
       if (stmt) {
-        const completedCopies = copiesByStatementId(statementId).filter(copy => copy.status === "completed");
+        const completedCopies = copiesByStatementId(statementId).filter(
+          (copy) => copy.status === "completed"
+        );
         setCopies(completedCopies);
       }
     };
@@ -64,108 +66,136 @@ export default function StatementSummary() {
 
   // איחוד כל הצבעים – גם מהרשימה וגם מהעותקים
   const colorCodesFromCopies = new Set();
-  copies.forEach(copy => {
-    Object.keys(copy.colorCounts || {}).forEach(code => colorCodesFromCopies.add(code));
+  copies.forEach((copy) => {
+    Object.keys(copy.colorCounts || {}).forEach((code) =>
+      colorCodesFromCopies.add(code)
+    );
   });
 
   // סגנונות שמופעלים ב-styleSettings
   const commonStyles = [];
-  if (styleSettings.boldEnabled) commonStyles.push({ key: "bold", label: "בולד" });
-  if (styleSettings.italicEnabled) commonStyles.push({ key: "italic", label: "הטייה" });
-  if (styleSettings.underlineEnabled) commonStyles.push({ key: "underline", label: "קו תחתון" });
-  const styleKeys = commonStyles.map(s => s.key);
+  if (styleSettings.boldEnabled)
+    commonStyles.push({ key: "bold", label: "בולד" });
+  if (styleSettings.italicEnabled)
+    commonStyles.push({ key: "italic", label: "הטייה" });
+  if (styleSettings.underlineEnabled)
+    commonStyles.push({ key: "underline", label: "קו תחתון" });
+  const styleKeys = commonStyles.map((s) => s.key);
 
   // בונים את allColors: מסירים את הסגנונות שמופעלים ב-styleSettings
   const allColors = [
     ...colors,
     ...Array.from(colorCodesFromCopies)
-      .filter(code => !colors.some(c => c.code === code))
-      .map(code => ({ _id: code, code, name: styleKeys.includes(code) ? null : code }))
-  ].filter(c => c.name !== null);
+      .filter((code) => !colors.some((c) => c.code === code))
+      .map((code) => ({
+        _id: code,
+        code,
+        name: styleKeys.includes(code) ? null : code,
+      })),
+  ].filter((c) => c.name !== null);
 
-const renderTable = (type) => (
-  <div style={{ overflowX: "auto", marginBottom: 30 }}>
-    <table style={{ borderCollapse: "collapse", width: "100%", textAlign: "center", minWidth: 600 }}>
-      <thead>
-        <tr>
-          <th style={{ border: "1px solid #ccc", padding: "8px" }}>מקודד</th>
-          {allColors.map(c => (
-            <th
-              key={`${type}-${c._id}`}
-              style={{ border: "1px solid #ccc", padding: "8px", backgroundColor: c.code }}
-            >
-              {c.name}
-            </th>
-          ))}
-          {commonStyles.map(s => (
-            <th key={`${type}-${s.key}`} style={{ border: "1px solid #ccc", padding: "8px" }}>
-              {s.label}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {copies.map(copy => {
-          const baseText = statement.text;
-          const highlights = copy?.highlights || [];
-          const coder = userById(copy.coderId);
-          const decoratedText = applyHighlightsToText(baseText, highlights, [], []);
-          const wordCounts = calculateWordCounts(decoratedText);
+  const renderTable = (type) => (
+    <div style={{ overflowX: "auto", marginBottom: 30 }}>
+      <table
+        style={{
+          borderCollapse: "collapse",
+          width: "100%",
+          textAlign: "center",
+          minWidth: 600,
+        }}
+      >
+        <thead>
+          <tr>
+            <th style={{ border: "1px solid #ccc", padding: "8px" }}>מקודד</th>
+            {allColors.map((c) => (
+              <th
+                key={`${type}-${c._id}`}
+                style={{
+                  border: "1px solid #ccc",
+                  padding: "8px",
+                  backgroundColor: c.code,
+                }}
+              >
+                {c.name}
+              </th>
+            ))}
+            {commonStyles.map((s) => (
+              <th
+                key={`${type}-${s.key}`}
+                style={{ border: "1px solid #ccc", padding: "8px" }}
+              >
+                {s.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {copies.map((copy) => {
+            const baseText = statement.text;
+            const highlights = copy?.highlights || [];
+            const coder = userById(copy.coderId);
+            const decoratedText = applyHighlightsToText(
+              baseText,
+              highlights,
+              [],
+              []
+            );
+            const wordCounts = calculateWordCounts(decoratedText);
 
-          return (
-            <tr key={copy._id}>
-              <td style={{ border: "1px solid #ccc", padding: "8px" }}>
-                {coder?.username || "ללא שם"}
-              </td>
+            return (
+              <tr key={copy._id}>
+                <td style={{ border: "1px solid #ccc", padding: "8px" }}>
+                  {coder?.username || "ללא שם"}
+                </td>
 
-              {type === "marks" && (
-                <>
-                  {allColors.map(c => (
-                    <td
-                      key={`mark-${copy._id}-${c._id}`}
-                      style={{ border: "1px solid #ccc", padding: "8px" }}
-                    >
-                      {copy.colorCounts?.[c.code] || 0}
-                    </td>
-                  ))}
-                  {commonStyles.map(s => (
-                    <td
-                      key={`style-${copy._id}-${s.key}`}
-                      style={{ border: "1px solid #ccc", padding: "8px" }}
-                    >
-                      {copy.colorCounts?.[s.key] || 0}
-                    </td>
-                  ))}
-                </>
-              )}
+                {type === "marks" && (
+                  <>
+                    {allColors.map((c) => (
+                      <td
+                        key={`mark-${copy._id}-${c._id}`}
+                        style={{ border: "1px solid #ccc", padding: "8px" }}
+                      >
+                        {copy.colorCounts?.[c.code] || 0}
+                      </td>
+                    ))}
+                    {commonStyles.map((s) => (
+                      <td
+                        key={`style-${copy._id}-${s.key}`}
+                        style={{ border: "1px solid #ccc", padding: "8px" }}
+                      >
+                        {copy.colorCounts?.[s.key] || 0}
+                      </td>
+                    ))}
+                  </>
+                )}
 
-              {type === "words" && (
-                <>
-                  {allColors.map(c => (
-                    <td
-                      key={`word-${copy._id}-${c._id}`}
-                      style={{ border: "1px solid #ccc", padding: "8px" }}
-                    >
-                      {wordCounts?.[c.code] || 0}
-                    </td>
-                  ))}
-                  {commonStyles.map(s => (
-                    <td
-                      key={`style-${copy._id}-${s.key}`}
-                      style={{ border: "1px solid #ccc", padding: "8px" }}
-                    >
-                      {wordCounts?.[s.key] || 0}
-                    </td>
-                  ))}
-                </>
-              )}
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
-  </div>
-);
+                {type === "words" && (
+                  <>
+                    {allColors.map((c) => (
+                      <td
+                        key={`word-${copy._id}-${c._id}`}
+                        style={{ border: "1px solid #ccc", padding: "8px" }}
+                      >
+                        {wordCounts?.[c.code] || 0}
+                      </td>
+                    ))}
+                    {commonStyles.map((s) => (
+                      <td
+                        key={`style-${copy._id}-${s.key}`}
+                        style={{ border: "1px solid #ccc", padding: "8px" }}
+                      >
+                        {wordCounts?.[s.key] || 0}
+                      </td>
+                    ))}
+                  </>
+                )}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
 
   return (
     <div style={{ padding: 20, direction: "rtl" }}>
@@ -177,7 +207,9 @@ const renderTable = (type) => (
       <h3>מילים</h3>
       {renderTable("words")}
 
-      <button style={{ marginTop: 20 }} onClick={() => navigate(-1)}>חזור</button>
+      <button style={{ marginTop: 20 }} onClick={() => navigate(-1)}>
+        חזור
+      </button>
     </div>
   );
 }
