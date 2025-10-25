@@ -6,13 +6,13 @@ export const fetchStyleSettingFromServer = async () => {
     method: "GET",
     credentials: "include",
   });
-  if (!res.ok) throw new Error("שגיאה בקבלת הגדרות עיצוב");
+  if (!res.ok) throw new Error("Error fetching style settings");
   return await res.json();
 };
 
 export const updateStyleSettingOnServer = async (style) => {
   if (!style) {
-    return { success: false, message: "נא להגדיר עיצוב" };
+    return { success: false, message: "Please define style settings" };
   }
   const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/styles`, {
     method: "PUT",
@@ -20,6 +20,6 @@ export const updateStyleSettingOnServer = async (style) => {
     credentials: "include",
     body: JSON.stringify(style),
   });
-  if (!res.ok) throw new Error("שגיאה בעדכון הגדרות עיצוב");
+  if (!res.ok) throw new Error("Error updating style settings");
   return await res.json();
 };

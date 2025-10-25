@@ -61,6 +61,11 @@ export default function ManageColors() {
 
   // ➖ Delete color
   const handleRemoveColor = async (color) => {
+    if (
+      !window.confirm(`Are you sure you want to delete color "${color.name}"?`)
+    )
+      return;
+
     try {
       await deleteColor(color._id);
       setColors(colors.filter((c) => c._id !== color._id));

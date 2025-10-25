@@ -8,13 +8,13 @@ import "../../styles/Chat.css";
 export default function CopyChatPage() {
   const { copyId } = useParams();
   const navigate = useNavigate();
-  const { currentUser } = useData();
+  const { currentUser, isAuthChecked } = useData();
 
   useEffect(() => {
-    if (!currentUser) {
+    if (isAuthChecked && !currentUser) {
       navigate("/", { replace: true });
     }
-  }, [currentUser, navigate]);
+  }, [currentUser, isAuthChecked, navigate]);
 
   return (
     <div className="chat-page-container">

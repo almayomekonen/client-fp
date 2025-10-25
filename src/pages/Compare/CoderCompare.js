@@ -61,7 +61,7 @@ export default function CoderComparePage() {
   } = useResult();
 
   const { getComparisonsForCopy, compareCopies } = useComparison();
-  const { currentUser, users } = useData();
+  const { currentUser, users, isAuthChecked, copies } = useData();
   const { statementById } = useStatement();
   const { addComment, deleteComment, fetchCommentsByCopyId } = useComment();
   const { getColors } = useColor(); // מוסיפים את הפונקציה הזו מה־ColorContext
@@ -110,10 +110,10 @@ export default function CoderComparePage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!currentUser) {
+    if (isAuthChecked && !currentUser) {
       navigate("/", { replace: true });
     }
-  }, [currentUser, navigate]);
+  }, [currentUser, isAuthChecked, navigate]);
 
   useEffect(() => {
     const loadStyle = async () => {
@@ -164,9 +164,25 @@ export default function CoderComparePage() {
   }, [socket, copyA, copyB, navigate]);
 
   useEffect(() => {
+    if (!isAuthChecked || !currentUser) return;
+
+    // Wait for copies to be loaded
+    const copyExists = copies.some((c) => c._id === copyId);
+    if (!copyExists) {
+      return; // Copy data not loaded yet, wait for next render
+    }
+
     async function fetchInitialData() {
       const mainCopy = await copyById(copyId);
+      if (!mainCopy) {
+        console.error("Copy not found:", copyId);
+        return;
+      }
       const s = await statementById(mainCopy.statementId);
+      if (!s) {
+        console.error("Statement not found:", mainCopy.statementId);
+        return;
+      }
 
       const comparisonIds = (await getComparisonsForCopy(mainCopy._id)) || [];
       const comparisonCopies = await Promise.all(
@@ -229,7 +245,7 @@ export default function CoderComparePage() {
     }
 
     fetchInitialData();
-  }, [copyId]);
+  }, [copyId, isAuthChecked, currentUser, copies]);
 
   const getRenderLeaf =
     (setActiveComment) =>
@@ -909,6 +925,7 @@ export default function CoderComparePage() {
                     renderLeaf={getRenderLeaf(setActiveComment)}
                     placeholder={`Coding ${name}`}
                     readOnly={currentUser?._id !== copy?.coderId}
+                    dir="auto"
                     className="slate-editor"
                     style={{
                       minHeight: "400px",
@@ -935,7 +952,7 @@ export default function CoderComparePage() {
                       }
                       className="tool-btn"
                     >
-                      <FaChartBar /> Show Markings in Selected Text
+                      <FaChartBar /> Show Codings in Selected Text
                     </button>
                     <button
                       onClick={() =>
@@ -953,7 +970,7 @@ export default function CoderComparePage() {
                 {/* Statistics */}
                 <div className="stats-grid">
                   <div className="stat-card">
-                    <h4 className="stat-title">Total Markings Count</h4>
+                    <h4 className="stat-title">Total Codings Count</h4>
                     <div className="stat-list">
                       {Object.entries(counts).map(([key, num]) => (
                         <div key={key} className="stat-item">
@@ -978,7 +995,7 @@ export default function CoderComparePage() {
 
                   {selectionCounts && (
                     <div className="stat-card">
-                      <h4 className="stat-title">Selection Markings Count</h4>
+                      <h4 className="stat-title">Selection Codings Count</h4>
                       <div className="stat-list">
                         {Object.entries(selectionCounts).map(([key, num]) => (
                           <div key={key} className="stat-item">

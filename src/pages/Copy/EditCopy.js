@@ -434,7 +434,7 @@ export default function StatementEditor() {
                 }
                 className="dashboard-btn btn-secondary btn-sm"
               >
-                <FaEye /> Show Selection Markings
+                <FaEye /> Show Selection Codings
               </button>
               <button
                 onClick={() =>
@@ -465,6 +465,7 @@ export default function StatementEditor() {
                 renderLeaf={renderLeaf}
                 placeholder="Select text to highlight..."
                 readOnly={true}
+                dir="auto"
                 style={{
                   minHeight: "400px",
                   border: "2px solid #e0e0e0",
@@ -512,7 +513,7 @@ export default function StatementEditor() {
                   color: "#666",
                 }}
               >
-                Markings Count:
+                Codings Count:
               </h4>
               {Object.entries(counts).length > 0 ? (
                 Object.entries(counts).map(([key, num]) => (
@@ -522,7 +523,7 @@ export default function StatementEditor() {
                 ))
               ) : (
                 <p style={{ color: "#999", fontSize: "14px" }}>
-                  No markings yet
+                  No codings yet
                 </p>
               )}
             </div>
@@ -569,7 +570,7 @@ export default function StatementEditor() {
                       color: "#666",
                     }}
                   >
-                    Markings in Selection:
+                    Codings in Selection:
                   </h4>
                   {Object.entries(selectionCounts).map(([key, num]) => (
                     <div key={key} style={{ marginBottom: "8px" }}>

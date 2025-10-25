@@ -23,13 +23,13 @@ export async function sendVerificationCode(email) {
 
     return { success: true, message: data.message };
   } catch (err) {
-    return { success: false, message: "שגיאה בשליחת קוד אימות" };
+    return { success: false, message: "Error sending verification code" };
   }
 }
 
 export async function verifyCode(email, code) {
   if (!email || !code) {
-    return { success: false, message: "נא להזין מייל וקוד" };
+    return { success: false, message: "Please enter email and code" };
   }
 
   try {
@@ -48,6 +48,6 @@ export async function verifyCode(email, code) {
 
     return { success: true, message: data.message };
   } catch (err) {
-    return { success: false, message: "שגיאה באימות הקוד" };
+    return { success: false, message: "Error verifying code" };
   }
 }

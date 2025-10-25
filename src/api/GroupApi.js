@@ -17,17 +17,20 @@ export const createGroupOnServer = async ({
     body: JSON.stringify({ name, description, experimentId }),
   });
 
-  if (!res.ok) throw new Error("שגיאה ביצירת קבוצה");
+  if (!res.ok) throw new Error("Error creating group");
   return await res.json();
 };
 
 export const deleteGroupFromServer = async (groupId) => {
-  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/groups/${groupId}`, {
-    method: "DELETE",
-    credentials: "include",
-  });
+  const res = await fetchWithRoleCheck(
+    `${API_BASE_URL}/api/groups/${groupId}`,
+    {
+      method: "DELETE",
+      credentials: "include",
+    }
+  );
 
-  if (!res.ok) throw new Error("שגיאה במחיקת קבוצה");
+  if (!res.ok) throw new Error("Error deleting group");
   return await res.json();
 };
 
@@ -35,7 +38,7 @@ export const fetchGroupsFromServer = async () => {
   const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/groups`, {
     credentials: "include",
   });
-  if (!res.ok) throw new Error("שגיאה בקבלת קבוצות");
+  if (!res.ok) throw new Error("Error fetching groups");
   return await res.json();
 };
 

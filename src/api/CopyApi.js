@@ -8,7 +8,7 @@ export const createCopyOnServer = async ({
   coderId,
 }) => {
   if (!coderId) {
-    return { success: false, message: "נא למלא את כל שדות החובה" };
+    return { success: false, message: "Please fill all required fields" };
   }
 
   const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/copies`, {
@@ -18,17 +18,17 @@ export const createCopyOnServer = async ({
     body: JSON.stringify({ statementId, groupId, experimentId, coderId }),
   });
 
-  if (!res.ok) throw new Error("שגיאה ביצירת עותק");
+  if (!res.ok) throw new Error("Error creating copy");
   const newCopy = await res.json();
 
-  return { success: true, message: "ההעתק התווסף בהצלחה", newCopy };
+  return { success: true, message: "Copy added successfully", newCopy };
 };
 
 export const fetchCopiesFromServer = async () => {
   const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/copies`, {
     credentials: "include",
   });
-  if (!res.ok) throw new Error("שגיאה בקבלת עותקים");
+  if (!res.ok) throw new Error("Error fetching copies");
   return await res.json();
 };
 
@@ -39,7 +39,7 @@ export const deleteCopyFromServer = async (copyId) => {
   });
 
   if (!res.ok) {
-    throw new Error("שגיאה במחיקת עותק");
+    throw new Error("Error deleting copy");
   }
 
   return await res.json();
@@ -53,15 +53,15 @@ export const UpdateCopyOnServer = async (copyId, updateFields) => {
     body: JSON.stringify(updateFields),
   });
 
-  if (!res.ok) throw new Error("שגיאה בעדכון העתק");
+  if (!res.ok) throw new Error("Error updating copy");
   return await res.json();
 };
 
 export const fetchColorsFromServer = async () => {
   const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/colors`, {
     method: "GET",
-    credentials: "include", // ← הוסף
+    credentials: "include",
   });
-  if (!res.ok) throw new Error("שגיאה בקבלת צבעים");
+  if (!res.ok) throw new Error("Error fetching colors");
   return await res.json();
 };

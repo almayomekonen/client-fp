@@ -283,7 +283,7 @@ export default function ViewStatementWithComments() {
                 }
                 className="dashboard-btn btn-secondary btn-sm"
               >
-                <FaEye /> Show Selection Markings
+                <FaEye /> Show Selection Codings
               </button>
               <button
                 onClick={() =>
@@ -313,6 +313,7 @@ export default function ViewStatementWithComments() {
               <Editable
                 renderLeaf={renderLeaf}
                 readOnly
+                dir="auto"
                 placeholder="No text available"
                 style={{
                   minHeight: "500px",
@@ -345,7 +346,7 @@ export default function ViewStatementWithComments() {
                   color: "#666",
                 }}
               >
-                Markings Count:
+                Codings Count:
               </h4>
               {Object.entries(counts).length > 0 ? (
                 Object.entries(counts).map(([key, num]) => (
@@ -355,7 +356,7 @@ export default function ViewStatementWithComments() {
                 ))
               ) : (
                 <p style={{ color: "#999", fontSize: "14px" }}>
-                  No markings yet
+                  No codings yet
                 </p>
               )}
             </div>
@@ -402,7 +403,7 @@ export default function ViewStatementWithComments() {
                       color: "#666",
                     }}
                   >
-                    Markings in Selection:
+                    Codings in Selection:
                   </h4>
                   {Object.entries(selectionCounts).map(([key, num]) => (
                     <div key={key} style={{ marginBottom: "8px" }}>

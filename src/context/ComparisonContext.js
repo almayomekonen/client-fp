@@ -1,18 +1,17 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext } from "react";
 import {
-  createComparison as createComparisonService,
-  removeAllComparisons as removeAllComparisonsService,
-  deleteComparison as deleteComparisonService,
-  getComparisonsForCopyFromServer,
-  checkComparisonExists as checkComparisonExistsService
-} from '../api/ComprasionApi';
-import{  compareCopies as compareCopiesService } from '../services/ComprasionService';
+  createComparisonOnServer as createComparisonService,
+  deleteAllComparisonsFromServer as removeAllComparisonsService,
+  deleteComparisonFromServer as deleteComparisonService,
+  fetchComparisonsFromServerForCopy as getComparisonsForCopyFromServer,
+  checkComparisonExistsOnServer as checkComparisonExistsService,
+} from "../api/ComprasionApi";
+import { compareCopies as compareCopiesService } from "../services/ComprasionService";
 
 const ComparisonContext = createContext();
 export const useComparison = () => useContext(ComparisonContext);
 
 export function ComparisonProvider({ children }) {
-
   const compareCopies = (coderA, coderB, fullText, range = null) => {
     return compareCopiesService(coderA, coderB, fullText, range);
   };
@@ -40,14 +39,16 @@ export function ComparisonProvider({ children }) {
   };
 
   return (
-    <ComparisonContext.Provider value={{
-      createComparison,
-      deleteComparison,
-      removeAllComparisons,
-      getComparisonsForCopy,
-      checkComparisonExists,
-      compareCopies
-    }}>
+    <ComparisonContext.Provider
+      value={{
+        createComparison,
+        deleteComparison,
+        removeAllComparisons,
+        getComparisonsForCopy,
+        checkComparisonExists,
+        compareCopies,
+      }}
+    >
       {children}
     </ComparisonContext.Provider>
   );

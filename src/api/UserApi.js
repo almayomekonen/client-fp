@@ -33,10 +33,8 @@ export async function deleteUserFromServer(userId) {
     );
 
     if (!res.ok) {
-      const data = await res
-        .json()
-        .catch(() => ({ message: "שגיאה לא ידועה" }));
-      throw new Error(data.message || "שגיאה במחיקת משתמש");
+      const data = await res.json().catch(() => ({ message: "Unknown error" }));
+      throw new Error(data.message || "Error deleting user");
     }
 
     const data = await res.json();
@@ -56,7 +54,7 @@ export const updateUserOnServer = async (userId, updateFields) => {
   });
 
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || "שגיאה בעדכון משתמש");
+  if (!res.ok) throw new Error(data.message || "Error updating user");
   return data;
 };
 
@@ -75,7 +73,7 @@ export async function login(username, password) {
     return { success: true, user: data.user };
   } catch (err) {
     console.error("❌ Login error:", err);
-    return { success: false, message: "שגיאה בהתחברות לשרת" };
+    return { success: false, message: "Error connecting to server" };
   }
 }
 
@@ -99,7 +97,7 @@ export async function logout(setCurrentUser, navigate) {
       navigate("/", { replace: true });
     }
   } catch (err) {
-    console.error("שגיאה בעת התנתקות:", err);
+    console.error("Error during logout:", err);
 
     // Even on error, clear everything
     setCurrentUser(null);

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { createEditor, Path } from "slate";
 import { Slate, Editable, withReact } from "slate-react";
@@ -103,6 +103,35 @@ export default function ComparePage() {
   const [isCompared, setIsCompared] = useState(false);
 
   const navigate = useNavigate();
+
+  // Refs for scroll syncing
+  const scrollContainerA = useRef(null);
+  const scrollContainerB = useRef(null);
+  const isScrollingA = useRef(false);
+  const isScrollingB = useRef(false);
+
+  // Scroll sync handlers
+  const handleScrollA = () => {
+    if (isScrollingB.current) return;
+    isScrollingA.current = true;
+    if (scrollContainerA.current && scrollContainerB.current) {
+      scrollContainerB.current.scrollTop = scrollContainerA.current.scrollTop;
+    }
+    setTimeout(() => {
+      isScrollingA.current = false;
+    }, 100);
+  };
+
+  const handleScrollB = () => {
+    if (isScrollingA.current) return;
+    isScrollingB.current = true;
+    if (scrollContainerA.current && scrollContainerB.current) {
+      scrollContainerA.current.scrollTop = scrollContainerB.current.scrollTop;
+    }
+    setTimeout(() => {
+      isScrollingB.current = false;
+    }, 100);
+  };
 
   // בעת טעינת העמוד, בודקים אם ההשוואה קיימת
   useEffect(() => {
@@ -995,17 +1024,23 @@ export default function ComparePage() {
                   value={value}
                   onChange={setValue}
                 >
-                  <Editable
-                    renderLeaf={getRenderLeaf(setActiveComment)}
-                    placeholder={`Coding ${name}`}
-                    readOnly={currentUser?._id !== copy?.coderId}
-                    className="slate-editor"
+                  <div
+                    ref={name === "A" ? scrollContainerA : scrollContainerB}
+                    onScroll={name === "A" ? handleScrollA : handleScrollB}
                     style={{
                       minHeight: "400px",
                       maxHeight: "600px",
                       overflowY: "auto",
                     }}
-                  />
+                  >
+                    <Editable
+                      renderLeaf={getRenderLeaf(setActiveComment)}
+                      placeholder={`Coding ${name}`}
+                      readOnly={currentUser?._id !== copy?.coderId}
+                      dir="auto"
+                      className="slate-editor"
+                    />
+                  </div>
                 </Slate>
               </div>
 
@@ -1025,7 +1060,7 @@ export default function ComparePage() {
                       }
                       className="tool-btn"
                     >
-                      <FaChartBar /> Show Markings in Selected Text
+                      <FaChartBar /> Show Codings in Selected Text
                     </button>
                     <button
                       onClick={() =>
@@ -1043,7 +1078,7 @@ export default function ComparePage() {
                 {/* Statistics */}
                 <div className="stats-grid">
                   <div className="stat-card">
-                    <h4 className="stat-title">Total Markings Count</h4>
+                    <h4 className="stat-title">Total Codings Count</h4>
                     <div className="stat-list">
                       {Object.entries(counts).map(([key, num]) => (
                         <div key={key} className="stat-item">
@@ -1068,7 +1103,7 @@ export default function ComparePage() {
 
                   {selectionCounts && (
                     <div className="stat-card">
-                      <h4 className="stat-title">Selection Markings Count</h4>
+                      <h4 className="stat-title">Selection Codings Count</h4>
                       <div className="stat-list">
                         {Object.entries(selectionCounts).map(([key, num]) => (
                           <div key={key} className="stat-item">

@@ -6,29 +6,29 @@ export const fetchColorsFromServer = async () => {
     method: "GET",
     credentials: "include",
   });
-  if (!res.ok) throw new Error("שגיאה בקבלת צבעים");
+  if (!res.ok) throw new Error("Error fetching colors");
   return await res.json();
 };
 
-export const addColorToServer = async (name, code) => {
-  if (!name || !code) {
-    return { success: false, message: "נא לבחור צבע" };
-  }
+export const createColorOnServer = async (code, name) => {
   const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/colors`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ name, code }),
+    body: JSON.stringify({ code, name }),
   });
-  if (!res.ok) throw new Error("שגיאה בהוספת צבע");
+  if (!res.ok) throw new Error("Error adding color");
   return await res.json();
 };
 
-export const deleteColorFromServer = async (id) => {
-  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/colors/${id}`, {
-    method: "DELETE",
-    credentials: "include",
-  });
-  if (!res.ok) throw new Error("שגיאה במחיקת צבע");
+export const deleteColorFromServer = async (colorId) => {
+  const res = await fetchWithRoleCheck(
+    `${API_BASE_URL}/api/colors/${colorId}`,
+    {
+      method: "DELETE",
+      credentials: "include",
+    }
+  );
+  if (!res.ok) throw new Error("Error deleting color");
   return await res.json();
 };

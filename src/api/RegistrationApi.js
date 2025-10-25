@@ -29,7 +29,7 @@ export async function register(
 
     return { success: true, message: data.message };
   } catch (err) {
-    return { success: false, message: "שגיאה בחיבור לשרת" };
+    return { success: false, message: "Error connecting to server" };
   }
 }
 
@@ -53,7 +53,7 @@ export async function fetchRegistrationRequests() {
       credentials: "include",
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "שגיאה בשרת");
+    if (!res.ok) throw new Error(data.message || "Server error");
     return data;
   } catch (err) {
     console.error(err);

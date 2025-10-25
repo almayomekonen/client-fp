@@ -32,17 +32,17 @@ export const addTaskForCopy = async ({
       }),
     });
 
-    if (!response.ok) throw new Error("שגיאה ביצירת משימה");
+    if (!response.ok) throw new Error("Error creating task");
 
     return {
       success: true,
-      message: "המשימה התווספה בהצלחה",
+      message: "Task added successfully",
     };
   } catch (err) {
-    console.error("שגיאה בהוספת משימה לעותק:", err);
+    console.error("Error adding task for copy:", err);
     return {
       success: false,
-      message: "שגיאה בהוספת משימה",
+      message: "Error adding task",
     };
   }
 };
@@ -59,7 +59,7 @@ export const createTaskOnServer = async ({
     credentials: "include",
     body: JSON.stringify({ experimentId, copiesId, investigatorId, coderId }),
   });
-  if (!res.ok) throw new Error("שגיאה ביצירת משימה");
+  if (!res.ok) throw new Error("Error creating task");
   return await res.json();
 };
 
@@ -67,7 +67,7 @@ export const fetchTasksFromServer = async () => {
   const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/tasks`, {
     credentials: "include",
   });
-  if (!res.ok) throw new Error("שגיאה בקבלת משימות");
+  if (!res.ok) throw new Error("Error fetching tasks");
   return await res.json();
 };
 
@@ -81,7 +81,7 @@ export const deleteTaskFromServer = async (taskId) => {
       .json()
       .catch(() => ({ message: "Unknown error" }));
     console.error("Delete task failed:", res.status, errorData);
-    throw new Error(errorData.message || "שגיאה במחיקת משימה");
+    throw new Error(errorData.message || "Error deleting task");
   }
   return await res.json();
 };
@@ -94,6 +94,6 @@ export const updateTaskOnServer = async (taskId, updateFields) => {
     body: JSON.stringify(updateFields),
   });
 
-  if (!res.ok) throw new Error("שגיאה בעדכון המשימה");
+  if (!res.ok) throw new Error("Error updating task");
   return await res.json();
 };
