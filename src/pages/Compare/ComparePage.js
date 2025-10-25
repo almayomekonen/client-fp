@@ -3,6 +3,23 @@ import { useParams } from "react-router-dom";
 import { createEditor, Path } from "slate";
 import { Slate, Editable, withReact } from "slate-react";
 import { useNavigate } from "react-router-dom";
+import {
+  FaCodeBranch,
+  FaPalette,
+  FaEraser,
+  FaUnderline,
+  FaBold,
+  FaItalic,
+  FaSave,
+  FaChartBar,
+  FaComment,
+  FaTimes,
+  FaPlus,
+  FaTrash,
+  FaUser,
+  FaCheckCircle,
+  FaTimesCircle,
+} from "react-icons/fa";
 
 import { useEdit } from "../../context/EditContext";
 import { useCopy } from "../../context/CopyContext";
@@ -13,6 +30,8 @@ import { useComparison } from "../../context/ComparisonContext";
 import { useResult } from "../../context/ResultContext";
 import { useColor } from "../../context/ColorContext";
 import { useStyleSetting } from "../../context/StyleSettingContext";
+import { useSocket } from "../../context/SocketContext";
+import "../../styles/Dashboard.css";
 
 export default function ComparePage() {
   const { statementId } = useParams();
@@ -46,6 +65,7 @@ export default function ComparePage() {
   const { currentUser, users } = useData();
   const { getColors } = useColor(); // מוסיפים את הפונקציה הזו מה־ColorContext
   const { getStyleSetting } = useStyleSetting();
+  const { socket } = useSocket();
 
   const { addComment, deleteComment, fetchCommentsByCopyId } = useComment();
 
@@ -116,6 +136,34 @@ export default function ComparePage() {
 
     return () => clearInterval(pollInterval);
   }, [copyA, copyB, isCompared, navigate, checkComparisonExists]);
+
+  // Real-time listener for comparison cancellation (instant notification via Socket.io)
+  useEffect(() => {
+    if (!socket || !copyA || !copyB) return;
+
+    const handleComparisonCancelled = (data) => {
+      const { copyId1, copyId2, message } = data;
+
+      // Check if this is the comparison being viewed
+      const isViewingCancelledComparison =
+        (copyA._id === copyId1 && copyB._id === copyId2) ||
+        (copyA._id === copyId2 && copyB._id === copyId1);
+
+      if (isViewingCancelledComparison) {
+        console.log("🔔 Comparison cancelled event received");
+        alert(
+          message || "This comparison has been cancelled by the researcher."
+        );
+        navigate("/coderHome");
+      }
+    };
+
+    socket.on("comparisonCancelled", handleComparisonCancelled);
+
+    return () => {
+      socket.off("comparisonCancelled", handleComparisonCancelled);
+    };
+  }, [socket, copyA, copyB, navigate]);
 
   useEffect(() => {
     if (!currentUser) {
@@ -652,90 +700,152 @@ export default function ComparePage() {
     }
   };
 
-  if (!valueA || !valueB || !statement) return <div>Loading texts...</div>;
+  if (!valueA || !valueB || !statement) {
+    return (
+      <div className="dashboard-container">
+        <div className="dashboard-loading">
+          <div className="loading-spinner"></div>
+          <p>Loading comparison...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ direction: "rtl", padding: 20 }}>
-      <h2>Edit and Compare Two Copies</h2>
-      <div style={{ marginTop: 20 }}>
-        <button onClick={handleToggleComparison}>
-          {isCompared
-            ? "Cancel comparison between copies"
-            : "Confirm that copies are compared against each other"}
-        </button>
+    <div className="dashboard-container">
+      {/* Header */}
+      <div className="dashboard-header">
+        <div>
+          <h1 className="dashboard-title">
+            <FaCodeBranch /> Compare Copies
+          </h1>
+          <p className="dashboard-subtitle">
+            Edit and compare two coding copies
+          </p>
+        </div>
       </div>
 
-      <div>
-        <label>Select copy for editor A:</label>
-        <select
-          value={copyA?._id || ""}
-          onChange={(e) => handleCopySelection("A", e.target.value)}
-        >
-          {!copyA && <option value="">--Select copy--</option>}
-          {copyA && (
-            <option value={copyA._id}>
-              {users.find((user) => user._id === copyA.coderId)?.username ||
-                copyA.coderId}
-            </option>
-          )}
-          {copies
-            .filter(
-              (copy) =>
-                copy.status === "completed" &&
-                copy._id !== copyA?._id &&
-                copy._id !== copyB?._id
-            )
-            .map((copy) => (
-              <option key={copy._id} value={copy._id}>
-                {users.find((user) => user._id === copy.coderId)?.username ||
-                  copy.coderId}
-              </option>
-            ))}
-        </select>
+      {/* Comparison Control */}
+      <div className="dashboard-card" style={{ marginBottom: "20px" }}>
+        <div className="card-header">
+          <h3 className="card-title">
+            <FaCodeBranch /> Comparison Control
+          </h3>
+        </div>
+        <div className="card-body">
+          <button
+            onClick={handleToggleComparison}
+            className={`dashboard-btn ${
+              isCompared ? "dashboard-btn-danger" : "dashboard-btn-primary"
+            }`}
+            style={{ width: "100%" }}
+          >
+            {isCompared ? (
+              <>
+                <FaTimesCircle /> Cancel Comparison
+              </>
+            ) : (
+              <>
+                <FaCheckCircle /> Activate Comparison
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
-      <div>
-        <label>Select copy for editor B:</label>
-        <select
-          value={copyB?._id || ""}
-          onChange={(e) => handleCopySelection("B", e.target.value)}
-        >
-          {!copyB && <option value="">--Select copy--</option>}
-          {copyB && (
-            <option value={copyB._id}>
-              {users.find((user) => user._id === copyB.coderId)?.username ||
-                copyB.coderId}
-            </option>
-          )}
-          {copies
-            .filter(
-              (copy) =>
-                copy.status === "completed" &&
-                copy._id !== copyB?._id &&
-                copy._id !== copyA?._id
-            )
-            .map((copy) => (
-              <option key={copy._id} value={copy._id}>
-                {users.find((user) => user._id === copy.coderId)?.username ||
-                  copy.coderId}
-              </option>
-            ))}
-        </select>
+      {/* Copy Selection */}
+      <div className="comparison-container" style={{ marginBottom: "20px" }}>
+        <div className="coding-block dashboard-card">
+          <div className="card-header">
+            <h3 className="card-title">
+              <FaUser /> Coding A
+            </h3>
+          </div>
+          <div className="card-body">
+            <label className="form-label">Select Coder:</label>
+            <select
+              value={copyA?._id || ""}
+              onChange={(e) => handleCopySelection("A", e.target.value)}
+              className="form-select"
+            >
+              {!copyA && <option value="">--Select copy--</option>}
+              {copyA && (
+                <option value={copyA._id}>
+                  {users.find((user) => user._id === copyA.coderId)?.username ||
+                    copyA.coderId}
+                </option>
+              )}
+              {copies
+                .filter(
+                  (copy) =>
+                    copy.status === "completed" &&
+                    copy._id !== copyA?._id &&
+                    copy._id !== copyB?._id
+                )
+                .map((copy) => (
+                  <option key={copy._id} value={copy._id}>
+                    {users.find((user) => user._id === copy.coderId)
+                      ?.username || copy.coderId}
+                  </option>
+                ))}
+            </select>
+            <button
+              onClick={handleCompareSelectionA}
+              className="dashboard-btn dashboard-btn-secondary"
+              style={{ marginTop: "10px", width: "100%" }}
+            >
+              <FaChartBar /> Compare Selected Range
+            </button>
+          </div>
+        </div>
+
+        <div className="coding-block dashboard-card">
+          <div className="card-header">
+            <h3 className="card-title">
+              <FaUser /> Coding B
+            </h3>
+          </div>
+          <div className="card-body">
+            <label className="form-label">Select Coder:</label>
+            <select
+              value={copyB?._id || ""}
+              onChange={(e) => handleCopySelection("B", e.target.value)}
+              className="form-select"
+            >
+              {!copyB && <option value="">--Select copy--</option>}
+              {copyB && (
+                <option value={copyB._id}>
+                  {users.find((user) => user._id === copyB.coderId)?.username ||
+                    copyB.coderId}
+                </option>
+              )}
+              {copies
+                .filter(
+                  (copy) =>
+                    copy.status === "completed" &&
+                    copy._id !== copyB?._id &&
+                    copy._id !== copyA?._id
+                )
+                .map((copy) => (
+                  <option key={copy._id} value={copy._id}>
+                    {users.find((user) => user._id === copy.coderId)
+                      ?.username || copy.coderId}
+                  </option>
+                ))}
+            </select>
+            <button
+              onClick={handleCompareSelectionB}
+              className="dashboard-btn dashboard-btn-secondary"
+              style={{ marginTop: "10px", width: "100%" }}
+            >
+              <FaChartBar /> Compare Selected Range
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div style={{ marginBottom: "20px" }}>
-        <button onClick={handleCompareSelectionA}>
-          Compare selected range in editor A
-        </button>
-      </div>
-
-      <div style={{ marginBottom: "20px" }}>
-        <button onClick={handleCompareSelectionB}>
-          Compare selected range in editor B
-        </button>
-      </div>
-
-      <div style={{ display: "flex", gap: "40px" }}>
+      {/* Comparison Container - Side by Side */}
+      <div className="comparison-container">
         {[
           {
             name: "A",
@@ -804,263 +914,293 @@ export default function ComparePage() {
             selectionWordCounts,
             setSelectionWordCounts,
           }) => (
-            <div key={name} style={{ flex: 1 }}>
-              <h3>Copy {name}</h3>
+            <div key={name} className="coding-block dashboard-card">
+              <div className="card-header">
+                <h3 className="card-title">
+                  <FaUser /> Coding {name} -{" "}
+                  {users.find((user) => user._id === copy?.coderId)?.username ||
+                    "Unknown"}
+                </h3>
+              </div>
 
               {currentUser?._id === copy?.coderId && (
-                <>
-                  <div
-                    style={{
-                      marginBottom: 10,
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: 5,
-                    }}
-                  >
-                    {colors.map((color) => (
-                      <button
-                        key={color._id}
-                        onClick={() => markColor(editor, color.code)}
-                        style={{
-                          backgroundColor: color.code,
-                          border: "1px solid #666",
-                          width: 24,
-                          height: 24,
-                        }}
-                        title={color.name}
-                      />
-                    ))}
-                    <button onClick={() => removeFormatting(editor)}>
-                      Remove all marking
-                    </button>
-                    {styleSettings.underlineEnabled && (
-                      <button
-                        onClick={() => markUnderline(editor)}
-                        style={{ marginRight: 5 }}
-                      >
-                        Underline
-                      </button>
-                    )}{" "}
-                    {styleSettings.boldEnabled && (
-                      <button onClick={() => markBold(editor)}>Bold</button>
-                    )}
-                    {styleSettings.italicEnabled && (
-                      <button onClick={() => markItalic(editor)}>Italic</button>
-                    )}
-                  </div>
-
-                  <button
-                    onClick={() => handleSave(editor, copy, value, setCounts)}
-                    style={{ marginTop: 10 }}
-                  >
-                    Save changes
-                  </button>
-                </>
-              )}
-
-              <Slate
-                key={`slate-${name}-${copy?._id}-${diffKey}-${commentKey}`}
-                editor={editor}
-                initialValue={value}
-                value={value}
-                onChange={setValue}
-              >
-                <Editable
-                  renderLeaf={getRenderLeaf(setActiveComment)}
-                  placeholder={`Copy ${name}`}
-                  readOnly={true}
-                  style={{
-                    minHeight: 300,
-                    border: "1px solid #ccc",
-                    padding: 10,
-                  }}
-                />
-              </Slate>
-
-              <button
-                onClick={() =>
-                  calculateSelectionCounts(editor, setSelectionCounts)
-                }
-              >
-                Show markings in selected text
-              </button>
-              <button
-                onClick={() =>
-                  setSelectionWordCounts(
-                    calculateWordCountsForSelection(editor, value)
-                  )
-                }
-              >
-                Show words in selected text
-              </button>
-
-              <div style={{ marginTop: 20 }}>
-                <h4>Overall marking count:</h4>
-                {Object.entries(counts).map(([key, num]) => (
-                  <div
-                    key={key}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      marginBottom: 4,
-                    }}
-                  >
-                    {renderKeyLabel(key, num)}
-                  </div>
-                ))}
-              </div>
-
-              <div style={{ marginTop: 20 }}>
-                <h4>Word count in entire text:</h4>
-                {Object.entries(name === "A" ? wordCountsA : wordCountsB).map(
-                  ([key, num]) => (
-                    <div
-                      key={key}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        marginBottom: 4,
-                      }}
-                    >
-                      {renderKeyLabel(key, num)}
-                    </div>
-                  )
-                )}
-              </div>
-
-              {selectionCounts && (
-                <div style={{ marginTop: 20 }}>
-                  <h4>Marking count in selected text:</h4>
-                  {Object.entries(selectionCounts).map(([key, num]) => (
-                    <div
-                      key={key}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        marginBottom: 4,
-                      }}
-                    >
-                      {renderKeyLabel(key, num)}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {selectionWordCounts && (
-                <div style={{ marginTop: 20 }}>
-                  <h4>Word count in selected range:</h4>
-                  {Object.entries(selectionWordCounts).map(([key, num]) => (
-                    <div
-                      key={key}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        marginBottom: 4,
-                      }}
-                    >
-                      {renderKeyLabel(key, num)}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div style={{ marginTop: 20 }}>
-                <h4>Add comment:</h4>
-                {!showInput && (
-                  <button onClick={() => setShowInput(true)}>
-                    Open comment input box
-                  </button>
-                )}
-                {showInput && (
-                  <div>
-                    <textarea
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="Write comment"
-                      style={{ width: "100%", height: 80 }}
-                    />
-                    <div style={{ marginTop: 10 }}>
-                      <button
-                        onClick={() => {
-                          handleAddComment(
-                            editor,
-                            value,
-                            setNewComment,
-                            localComments,
-                            setLocalComments,
-                            setValue,
-                            copy._id,
-                            statement,
-                            name === "A" ? setCommentKeyA : setCommentKeyB,
-                            newComment
-                          );
-                          setShowInput(false);
-                        }}
-                      >
-                        Save comment
-                      </button>
-                      <button onClick={() => setShowInput(false)}>
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {activeComment && (
                 <div
-                  style={{
-                    position: "fixed",
-                    top: "50%",
-                    left: "50%",
-                    transform: "translate(-50%, -50%)",
-                    backgroundColor: "#fff",
-                    padding: 20,
-                    border: "1px solid #ccc",
-                    zIndex: 1000,
-                    maxWidth: 400,
-                  }}
+                  className="card-body"
+                  style={{ borderBottom: "1px solid #e5e7eb" }}
                 >
-                  <h4>Comments in this area:</h4>
-                  {activeComment.map((c) => (
-                    <div
-                      key={c._id}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        marginBottom: 5,
-                      }}
-                    >
-                      <span>{c.text}</span>
-                      {currentUser?._id === c.userId && (
+                  {/* Highlighting Tools */}
+                  <div className="tool-section">
+                    <h4 className="tool-title">
+                      <FaPalette /> Highlighting Tools
+                    </h4>
+                    <div className="color-palette">
+                      {colors.map((color) => (
                         <button
-                          style={{ backgroundColor: "red", color: "#fff" }}
-                          onClick={() => {
-                            handleRemoveComment(
-                              c._id,
-                              localComments,
-                              setLocalComments,
-                              setValue,
-                              statement,
-                              value,
-                              name === "A" ? setCommentKeyA : setCommentKeyB,
-                              editor,
-                              setActiveComment
-                            );
-                            const updated = localComments.filter(
-                              (cm) => cm._id !== c._id
-                            );
-                            if (updated.length === 0) setActiveComment(null);
-                          }}
+                          key={color._id}
+                          onClick={() => markColor(editor, color.code)}
+                          className="color-btn"
+                          style={{ backgroundColor: color.code }}
+                          title={color.name}
+                        />
+                      ))}
+                    </div>
+                    <div className="tool-buttons">
+                      <button
+                        onClick={() => removeFormatting(editor)}
+                        className="tool-btn"
+                      >
+                        <FaEraser /> Remove All Markings
+                      </button>
+                      {styleSettings.underlineEnabled && (
+                        <button
+                          onClick={() => markUnderline(editor)}
+                          className="tool-btn"
                         >
-                          Delete
+                          <FaUnderline /> Underline
+                        </button>
+                      )}
+                      {styleSettings.boldEnabled && (
+                        <button
+                          onClick={() => markBold(editor)}
+                          className="tool-btn"
+                        >
+                          <FaBold /> Bold
+                        </button>
+                      )}
+                      {styleSettings.italicEnabled && (
+                        <button
+                          onClick={() => markItalic(editor)}
+                          className="tool-btn"
+                        >
+                          <FaItalic /> Italic
                         </button>
                       )}
                     </div>
-                  ))}
+                    <button
+                      onClick={() => handleSave(editor, copy, value, setCounts)}
+                      className="dashboard-btn dashboard-btn-primary"
+                      style={{ width: "100%" }}
+                    >
+                      <FaSave /> Save Changes
+                    </button>
+                  </div>
+                </div>
+              )}
 
-                  <button onClick={() => setActiveComment(null)}>Close</button>
+              <div className="card-body">
+                <Slate
+                  key={`slate-${name}-${copy?._id}-${diffKey}-${commentKey}`}
+                  editor={editor}
+                  initialValue={value}
+                  value={value}
+                  onChange={setValue}
+                >
+                  <Editable
+                    renderLeaf={getRenderLeaf(setActiveComment)}
+                    placeholder={`Coding ${name}`}
+                    readOnly={currentUser?._id !== copy?.coderId}
+                    className="slate-editor"
+                    style={{
+                      minHeight: "400px",
+                      maxHeight: "600px",
+                      overflowY: "auto",
+                    }}
+                  />
+                </Slate>
+              </div>
+
+              <div
+                className="card-body"
+                style={{ borderTop: "1px solid #e5e7eb" }}
+              >
+                {/* Analysis Tools */}
+                <div className="tool-section">
+                  <h4 className="tool-title">
+                    <FaChartBar /> Analysis Tools
+                  </h4>
+                  <div className="tool-buttons">
+                    <button
+                      onClick={() =>
+                        calculateSelectionCounts(editor, setSelectionCounts)
+                      }
+                      className="tool-btn"
+                    >
+                      <FaChartBar /> Show Markings in Selected Text
+                    </button>
+                    <button
+                      onClick={() =>
+                        setSelectionWordCounts(
+                          calculateWordCountsForSelection(editor, value)
+                        )
+                      }
+                      className="tool-btn"
+                    >
+                      <FaChartBar /> Show Words in Selected Text
+                    </button>
+                  </div>
+                </div>
+
+                {/* Statistics */}
+                <div className="stats-grid">
+                  <div className="stat-card">
+                    <h4 className="stat-title">Total Markings Count</h4>
+                    <div className="stat-list">
+                      {Object.entries(counts).map(([key, num]) => (
+                        <div key={key} className="stat-item">
+                          {renderKeyLabel(key, num)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="stat-card">
+                    <h4 className="stat-title">Total Word Count</h4>
+                    <div className="stat-list">
+                      {Object.entries(
+                        name === "A" ? wordCountsA : wordCountsB
+                      ).map(([key, num]) => (
+                        <div key={key} className="stat-item">
+                          {renderKeyLabel(key, num)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {selectionCounts && (
+                    <div className="stat-card">
+                      <h4 className="stat-title">Selection Markings Count</h4>
+                      <div className="stat-list">
+                        {Object.entries(selectionCounts).map(([key, num]) => (
+                          <div key={key} className="stat-item">
+                            {renderKeyLabel(key, num)}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectionWordCounts && (
+                    <div className="stat-card">
+                      <h4 className="stat-title">Selection Word Count</h4>
+                      <div className="stat-list">
+                        {Object.entries(selectionWordCounts).map(
+                          ([key, num]) => (
+                            <div key={key} className="stat-item">
+                              {renderKeyLabel(key, num)}
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Comments Section */}
+                <div className="tool-section">
+                  <h4 className="tool-title">
+                    <FaComment /> Comments
+                  </h4>
+                  {!showInput && (
+                    <button
+                      onClick={() => setShowInput(true)}
+                      className="dashboard-btn dashboard-btn-secondary"
+                      style={{ width: "100%" }}
+                    >
+                      <FaPlus /> Add Comment
+                    </button>
+                  )}
+                  {showInput && (
+                    <div className="comment-input-section">
+                      <textarea
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        placeholder="Write your comment here..."
+                        className="comment-textarea"
+                      />
+                      <div className="comment-actions">
+                        <button
+                          onClick={() => {
+                            handleAddComment(
+                              editor,
+                              value,
+                              setNewComment,
+                              localComments,
+                              setLocalComments,
+                              setValue,
+                              copy._id,
+                              statement,
+                              name === "A" ? setCommentKeyA : setCommentKeyB,
+                              newComment
+                            );
+                            setShowInput(false);
+                          }}
+                          className="dashboard-btn dashboard-btn-primary"
+                        >
+                          <FaPlus /> Save Comment
+                        </button>
+                        <button
+                          onClick={() => setShowInput(false)}
+                          className="dashboard-btn dashboard-btn-secondary"
+                        >
+                          <FaTimes /> Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {activeComment && (
+                <div className="comment-modal-overlay">
+                  <div className="comment-modal">
+                    <div className="comment-modal-header">
+                      <h4 className="comment-modal-title">
+                        <FaComment /> Comments
+                      </h4>
+                      <button
+                        onClick={() => setActiveComment(null)}
+                        className="comment-modal-close"
+                      >
+                        <FaTimes />
+                      </button>
+                    </div>
+                    <div className="comment-modal-body">
+                      {activeComment.map((c) => (
+                        <div key={c._id} className="comment-item">
+                          <div className="comment-text">{c.text}</div>
+                          {currentUser?._id === c.userId && (
+                            <button
+                              onClick={() => {
+                                if (window.confirm("Delete this comment?")) {
+                                  handleRemoveComment(
+                                    c._id,
+                                    localComments,
+                                    setLocalComments,
+                                    setValue,
+                                    statement,
+                                    value,
+                                    name === "A"
+                                      ? setCommentKeyA
+                                      : setCommentKeyB,
+                                    editor,
+                                    setActiveComment
+                                  );
+                                  const updated = localComments.filter(
+                                    (cm) => cm._id !== c._id
+                                  );
+                                  if (updated.length === 0)
+                                    setActiveComment(null);
+                                }
+                              }}
+                              className="comment-delete-btn"
+                            >
+                              <FaTrash />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

@@ -18,6 +18,7 @@
     "slate": "^0.114.0",
     "slate-history": "^0.113.1",
     "slate-react": "^0.114.2",
+    "socket.io-client": "^4.8.1",
     "uuid": "^11.1.0",
     "web-vitals": "^2.1.4"
   },

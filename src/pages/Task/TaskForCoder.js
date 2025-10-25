@@ -6,6 +6,20 @@ import { useTask } from "../../context/TaskContext";
 import { useStatement } from "../../context/StatementContext";
 import { useExperiment } from "../../context/ExperimentContext";
 import { useTaskMessage } from "../../context/TaskMessageContext";
+import {
+  FaTasks,
+  FaMicroscope,
+  FaUser,
+  FaChartLine,
+  FaComments,
+  FaFileAlt,
+  FaCheckCircle,
+  FaClock,
+  FaEnvelope,
+  FaChevronDown,
+  FaChevronRight,
+} from "react-icons/fa";
+import "./TaskManagement.css";
 
 export default function TaskForCoder() {
   const { users, currentUser, isAuthChecked } = useData();
@@ -129,15 +143,9 @@ export default function TaskForCoder() {
 
   if (!isAuthChecked) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
-        <div>Loading...</div>
+      <div className="task-loading">
+        <div className="task-loading-spinner"></div>
+        <div className="task-loading-text">Loading...</div>
       </div>
     );
   }
@@ -147,77 +155,152 @@ export default function TaskForCoder() {
   const renderCopies = (taskId) => {
     const taskCopies = copiesByTaskId(taskId);
     return (
-      <ul className="ml-6 mt-2 list-disc">
-        {taskCopies.map((copy) => (
-          <li key={copy._id}>
-            Statement {statementsCache[copy.statementId]?.name || "Loading..."}{" "}
-            - Status: {copy.status}
-          </li>
-        ))}
+      <ul className="task-copies-list">
+        {taskCopies.map((copy) => {
+          const statement = statementsCache[copy.statementId];
+          const isCompleted = copy.status === "completed";
+
+          return (
+            <li key={copy._id} className="task-copy-item">
+              <div className="task-copy-info">
+                <FaFileAlt className="task-copy-icon" />
+                <span className="task-copy-name">
+                  {statement?.name || "Loading..."}
+                </span>
+              </div>
+              <span
+                className={`task-copy-status ${
+                  isCompleted ? "status-completed" : "status-in-progress"
+                }`}
+              >
+                {isCompleted ? (
+                  <>
+                    <FaCheckCircle /> Completed
+                  </>
+                ) : (
+                  <>
+                    <FaClock /> In Progress
+                  </>
+                )}
+              </span>
+            </li>
+          );
+        })}
       </ul>
     );
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">My Tasks</h2>
-      {researcherTasks.length === 0 && <p>You don't have any tasks yet.</p>}
-      <ul className="space-y-4">
-        {researcherTasks.map((task) => (
-          <li
-            key={task._id}
-            className="border rounded-xl p-4 shadow-md bg-white"
-          >
-            <div className="flex justify-between items-center">
+    <div className="task-management-container">
+      {/* Header */}
+      <div className="task-header">
+        <h1 className="task-title">
+          <FaTasks />
+          Tasks of '{currentUser?.username}'
+        </h1>
+        <p className="task-subtitle">
+          <FaUser style={{ marginRight: "8px" }} />
+          Your assigned coding tasks
+        </p>
+      </div>
+
+      {/* Empty State */}
+      {researcherTasks.length === 0 && (
+        <div className="task-empty-state">
+          📋 You don't have any tasks assigned yet.
+        </div>
+      )}
+
+      {/* Tasks List */}
+      <div className="task-list">
+        {researcherTasks.map((task) => {
+          const isExpanded = selectedTaskId === task._id;
+          const progress = taskProgress(task._id);
+          const expPercent = experimentPercentMap[task._id] ?? 0;
+          const unreadCount = getUnreadCount(task._id, currentUser._id);
+
+          return (
+            <div key={task._id} className="task-card">
+              {/* Task Header */}
               <div
-                className="cursor-pointer"
-                onClick={() =>
-                  setSelectedTaskId(
-                    selectedTaskId === task._id ? null : task._id
-                  )
-                }
+                className="task-card-header"
+                onClick={() => setSelectedTaskId(isExpanded ? null : task._id)}
               >
-                <p>
-                  <strong>Experiment:</strong>{" "}
-                  {experimentNames[task.experimentId] || "Loading..."}
-                </p>
-                <p>
-                  <strong>Researcher:</strong>{" "}
-                  {getInvestigatorName(task.investigatorId)}
-                </p>
-                <p>
-                  <strong>Experiment Completion:</strong>{" "}
-                  {experimentPercentMap[task._id] ?? 0}%
-                </p>
-                <p>
-                  <strong>Progress:</strong> {taskProgress(task._id)}%
-                </p>
-                <p>
-                  <strong>Unread Messages:</strong>{" "}
-                  {getUnreadCount(task._id, currentUser._id)}
-                </p>
+                <div className="task-info">
+                  <div className="task-experiment">
+                    <FaMicroscope />
+                    {experimentNames[task.experimentId] || "Loading..."}
+                  </div>
+                  <div className="task-meta">
+                    <span className="task-meta-item">
+                      <FaUser />
+                      Researcher: {getInvestigatorName(task.investigatorId)}
+                    </span>
+                  </div>
+                </div>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "12px" }}
+                >
+                  {unreadCount > 0 && (
+                    <span className="task-badge badge-unread">
+                      <FaEnvelope /> {unreadCount}
+                    </span>
+                  )}
+                  {isExpanded ? <FaChevronDown /> : <FaChevronRight />}
+                </div>
               </div>
+
+              {/* Progress Bar */}
+              <div className="task-progress">
+                <div className="progress-label">
+                  <span>
+                    <FaChartLine /> Task Progress: {progress}%
+                  </span>
+                  <span>Experiment: {expPercent}%</span>
+                </div>
+                <div className="progress-bar-container">
+                  <div
+                    className="progress-bar-fill"
+                    style={{ width: `${progress}%` }}
+                  >
+                    {progress > 10 && `${progress}%`}
+                  </div>
+                </div>
+              </div>
+
+              {/* Expanded Details */}
+              {isExpanded && (
+                <>
+                  {/* Copies List */}
+                  {renderCopies(task._id)}
+
+                  {/* Actions */}
+                  <div className="task-details-actions">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/task-chat/${task._id}`);
+                      }}
+                      className="task-btn task-btn-chat"
+                    >
+                      <FaComments /> Go to Chat
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/task-summary/${task._id}`);
+                      }}
+                      className="task-btn task-btn-summary"
+                    >
+                      <FaFileAlt /> Task Summary
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
-            {selectedTaskId === task._id && (
-              <>
-                {renderCopies(task._id)}
-                <button
-                  onClick={() => navigate(`/task-chat/${task._id}`)}
-                  className="text-blue-600 underline text-sm ml-4"
-                >
-                  Go to Chat
-                </button>
-                <button
-                  onClick={() => navigate(`/task-summary/${task._id}`)}
-                  className="text-green-600 underline text-sm"
-                >
-                  Task Summary
-                </button>
-              </>
-            )}
-          </li>
-        ))}
-      </ul>
+          );
+        })}
+      </div>
     </div>
   );
 }

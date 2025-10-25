@@ -529,3 +529,30 @@
     font-size: 28px;
   }
 }
+
+/* Comparison Layout - Side by Side */
+.comparison-container {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.coding-block {
+  flex: 1;
+  min-width: 400px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* On mobile, stack vertically */
+@media (max-width: 768px) {
+  .comparison-container {
+    flex-direction: column;
+  }
+
+  .coding-block {
+    min-width: 100%;
+    width: 100%;
+  }
+}

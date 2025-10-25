@@ -152,6 +152,13 @@ export default function TaskManagementPage() {
     users.find((u) => u._id === coderId)?.username || "User not found";
 
   const handleDeleteTask = async (taskId) => {
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this task? This action cannot be undone."
+      )
+    ) {
+      return;
+    }
     await deleteTask(taskId);
   };
 

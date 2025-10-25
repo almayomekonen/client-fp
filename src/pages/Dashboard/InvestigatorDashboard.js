@@ -136,10 +136,19 @@ export default function InvestigatorHomePage() {
 
   if (!currentUser) return null;
 
-  // --- CRUD Functions ---
   const handleCreateExperiment = async (e) => {
     e.preventDefault();
     if (!expName.trim()) return alert("Please enter an experiment name");
+
+    const duplicateExp = relevantExperiments.find(
+      (exp) => exp.name.toLowerCase() === expName.trim().toLowerCase()
+    );
+
+    if (duplicateExp) {
+      return alert(
+        "Experiment name already exists. Please choose a different name."
+      );
+    }
 
     const newExp = await addExperiment(expName, expDesc, currentUser._id);
     if (newExp) setRelevantExperiments((prev) => [...prev, newExp]);
@@ -163,6 +172,17 @@ export default function InvestigatorHomePage() {
   const handleCreateGroup = async (e, experimentId) => {
     e.preventDefault();
     if (!groupName.trim()) return alert("Please enter a group name");
+
+    const duplicateGroup = groups.find(
+      (g) => g.name.toLowerCase() === groupName.trim().toLowerCase()
+    );
+
+    if (duplicateGroup) {
+      return alert(
+        "Group name already exists in this experiment. Please choose a different name."
+      );
+    }
+
     const newGroup = await addGroup(experimentId, groupName, groupDesc);
     if (newGroup) setGroups((prev) => [...prev, newGroup]);
     setGroupName("");
@@ -181,6 +201,16 @@ export default function InvestigatorHomePage() {
     e.preventDefault();
     if (!statementName.trim() || !statementText.trim())
       return alert("Please fill in all fields");
+
+    const duplicateStatement = statements.find(
+      (stmt) => stmt.name.toLowerCase() === statementName.trim().toLowerCase()
+    );
+
+    if (duplicateStatement) {
+      return alert(
+        "Statement name already exists in this group. Please choose a different name."
+      );
+    }
 
     const newStatement = await addStatement(
       statementName,
