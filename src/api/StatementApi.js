@@ -9,7 +9,7 @@ export const createStatementOnServer = async ({
   experimentId,
 }) => {
   if (!name || !text) {
-    return { success: false, message: "נא למלא את כל שדות החובה" };
+    return { success: false, message: "Please fill in all required fields" };
   }
 
   const slateText = [
@@ -26,7 +26,7 @@ export const createStatementOnServer = async ({
     body: JSON.stringify({ name, slateText, groupId, experimentId }),
   });
 
-  if (!res.ok) throw new Error("שגיאה ביצירת הצהרה");
+  if (!res.ok) throw new Error("Error creating statement");
   return await res.json();
 };
 
@@ -36,7 +36,7 @@ export const deleteStatementFromServer = async (id) => {
     credentials: "include",
   });
 
-  if (!res.ok) throw new Error("שגיאה במחיקת הצהרה");
+  if (!res.ok) throw new Error("Error deleting statement");
   return await res.json();
 };
 
@@ -44,11 +44,10 @@ export const fetchStatementsFromServer = async () => {
   const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/statements`, {
     credentials: "include",
   });
-  if (!res.ok) throw new Error("שגיאה בקבלת הצהרות");
+  if (!res.ok) throw new Error("Error getting statements");
   return await res.json();
 };
 
-// מחזיר את כל ההצהרות של קבוצה ספציפית
 export const fetchStatementsByGroupId = async (groupId) => {
   const res = await fetchWithRoleCheck(
     `${API_BASE_URL}/api/statements/group/${groupId}`,
@@ -56,11 +55,10 @@ export const fetchStatementsByGroupId = async (groupId) => {
       credentials: "include",
     }
   );
-  if (!res.ok) throw new Error("שגיאה בטעינת הצהרות הקבוצה");
+  if (!res.ok) throw new Error("Error getting statements by group");
   return await res.json();
 };
 
-// מחזיר הצהרה לפי ID
 export const fetchStatementById = async (statementId) => {
   const res = await fetchWithRoleCheck(
     `${API_BASE_URL}/api/statements/${statementId}`,
@@ -68,11 +66,10 @@ export const fetchStatementById = async (statementId) => {
       credentials: "include",
     }
   );
-  if (!res.ok) throw new Error("שגיאה בטעינת הצהרה");
+  if (!res.ok) throw new Error("Error getting statement");
   return await res.json();
 };
 
-// מחזיר את כל ההצהרות של ניסוי ספציפי
 export const fetchStatementsByExperimentId = async (experimentId) => {
   const res = await fetchWithRoleCheck(
     `${API_BASE_URL}/api/statements/experiment/${experimentId}`,
@@ -80,6 +77,6 @@ export const fetchStatementsByExperimentId = async (experimentId) => {
       credentials: "include",
     }
   );
-  if (!res.ok) throw new Error("שגיאה בטעינת הצהרות הניסוי");
+  if (!res.ok) throw new Error("Error getting statements by experiment");
   return await res.json();
 };

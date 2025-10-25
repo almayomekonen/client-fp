@@ -3,6 +3,7 @@ import React, {
   useContext,
   useEffect,
   useCallback,
+  useRef,
 } from "react";
 import { useData } from "./DataContext";
 import { fetchCopiesFromServer } from "../api/CopyApi";
@@ -32,8 +33,8 @@ export function RefreshProvider({ children }) {
       const copies = await fetchCopiesFromServer();
       setCopies(copies);
     } catch (error) {
-      console.error("Error fetching copies:", error);
-      setCopies([]);
+      console.error("❌ Error fetching copies:", error.message || error);
+      // Don't clear data on error - keep existing data
     }
   }, [setCopies]);
 
@@ -42,8 +43,8 @@ export function RefreshProvider({ children }) {
       const tasks = await fetchTasksFromServer();
       setTasks(tasks);
     } catch (error) {
-      console.error("Error fetching tasks:", error);
-      setTasks([]);
+      console.error("❌ Error fetching tasks:", error.message || error);
+      // Don't clear data on error
     }
   }, [setTasks]);
 
@@ -51,9 +52,12 @@ export function RefreshProvider({ children }) {
     try {
       const users = await fetchUsersFromServer();
       setUsers(users);
+      return users;
     } catch (error) {
-      console.error("Error fetching users:", error);
-      setUsers([]);
+      console.error("❌ Error fetching users:", error);
+      // Don't clear the users list on error - keep the old data
+      // This prevents the UI from showing empty while there's an error
+      throw error; // Re-throw so caller knows there was an error
     }
   }, [setUsers]);
 
@@ -62,8 +66,11 @@ export function RefreshProvider({ children }) {
       const registrationRequests = await fetchRegistrationRequests();
       setRegistrationRequests(registrationRequests);
     } catch (error) {
-      console.error("Error fetching registration requests:", error);
-      setRegistrationRequests([]);
+      console.error(
+        "❌ Error fetching registration requests:",
+        error.message || error
+      );
+      // Don't clear data on error
     }
   }, [setRegistrationRequests]);
 
@@ -72,8 +79,8 @@ export function RefreshProvider({ children }) {
       const copyMessages = await fetchCopyMessagesFromServer();
       setCopyMessages(copyMessages);
     } catch (error) {
-      console.error("Error fetching copy messages:", error);
-      setCopyMessages([]);
+      console.error("❌ Error fetching copy messages:", error.message || error);
+      // Don't clear data on error
     }
   }, [setCopyMessages]);
 
@@ -82,31 +89,53 @@ export function RefreshProvider({ children }) {
       const taskMessages = await fetchTaskMessagesFromServer();
       setTaskMessages(taskMessages);
     } catch (error) {
-      console.error("Error fetching task messages:", error);
-      setTaskMessages([]);
+      console.error("❌ Error fetching task messages:", error.message || error);
+      // Don't clear data on error
     }
   }, [setTaskMessages]);
 
+  // Track if data has been loaded to prevent duplicate loads
+  const hasLoadedData = useRef(false);
+  const currentUserId = useRef(null);
+
   useEffect(() => {
     // רק אם האותנטיקציה נבדקה והמשתמש מחובר
-    if (isAuthChecked && currentUser) {
-      refreshCopies();
-      refreshTasks();
-      refreshUsers();
-      refreshRegistrationRequests();
-      refreshCopyMessages();
-      refreshTaskMessages();
+    if (isAuthChecked && currentUser?._id) {
+      // Only load if we haven't loaded for this user yet
+      if (currentUserId.current !== currentUser._id) {
+        currentUserId.current = currentUser._id;
+        hasLoadedData.current = false;
+      }
+
+      if (!hasLoadedData.current) {
+        hasLoadedData.current = true;
+        console.log("🔄 Loading initial data for user:", currentUser._id);
+
+        // Load data sequentially with small delays to avoid overwhelming the server
+        const loadData = async () => {
+          try {
+            await refreshUsers();
+            await refreshCopies();
+            await refreshTasks();
+            await refreshRegistrationRequests();
+            await refreshCopyMessages();
+            await refreshTaskMessages();
+            console.log("✅ Initial data loaded successfully");
+          } catch (err) {
+            console.error("❌ Error loading initial data:", err);
+            hasLoadedData.current = false; // Reset on error so it can retry
+          }
+        };
+        loadData();
+      }
+    } else if (!currentUser) {
+      // Reset when user logs out
+      hasLoadedData.current = false;
+      currentUserId.current = null;
     }
-  }, [
-    isAuthChecked,
-    currentUser,
-    refreshCopies,
-    refreshTasks,
-    refreshUsers,
-    refreshRegistrationRequests,
-    refreshCopyMessages,
-    refreshTaskMessages,
-  ]);
+    // Only run when auth state changes, not when functions change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthChecked, currentUser?._id]);
 
   return (
     <RefreshContext.Provider

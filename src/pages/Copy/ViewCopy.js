@@ -2,12 +2,23 @@ import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { createEditor, Path } from "slate";
 import { Slate, Editable, withReact } from "slate-react";
+import {
+  FaEye,
+  FaChartBar,
+  FaComment,
+  FaTimes,
+  FaPlus,
+  FaTrash,
+  FaSave,
+  FaFileAlt,
+} from "react-icons/fa";
 import { useCopy } from "../../context/CopyContext";
 import { useStatement } from "../../context/StatementContext";
 import { useData } from "../../context/DataContext";
 import { useEdit } from "../../context/EditContext";
 import { useComment } from "../../context/CommentContext";
 import { useResult } from "../../context/ResultContext";
+import "../../styles/Dashboard.css";
 
 export default function ViewStatementWithComments() {
   const { copyId } = useParams();
@@ -154,15 +165,9 @@ export default function ViewStatementWithComments() {
   // Show loading while checking auth
   if (!isAuthChecked) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
-        <div>טוען...</div>
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <div>Loading...</div>
       </div>
     );
   }
@@ -171,8 +176,11 @@ export default function ViewStatementWithComments() {
 
   // Add comment
   const handleAddComment = async () => {
-    if (!editor.selection) return alert("יש לבחור מיקום בטקסט לפני הוספת הערה");
-    if (!newComment) return alert("יש להזין טקסט להערה");
+    if (!editor.selection)
+      return alert(
+        "Please select a location in the text before adding a comment"
+      );
+    if (!newComment) return alert("Please enter text for the comment");
 
     const { anchor } = editor.selection;
     const offset = getGlobalOffsetFromValue(value, anchor.path, anchor.offset);
@@ -231,159 +239,315 @@ export default function ViewStatementWithComments() {
     setActiveComment(null);
   };
 
-  if (!value) return <div>טוען טקסט...</div>;
+  if (!value)
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <div>Loading statement...</div>
+      </div>
+    );
 
   return (
-    <div style={{ padding: 20, direction: "rtl" }}>
-      <h2>צפייה והוספת הערות להצהרה</h2>
-      <button
-        onClick={() => calculateSelectionCounts(editor, setSelectionCounts)}
-        style={{ marginBottom: 10 }}
-      >
-        הצג סימונים בטקסט המסומן
-      </button>
-      <button
-        onClick={() =>
-          setSelectionWordCounts(calculateWordCountsForSelection(editor, value))
-        }
-        style={{ marginBottom: 10, marginInlineStart: 10 }}
-      >
-        הצג מילים בטקסט המסומן
-      </button>
-
-      <Slate
-        key={`slate-${copy?._id}-${commentKey}`}
-        editor={editor}
-        initialValue={value}
-        value={value}
-        onChange={setValue}
-      >
-        <Editable
-          renderLeaf={renderLeaf}
-          readOnly
-          placeholder="אין טקסט"
-          style={{ minHeight: 300, border: "1px solid #ccc", padding: 10 }}
-        />
-      </Slate>
-
-      <div style={{ marginTop: 20 }}>
-        <h4>כמות סימונים כללית:</h4>
-        {Object.entries(counts).map(([key, num]) => (
-          <div
-            key={key}
-            style={{ display: "flex", alignItems: "center", marginBottom: 4 }}
-          >
-            {renderKeyLabel(key, num)}
-          </div>
-        ))}
+    <div className="dashboard-container">
+      {/* Header */}
+      <div className="dashboard-header">
+        <h1 className="dashboard-title">
+          <FaEye />
+          Statement Viewer
+        </h1>
+        <p className="dashboard-subtitle">
+          <FaFileAlt style={{ marginRight: "8px" }} />
+          View coded statement and add comments
+        </p>
       </div>
 
-      <div style={{ marginTop: 20 }}>
-        <h4>ספירת מילים בטקסט כולו:</h4>
-        {Object.entries(wordCounts).map(([key, num]) => (
-          <div
-            key={key}
-            style={{ display: "flex", alignItems: "center", marginBottom: 4 }}
-          >
-            {renderKeyLabel(key, num)}
-          </div>
-        ))}
-      </div>
-
-      {selectionCounts && (
-        <div style={{ marginTop: 20 }}>
-          <h4>כמות סימונים בטקסט המסומן:</h4>
-          {Object.entries(selectionCounts).map(([key, num]) => (
-            <div
-              key={key}
-              style={{ display: "flex", alignItems: "center", marginBottom: 4 }}
-            >
-              {renderKeyLabel(key, num)}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {selectionWordCounts && (
-        <div style={{ marginTop: 20 }}>
-          <h4>ספירת מילים בטקסט המסומן:</h4>
-          {Object.entries(selectionWordCounts).map(([key, num]) => (
-            <div
-              key={key}
-              style={{ display: "flex", alignItems: "center", marginBottom: 4 }}
-            >
-              {renderKeyLabel(key, num)}
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div style={{ marginTop: 20 }}>
-        <h4>הוספת הערה:</h4>
-        {!isAddingComment && (
-          <button onClick={() => setIsAddingComment(true)}>הוסף הערה</button>
-        )}
-        {isAddingComment && (
-          <div>
-            <textarea
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="הוסף הערה כאן"
-              style={{ width: "100%", height: "80px" }}
-            />
-            <div style={{ marginTop: 10 }}>
-              <button onClick={handleAddComment} style={{ marginRight: 5 }}>
-                שמור
+      {/* Main Content Grid */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 400px",
+          gap: "20px",
+        }}
+      >
+        {/* Left Column - Viewer */}
+        <div>
+          {/* Analysis Tools */}
+          <div className="dashboard-card" style={{ marginBottom: "20px" }}>
+            <h3 className="card-title" style={{ marginBottom: "16px" }}>
+              <FaChartBar /> Analysis Tools
+            </h3>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              <button
+                onClick={() =>
+                  calculateSelectionCounts(editor, setSelectionCounts)
+                }
+                className="dashboard-btn btn-secondary btn-sm"
+              >
+                <FaEye /> Show Selection Markings
               </button>
               <button
-                onClick={() => {
-                  setIsAddingComment(false);
-                  setNewComment("");
-                }}
+                onClick={() =>
+                  setSelectionWordCounts(
+                    calculateWordCountsForSelection(editor, value)
+                  )
+                }
+                className="dashboard-btn btn-secondary btn-sm"
               >
-                ביטול
+                <FaChartBar /> Show Selection Words
               </button>
             </div>
           </div>
-        )}
+
+          {/* Viewer Card */}
+          <div className="dashboard-card">
+            <h3 className="card-title" style={{ marginBottom: "16px" }}>
+              <FaFileAlt /> Statement Content
+            </h3>
+            <Slate
+              key={`slate-${copy?._id}-${commentKey}`}
+              editor={editor}
+              initialValue={value}
+              value={value}
+              onChange={setValue}
+            >
+              <Editable
+                renderLeaf={renderLeaf}
+                readOnly
+                placeholder="No text available"
+                style={{
+                  minHeight: "500px",
+                  border: "2px solid #e0e0e0",
+                  borderRadius: "8px",
+                  padding: "20px",
+                  fontSize: "16px",
+                  lineHeight: "1.8",
+                  backgroundColor: "#fafafa",
+                }}
+              />
+            </Slate>
+          </div>
+        </div>
+
+        {/* Right Column - Statistics & Comments */}
+        <div>
+          {/* Total Statistics */}
+          <div className="dashboard-card" style={{ marginBottom: "20px" }}>
+            <h3 className="card-title" style={{ marginBottom: "16px" }}>
+              <FaChartBar /> Total Statistics
+            </h3>
+
+            <div style={{ marginBottom: "20px" }}>
+              <h4
+                style={{
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  marginBottom: "12px",
+                  color: "#666",
+                }}
+              >
+                Markings Count:
+              </h4>
+              {Object.entries(counts).length > 0 ? (
+                Object.entries(counts).map(([key, num]) => (
+                  <div key={key} style={{ marginBottom: "8px" }}>
+                    {renderKeyLabel(key, num)}
+                  </div>
+                ))
+              ) : (
+                <p style={{ color: "#999", fontSize: "14px" }}>
+                  No markings yet
+                </p>
+              )}
+            </div>
+
+            <div>
+              <h4
+                style={{
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  marginBottom: "12px",
+                  color: "#666",
+                }}
+              >
+                Word Count:
+              </h4>
+              {Object.entries(wordCounts).length > 0 ? (
+                Object.entries(wordCounts).map(([key, num]) => (
+                  <div key={key} style={{ marginBottom: "8px" }}>
+                    {renderKeyLabel(key, num)}
+                  </div>
+                ))
+              ) : (
+                <p style={{ color: "#999", fontSize: "14px" }}>
+                  No word counts
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Selection Statistics */}
+          {(selectionCounts || selectionWordCounts) && (
+            <div className="dashboard-card" style={{ marginBottom: "20px" }}>
+              <h3 className="card-title" style={{ marginBottom: "16px" }}>
+                <FaEye /> Selection Statistics
+              </h3>
+
+              {selectionCounts && (
+                <div style={{ marginBottom: "20px" }}>
+                  <h4
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: "600",
+                      marginBottom: "12px",
+                      color: "#666",
+                    }}
+                  >
+                    Markings in Selection:
+                  </h4>
+                  {Object.entries(selectionCounts).map(([key, num]) => (
+                    <div key={key} style={{ marginBottom: "8px" }}>
+                      {renderKeyLabel(key, num)}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {selectionWordCounts && (
+                <div>
+                  <h4
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: "600",
+                      marginBottom: "12px",
+                      color: "#666",
+                    }}
+                  >
+                    Words in Selection:
+                  </h4>
+                  {Object.entries(selectionWordCounts).map(([key, num]) => (
+                    <div key={key} style={{ marginBottom: "8px" }}>
+                      {renderKeyLabel(key, num)}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Comments Section */}
+          <div className="dashboard-card">
+            <h3 className="card-title" style={{ marginBottom: "16px" }}>
+              <FaComment /> Comments
+            </h3>
+
+            {!isAddingComment && (
+              <button
+                onClick={() => setIsAddingComment(true)}
+                className="dashboard-btn btn-primary btn-sm"
+                style={{ width: "100%" }}
+              >
+                <FaPlus /> Add Comment
+              </button>
+            )}
+
+            {isAddingComment && (
+              <div>
+                <textarea
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Select text location and add your comment..."
+                  className="form-textarea"
+                  style={{ marginBottom: "12px", minHeight: "100px" }}
+                />
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button
+                    onClick={handleAddComment}
+                    className="dashboard-btn btn-success btn-sm"
+                    style={{ flex: 1 }}
+                  >
+                    <FaSave /> Save
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsAddingComment(false);
+                      setNewComment("");
+                    }}
+                    className="dashboard-btn btn-secondary btn-sm"
+                    style={{ flex: 1 }}
+                  >
+                    <FaTimes /> Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
+      {/* Comment Modal */}
       {activeComment && (
         <div
           style={{
             position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            backgroundColor: "white",
-            padding: 20,
-            border: "1px solid #ccc",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
             zIndex: 1000,
           }}
+          onClick={() => setActiveComment(null)}
         >
-          <h4>הערות לטקסט הנבחר:</h4>
-          <ul style={{ listStyle: "none", padding: 0 }}>
-            {activeComment.map((c) => (
-              <li key={c._id} style={{ marginBottom: 5 }}>
-                {c.text}
-                {currentUser?._id === c.userId && (
-                  <button
-                    onClick={() => handleRemoveComment(c._id)}
+          <div
+            className="dashboard-card"
+            style={{
+              maxWidth: "500px",
+              width: "90%",
+              maxHeight: "70vh",
+              overflow: "auto",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="card-header">
+              <h3 className="card-title">
+                <FaComment /> Comments
+              </h3>
+              <button
+                onClick={() => setActiveComment(null)}
+                className="dashboard-btn btn-secondary btn-sm"
+              >
+                <FaTimes /> Close
+              </button>
+            </div>
+
+            <ul className="dashboard-list">
+              {activeComment.map((c) => (
+                <li key={c._id} className="list-item">
+                  <div
                     style={{
-                      backgroundColor: "red",
-                      color: "white",
-                      border: "none",
-                      marginInlineStart: 8,
-                      cursor: "pointer",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "start",
                     }}
                   >
-                    מחק
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-          <button onClick={() => setActiveComment(null)}>סגור</button>
+                    <p style={{ margin: 0, flex: 1 }}>{c.text}</p>
+                    {currentUser?._id === c.userId && (
+                      <button
+                        onClick={() => handleRemoveComment(c._id)}
+                        className="dashboard-btn btn-danger btn-sm"
+                        style={{ marginLeft: "12px" }}
+                      >
+                        <FaTrash />
+                      </button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       )}
     </div>

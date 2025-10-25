@@ -6,6 +6,21 @@ import { useStatement } from "../../context/StatementContext";
 import { useCopy } from "../../context/CopyContext";
 import { useExperiment } from "../../context/ExperimentContext";
 import { useTaskMessage } from "../../context/TaskMessageContext";
+import {
+  FaTasks,
+  FaMicroscope,
+  FaUser,
+  FaChartLine,
+  FaComments,
+  FaTrash,
+  FaFileAlt,
+  FaCheckCircle,
+  FaClock,
+  FaEnvelope,
+  FaChevronDown,
+  FaChevronRight,
+} from "react-icons/fa";
+import "./TaskManagement.css";
 
 export default function TaskManagementPage() {
   const { users, tasks, currentUser, isAuthChecked } = useData();
@@ -42,7 +57,8 @@ export default function TaskManagementPage() {
           promises.push(
             experimentById(task.experimentId).then((exp) => {
               if (exp)
-                expNames[task.experimentId] = exp.name || "ניסוי לא נמצא";
+                expNames[task.experimentId] =
+                  exp.name || "Experiment not found";
             })
           );
         }
@@ -60,7 +76,7 @@ export default function TaskManagementPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tasks.length]);
 
-  // --- טעינת הצהרות עבור כל המשימות ---
+  // --- Load statements for all tasks ---
   useEffect(() => {
     const fetchStatementsForTasks = async () => {
       const newCache = {};
@@ -92,7 +108,7 @@ export default function TaskManagementPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tasks.length]);
 
-  // --- חישוב אחוזי ניסוי אסינכרוניים ---
+  // --- Calculate experiment percentages asynchronously ---
   useEffect(() => {
     const fetchPercents = async () => {
       const newMap = {};
@@ -123,15 +139,9 @@ export default function TaskManagementPage() {
 
   if (!isAuthChecked) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
-        <div>טוען...</div>
+      <div className="task-loading">
+        <div className="task-loading-spinner"></div>
+        <div className="task-loading-text">Loading...</div>
       </div>
     );
   }
@@ -139,7 +149,7 @@ export default function TaskManagementPage() {
   if (!currentUser) return null;
 
   const getCoderName = (coderId) =>
-    users.find((u) => u._id === coderId)?.username || "משתמש לא נמצא";
+    users.find((u) => u._id === coderId)?.username || "User not found";
 
   const handleDeleteTask = async (taskId) => {
     await deleteTask(taskId);
@@ -148,11 +158,32 @@ export default function TaskManagementPage() {
   const renderCopies = (taskId) => {
     const taskCopies = copiesByTaskId(taskId);
     return (
-      <ul className="ml-6 mt-2 list-disc">
+      <ul className="task-copies-list">
         {taskCopies.map((copy) => (
-          <li key={copy._id}>
-            הצהרה {statementsCache[copy.statementId]?.name || "טוען..."} -
-            סטטוס: {copy.status}
+          <li key={copy._id} className="task-copy-item">
+            <div className="task-copy-info">
+              <div className="task-copy-icon">
+                <FaFileAlt />
+              </div>
+              <div>
+                <div className="task-copy-name">
+                  {statementsCache[copy.statementId]?.name || "Loading..."}
+                </div>
+              </div>
+            </div>
+            <span
+              className={`task-copy-status ${
+                copy.status === "completed"
+                  ? "status-completed"
+                  : copy.status === "in-progress"
+                  ? "status-in-progress"
+                  : "status-pending"
+              }`}
+            >
+              {copy.status === "completed" && <FaCheckCircle />}
+              {copy.status === "in-progress" && <FaClock />}
+              {copy.status}
+            </span>
           </li>
         ))}
       </ul>
@@ -160,70 +191,116 @@ export default function TaskManagementPage() {
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">ניהול משימות</h2>
-      {tasks.length === 0 && <p>אין משימות להצגה.</p>}
-      <ul className="space-y-4">
-        {tasks.map((task) => (
-          <li
-            key={task._id}
-            className="border rounded-xl p-4 shadow-md bg-white"
-          >
-            <div className="flex justify-between items-center">
-              <div
-                className="cursor-pointer"
-                onClick={() =>
-                  setSelectedTaskId(
-                    selectedTaskId === task._id ? null : task._id
-                  )
-                }
-              >
-                <p>
-                  <strong>ניסוי:</strong>{" "}
-                  {experimentNames[task.experimentId] || "טוען..."}
-                </p>
-                <p>
-                  <strong>מקודד:</strong> {getCoderName(task.coderId)}
-                </p>
-                <p>
-                  <strong>אחוז מהניסוי:</strong>{" "}
-                  {experimentPercentMap[task._id] ?? 0}%
-                </p>
-                <p>
-                  <strong>התקדמות:</strong> {taskProgress(task._id)}%
-                </p>
-                <p>
-                  <strong>הודעות שלא נקראו:</strong>{" "}
-                  {getUnreadCount(task._id, currentUser._id)}
-                </p>
-              </div>
-              <button
-                onClick={() => handleDeleteTask(task._id)}
-                className="text-red-600 underline text-sm ml-4"
-              >
-                מחק משימה
-              </button>
-            </div>
-            {selectedTaskId === task._id && (
-              <>
-                {renderCopies(task._id)}
-                <button
-                  onClick={() => navigate(`/task-chat/${task._id}`)}
-                  className="text-blue-600 underline text-sm ml-4"
-                >
-                  עבור לצ'אט
-                </button>
-                <button
-                  onClick={() => navigate(`/task-summary/${task._id}`)}
-                  className="text-green-600 underline text-sm"
-                >
-                  סיכום משימה
-                </button>
-              </>
-            )}
-          </li>
-        ))}
-      </ul>
+    <div className="task-management-container">
+      <div className="task-header">
+        <h1 className="task-title">
+          <FaTasks /> Task Management
+        </h1>
+        <p className="task-subtitle">View and manage all tasks in the system</p>
+      </div>
+
+      {tasks.length === 0 ? (
+        <div className="task-empty-state">
+          <div className="task-empty-icon">📋</div>
+          <p className="task-empty-text">No tasks to display</p>
+          <p className="task-empty-subtext">
+            Tasks will appear here once they are created
+          </p>
+        </div>
+      ) : (
+        <ul className="task-list">
+          {tasks.map((task) => {
+            const progress = taskProgress(task._id);
+            const unreadCount = getUnreadCount(task._id, currentUser._id);
+            const isExpanded = selectedTaskId === task._id;
+
+            return (
+              <li key={task._id} className="task-card">
+                <div className="task-card-header">
+                  <div
+                    className="task-info"
+                    onClick={() =>
+                      setSelectedTaskId(isExpanded ? null : task._id)
+                    }
+                  >
+                    <div className="task-experiment">
+                      {isExpanded ? <FaChevronDown /> : <FaChevronRight />}
+                      <FaMicroscope />
+                      {experimentNames[task.experimentId] || "Loading..."}
+                    </div>
+
+                    <div className="task-meta">
+                      <div className="task-meta-item">
+                        <FaUser />
+                        <strong>Coder:</strong> {getCoderName(task.coderId)}
+                      </div>
+                      <div className="task-meta-item">
+                        <FaChartLine />
+                        <strong>Experiment %:</strong>{" "}
+                        {experimentPercentMap[task._id] ?? 0}%
+                      </div>
+                      {unreadCount > 0 && (
+                        <div className="task-meta-item">
+                          <FaEnvelope />
+                          <span className="task-badge badge-unread">
+                            {unreadCount} unread
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="task-progress">
+                      <div className="progress-label">
+                        Task Progress: {progress}%
+                      </div>
+                      <div className="progress-bar-container">
+                        <div
+                          className="progress-bar-fill"
+                          style={{ width: `${progress}%` }}
+                        >
+                          {progress > 0 && `${progress}%`}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="task-actions">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteTask(task._id);
+                      }}
+                      className="task-btn task-btn-delete"
+                    >
+                      <FaTrash /> Delete
+                    </button>
+                  </div>
+                </div>
+
+                {isExpanded && (
+                  <div className="task-details">
+                    {renderCopies(task._id)}
+                    <div className="task-details-actions">
+                      <button
+                        onClick={() => navigate(`/task-chat/${task._id}`)}
+                        className="task-btn task-btn-chat"
+                      >
+                        <FaComments /> Go to Chat
+                      </button>
+                      <button
+                        onClick={() => navigate(`/task-summary/${task._id}`)}
+                        className="task-btn task-btn-summary"
+                      >
+                        <FaChartLine /> Task Summary
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }

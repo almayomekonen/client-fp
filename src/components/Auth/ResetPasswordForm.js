@@ -8,7 +8,7 @@ export default function ResetPasswordForm({ onSubmit }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (newPassword !== confirmNewPassword) {
-      alert("הסיסמאות אינן תואמות");
+      alert("Passwords do not match");
       return;
     }
     onSubmit(newPassword);
@@ -21,7 +21,7 @@ export default function ResetPasswordForm({ onSubmit }) {
           type="password"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
-          placeholder="סיסמה חדשה"
+          placeholder="New Password"
           className="auth-input"
           required
         />
@@ -32,14 +32,14 @@ export default function ResetPasswordForm({ onSubmit }) {
           type="password"
           value={confirmNewPassword}
           onChange={(e) => setConfirmNewPassword(e.target.value)}
-          placeholder="אימות סיסמה חדשה"
+          placeholder="Confirm New Password"
           className="auth-input"
           required
         />
       </div>
 
       <button type="submit" className="auth-btn">
-        <FaSave /> שנה סיסמה
+        <FaSave /> Change Password
       </button>
     </form>
   );

@@ -9,7 +9,7 @@ import "../../styles/Auth.css";
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
   const { users } = useData();
-  const { resetPassword } = useUsers(); // ניגשים ל-users כדי למצוא את המייל
+  const { resetPassword } = useUsers(); // Access users to find the email
   const { sendVerificationCode, verifyCode } = useEmailVerification();
 
   const [username, setUsername] = useState("");
@@ -20,20 +20,20 @@ export default function ResetPasswordPage() {
 
   const handleSendCode = async () => {
     if (!username) {
-      setMessage("נא להזין שם משתמש");
+      setMessage("Please enter username");
       return;
     }
 
-    // מוצאים את המייל לפי שם המשתמש
+    // Find email by username
     const user = users.find((u) => u.username === username);
     if (!user) {
-      setMessage("שם משתמש לא קיים");
+      setMessage("Username does not exist");
       return;
     }
     const userEmail = user.email;
     setEmail(userEmail);
 
-    // שולחים את הקוד למייל
+    // Send the code to email
     const result = await sendVerificationCode(userEmail);
     setMessage(result.message);
     if (result.success) {
@@ -43,7 +43,7 @@ export default function ResetPasswordPage() {
 
   const handleVerifyCode = async () => {
     if (!codeFromUser) {
-      setMessage("נא להזין קוד");
+      setMessage("Please enter code");
       return;
     }
 
@@ -57,11 +57,11 @@ export default function ResetPasswordPage() {
   const handlePasswordReset = async (newPassword) => {
     const user = users.find((u) => u.username === username);
     if (!user) {
-      setMessage("משתמש לא נמצא");
+      setMessage("User not found");
       return;
     }
 
-    const result = await resetPassword(user._id, newPassword); // שולח userId
+    const result = await resetPassword(user._id, newPassword); // Send userId
     setMessage(result.message);
     if (result.success) {
       setTimeout(() => navigate("/"), 2000);
@@ -73,8 +73,8 @@ export default function ResetPasswordPage() {
       <div className="auth-card">
         <div className="auth-header">
           <div className="auth-logo">🔑</div>
-          <h1 className="auth-title">שחזור סיסמה</h1>
-          <p className="auth-subtitle">אפס את הסיסמה שלך</p>
+          <h1 className="auth-title">Reset Password</h1>
+          <p className="auth-subtitle">Reset your password</p>
         </div>
 
         {step === "enterUsername" && (
@@ -84,13 +84,13 @@ export default function ResetPasswordPage() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="שם משתמש"
+                placeholder="Username"
                 className="auth-input"
                 required
               />
             </div>
             <button onClick={handleSendCode} className="auth-btn">
-              שלח קוד למייל
+              Send code to email
             </button>
           </div>
         )}
@@ -98,20 +98,20 @@ export default function ResetPasswordPage() {
         {step === "waitingForCode" && (
           <div className="auth-form">
             <div className="auth-message info">
-              נשלח קוד אימות למייל: <strong>{email}</strong>
+              A verification code has been sent to: <strong>{email}</strong>
             </div>
             <div className="auth-form-group">
               <input
                 type="text"
                 value={codeFromUser}
                 onChange={(e) => setCodeFromUser(e.target.value)}
-                placeholder="קוד אימות"
+                placeholder="Verification Code"
                 className="auth-input"
                 required
               />
             </div>
             <button onClick={handleVerifyCode} className="auth-btn">
-              אמת קוד
+              Verify Code
             </button>
           </div>
         )}
@@ -123,9 +123,9 @@ export default function ResetPasswordPage() {
         {message && (
           <div
             className={`auth-message ${
-              message.includes("שגיאה")
+              message.toLowerCase().includes("error")
                 ? "error"
-                : message.includes("בהצלחה")
+                : message.toLowerCase().includes("success")
                 ? "success"
                 : "info"
             }`}
@@ -147,7 +147,7 @@ export default function ResetPasswordPage() {
               textDecoration: "none",
             }}
           >
-            חזרה להתחברות
+            Back to Login
           </button>
         </div>
       </div>

@@ -21,19 +21,20 @@ export default function ManageColors() {
   const [colors, setColors] = useState([]);
   const [styleSettings, setStyleSettings] = useState({});
 
-  // טוען מהשרת
+  // Load from server
   useEffect(() => {
     const loadStyle = async () => {
       try {
         const data = await getStyleSetting();
         setStyleSettings(data);
       } catch (err) {
-        alert("❌ שגיאה בטעינת הגדרות עיצוב");
+        alert("❌ Error loading style settings");
       }
     };
     loadStyle();
   }, []);
-  // טוען צבעים מהשרת כשעולים
+
+  // Load colors from server on mount
   useEffect(() => {
     loadColors();
   }, []);
@@ -43,40 +44,40 @@ export default function ManageColors() {
       const data = await getColors();
       setColors(data);
     } catch (err) {
-      alert("❌ שגיאה בטעינת צבעים");
+      alert("❌ Error loading colors");
     }
   };
 
-  // ➕ הוספת צבע
+  // ➕ Add color
   const handleAddColor = async () => {
     try {
       const newColor = await addColor(pickedColor, pickedColor);
-      setColors([...colors, newColor]); // מוסיף לרשימה המקומית
-      alert(`✅ הצבע ${pickedColor} נוסף בהצלחה!`);
+      setColors([...colors, newColor]); // Add to local list
+      alert(`✅ Color ${pickedColor} added successfully!`);
     } catch (err) {
-      alert("❌ שגיאה בהוספת צבע");
+      alert("❌ Error adding color");
     }
   };
 
-  // ➖ מחיקת צבע
+  // ➖ Delete color
   const handleRemoveColor = async (color) => {
     try {
       await deleteColor(color._id);
       setColors(colors.filter((c) => c._id !== color._id));
-      alert(`🗑️ הצבע ${color.name} הוסר`);
+      alert(`🗑️ Color ${color.name} removed`);
     } catch (err) {
-      alert("❌ שגיאה במחיקת צבע");
+      alert("❌ Error deleting color");
     }
   };
 
-  // ✍️ שינוי אפשרויות עיצוב (עדיין מול DB דרך ה־Context של StyleSetting)
+  // ✍️ Toggle style options (via DB through StyleSetting Context)
   const toggleStyle = async (field) => {
     try {
       const updated = { ...styleSettings, [field]: !styleSettings[field] };
       await updateStyleSetting(updated);
       setStyleSettings(updated);
     } catch (err) {
-      alert("❌ שגיאה בעדכון ההגדרות");
+      alert("❌ Error updating style settings");
     }
   };
 
@@ -84,22 +85,22 @@ export default function ManageColors() {
     <div className="manage-colors-container">
       <div className="manage-colors-header">
         <h1 className="manage-colors-title">
-          <FaPalette /> ניהול צבעים ואפשרויות עיצוב
+          <FaPalette /> Manage Colors and Style Options
         </h1>
         <p className="manage-colors-subtitle">
-          הוספה ומחיקה של צבעים, והגדרת אפשרויות עיצוב למערכת
+          Add and remove colors, and configure style options for the system
         </p>
       </div>
 
-      {/* 🎨 צבעים קיימים */}
+      {/* 🎨 Existing Colors */}
       <div className="colors-section">
         <h3 className="colors-section-title">
-          <FaPalette /> צבעים קיימים
+          <FaPalette /> Existing Colors
         </h3>
         {colors.length === 0 ? (
           <div className="colors-empty-state">
             <div className="colors-empty-icon">🎨</div>
-            <p className="colors-empty-text">אין צבעים במערכת</p>
+            <p className="colors-empty-text">No colors in the system</p>
           </div>
         ) : (
           <div className="colors-grid">
@@ -115,7 +116,7 @@ export default function ManageColors() {
                   onClick={() => handleRemoveColor(color)}
                   className="color-remove-btn"
                 >
-                  <FaTrash /> הסר
+                  <FaTrash /> Remove
                 </button>
               </div>
             ))}
@@ -123,10 +124,10 @@ export default function ManageColors() {
         )}
       </div>
 
-      {/* ➕ הוספת צבע */}
+      {/* ➕ Add New Color */}
       <div className="add-color-section">
         <h3 className="colors-section-title">
-          <FaPlus /> הוסף צבע חדש
+          <FaPlus /> Add New Color
         </h3>
         <div className="color-picker-container">
           <div className="color-picker-wrapper">
@@ -136,14 +137,14 @@ export default function ManageColors() {
             />
           </div>
           <button onClick={handleAddColor} className="add-color-btn">
-            <FaPlus /> הוסף צבע לרשימה
+            <FaPlus /> Add Color to List
           </button>
         </div>
       </div>
 
-      {/* ✍️ אפשרויות עיצוב */}
+      {/* ✍️ Style Options */}
       <div className="style-settings-section">
-        <h3 className="colors-section-title">אפשרויות עיצוב</h3>
+        <h3 className="colors-section-title">Style Options</h3>
         <div className="style-options">
           <label className="style-option">
             <input
@@ -154,7 +155,7 @@ export default function ManageColors() {
             />
             <span className="style-label">
               <FaBold className="style-label-icon" />
-              אפשר בולד (מודגש)
+              Enable Bold
             </span>
           </label>
 
@@ -167,7 +168,7 @@ export default function ManageColors() {
             />
             <span className="style-label">
               <FaItalic className="style-label-icon" />
-              אפשר איטליק (נטוי)
+              Enable Italic
             </span>
           </label>
 
@@ -180,7 +181,7 @@ export default function ManageColors() {
             />
             <span className="style-label">
               <FaUnderline className="style-label-icon" />
-              אפשר קו תחתון
+              Enable Underline
             </span>
           </label>
         </div>

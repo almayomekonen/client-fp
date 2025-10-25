@@ -31,17 +31,17 @@ export default function RequestsApprovalPanel() {
     <div className="dashboard-container">
       <div className="dashboard-header">
         <h1 className="dashboard-title">
-          <FaUsers /> ניהול משתמשים
+          <FaUsers /> User Management
         </h1>
         <p className="dashboard-subtitle">
-          אישור בקשות הרשמה וניהול משתמשים קיימים
+          Approve registration requests and manage existing users
         </p>
       </div>
 
       <div className="dashboard-card">
         <div className="card-header">
           <h2 className="card-title">
-            <FaUserCheck /> בקשות הרשמה ממתינות
+            <FaUserCheck /> Pending Registration Requests
           </h2>
         </div>
         <div className="card-content">
@@ -56,7 +56,7 @@ export default function RequestsApprovalPanel() {
       <div className="dashboard-card">
         <div className="card-header">
           <h2 className="card-title">
-            <FaUserTimes /> ניהול משתמשים קיימים
+            <FaUserTimes /> Manage Existing Users
           </h2>
         </div>
         <div className="card-content">

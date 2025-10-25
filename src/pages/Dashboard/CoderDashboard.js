@@ -7,15 +7,18 @@ import { useExperiment } from "../../context/ExperimentContext";
 import { useCopyMessage } from "../../context/CopyMessageContext";
 import { useComparison } from "../../context/ComparisonContext";
 import {
-  FaEdit,
+  FaUserCircle,
   FaMicroscope,
   FaFileAlt,
-  FaComments,
-  FaEnvelope,
-  FaBalanceScale,
-  FaChartPie,
-  FaCheckCircle,
   FaClock,
+  FaEdit,
+  FaComments,
+  FaCheckCircle,
+  FaRedo,
+  FaCodeBranch,
+  FaChartLine,
+  FaUser,
+  FaEnvelope,
 } from "react-icons/fa";
 import "../../styles/Dashboard.css";
 
@@ -49,7 +52,9 @@ export default function CoderHomePage() {
 
   useEffect(() => {
     const fetchComparisons = async () => {
-      if (!currentUser || !copies || copies.length === 0) return;
+      // Wait for auth check to complete
+      if (!isAuthChecked || !currentUser || !copies || copies.length === 0)
+        return;
 
       const coderCopies = copiesForExperimentByCoderId(currentUser._id).flatMap(
         (c) => c.copies
@@ -79,12 +84,13 @@ export default function CoderHomePage() {
 
     fetchComparisons();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser?._id, copies]);
+  }, [currentUser?._id, copies, isAuthChecked]);
 
-  // טען מידע על ניסויים
+  // Load experiment information
   useEffect(() => {
     const fetchExperimentsInfo = async () => {
-      if (!currentUser || !copies || copies.length === 0) return;
+      if (!isAuthChecked || !currentUser || !copies || copies.length === 0)
+        return;
 
       const coderCopiesByExperiment = copiesForExperimentByCoderId(
         currentUser._id
@@ -108,15 +114,15 @@ export default function CoderHomePage() {
                 experiment._id
               );
               map[experiment._id] = {
-                name: expData?.name || `ניסוי ${experiment._id}`,
-                investigatorName: investigatorName || "לא ידוע",
+                name: expData?.name || `Experiment ${experiment._id}`,
+                investigatorName: investigatorName || "Unknown",
               };
             } catch (err) {
-              console.warn(`לא ניתן לטעון ניסוי ${experiment._id}:`, err);
+              console.warn(`Could not load experiment ${experiment._id}:`, err);
 
               map[experiment._id] = {
-                name: `ניסוי ${experiment._id}`,
-                investigatorName: "לא ידוע",
+                name: `Experiment ${experiment._id}`,
+                investigatorName: "Unknown",
               };
             }
           })()
@@ -131,12 +137,14 @@ export default function CoderHomePage() {
 
     fetchExperimentsInfo();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser?._id, copies]);
+  }, [currentUser?._id, copies, isAuthChecked]);
 
-  // טען הצהרות אסינכרוני
+  // Load statements asynchronously
   useEffect(() => {
     const fetchStatements = async () => {
-      if (!currentUser || !copies || copies.length === 0) return;
+      // Wait for auth check to complete
+      if (!isAuthChecked || !currentUser || !copies || copies.length === 0)
+        return;
 
       const coderCopies = copiesForExperimentByCoderId(currentUser._id).flatMap(
         (c) => c.copies
@@ -161,7 +169,7 @@ export default function CoderHomePage() {
                   err
                 );
                 map[copy.statementId] = {
-                  name: "הצהרה נמחקה",
+                  name: "Statement deleted",
                   _id: copy.statementId,
                 };
               })
@@ -177,21 +185,14 @@ export default function CoderHomePage() {
 
     fetchStatements();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser?._id, copies]);
+  }, [currentUser?._id, copies, isAuthChecked]);
 
-  // אם עדיין בודקים אותנטיקציה, הצג טעינה
+  // If still checking authentication, show loading
   if (!isAuthChecked) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-          fontSize: "18px",
-        }}
-      >
-        <div>טוען...</div>
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <div>Loading your dashboard...</div>
       </div>
     );
   }
@@ -209,30 +210,79 @@ export default function CoderHomePage() {
   };
 
   return (
-    <div style={{ direction: "rtl", padding: 20 }}>
-      <h1>ברוך הבא, {currentUser?.username}</h1>
-      <h2>הניסויים שלך:</h2>
+    <div className="dashboard-container">
+      {/* Header */}
+      <div className="dashboard-header">
+        <h1 className="dashboard-title">
+          <FaUserCircle />
+          Welcome, {currentUser?.username}
+        </h1>
+        <p className="dashboard-subtitle">
+          <FaMicroscope style={{ marginRight: "8px" }} />
+          Your Coding Assignments
+        </p>
+      </div>
 
+      {/* Content */}
       {coderCopiesByExperiment.length === 0 ? (
-        <p>לא נמצאו ניסויים עבורך.</p>
+        <div className="empty-state">
+          <div className="empty-state-icon">📋</div>
+          <div className="empty-state-text">
+            No experiments assigned to you yet.
+          </div>
+        </div>
       ) : (
         coderCopiesByExperiment.map(({ experiment, copies }) => {
           const expInfo = experimentsMap[experiment._id] || {};
-          const experimentName = expInfo.name;
-          const investigatorName = expInfo.investigatorName;
+          const experimentName = expInfo.name || "Loading...";
+          const investigatorName = expInfo.investigatorName || "Unknown";
           const completion = calculateCompletionPercentage(copies);
           const lastUpdate = getLastUpdateDate(copies);
 
           return (
-            <div key={experiment._id} style={{ marginBottom: 30 }}>
-              <h3>
-                {experimentName} –{" "}
-                <span style={{ fontSize: "0.9em", color: "gray" }}>
-                  השלמה: {completion}% | עדכון אחרון: {lastUpdate || "—"} |
-                  חוקר: {investigatorName}
-                </span>
-              </h3>
-              <ul>
+            <div key={experiment._id} className="dashboard-card">
+              {/* Experiment Header */}
+              <div className="card-header">
+                <h2 className="card-title">
+                  <FaMicroscope />
+                  {experimentName}
+                </h2>
+                <div
+                  style={{ display: "flex", gap: "12px", alignItems: "center" }}
+                >
+                  <span className="dashboard-badge badge-info">
+                    <FaUser /> {investigatorName}
+                  </span>
+                  <span className="dashboard-badge badge-primary">
+                    <FaChartLine /> {completion}%
+                  </span>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="progress-bar-container">
+                <div
+                  className="progress-bar-fill"
+                  style={{ width: `${completion}%` }}
+                >
+                  {completion > 10 && `${completion}%`}
+                </div>
+              </div>
+
+              {/* Last Update */}
+              <div
+                style={{
+                  marginBottom: "20px",
+                  color: "#666",
+                  fontSize: "14px",
+                }}
+              >
+                <FaClock style={{ marginRight: "8px" }} />
+                Last Update: {lastUpdate || "—"}
+              </div>
+
+              {/* Copies List */}
+              <ul className="dashboard-list">
                 {copies.map((copy) => {
                   const statement = statementsMap[copy.statementId];
                   const unreadCount = getUnreadCount(
@@ -240,125 +290,148 @@ export default function CoderHomePage() {
                     currentUser?._id
                   );
                   const comparisonsForThisCopy = comparisonsMap[copy._id] || [];
+                  const isCompleted = copy.status === "completed";
+                  const isInProgress = copy.status === "in progress";
 
                   return (
-                    <li
-                      key={copy._id}
-                      style={{
-                        margin: "10px 0",
-                        padding: 10,
-                        border: "1px solid #ccc",
-                        borderRadius: 5,
-                      }}
-                    >
-                      <div>
-                        <strong>הצהרה:</strong> {statement?.name || "טוען..."}
-                        <br />
-                        <strong>התקדמות:</strong> {copy.status}
-                        <br />
-                        <strong>עדכון אחרון:</strong>{" "}
-                        {copy.lastUpdate
-                          ? new Date(copy.lastUpdate).toLocaleString()
-                          : "—"}
+                    <li key={copy._id} className="list-item">
+                      {/* Copy Info */}
+                      <div className="list-item-header">
+                        <div>
+                          <div className="list-item-title">
+                            <FaFileAlt />
+                            {statement?.name || "Loading..."}
+                          </div>
+                          <div className="list-item-meta">
+                            <span
+                              className={`dashboard-badge ${
+                                isCompleted
+                                  ? "badge-success"
+                                  : isInProgress
+                                  ? "badge-warning"
+                                  : "badge-info"
+                              }`}
+                              style={{ marginRight: "10px" }}
+                            >
+                              {isCompleted ? (
+                                <>
+                                  <FaCheckCircle /> Completed
+                                </>
+                              ) : isInProgress ? (
+                                <>
+                                  <FaClock /> In Progress
+                                </>
+                              ) : (
+                                copy.status
+                              )}
+                            </span>
+                            <FaClock style={{ marginRight: "6px" }} />
+                            {copy.lastUpdate
+                              ? new Date(copy.lastUpdate).toLocaleString(
+                                  "en-US",
+                                  {
+                                    month: "short",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  }
+                                )
+                              : "—"}
+                          </div>
+                        </div>
                       </div>
 
-                      {copy.status === "in progress" && (
-                        <>
-                          <button
-                            onClick={() =>
-                              navigate(`/edit-statement/${copy._id}`)
-                            }
-                            style={{ marginTop: 8, marginLeft: 10 }}
-                          >
-                            ערוך הצהרה
-                          </button>
-
-                          <button
-                            onClick={() => navigate(`/copy-chat/${copy._id}`)}
-                            style={{
-                              marginTop: 8,
-                              backgroundColor: "#3b82f6",
-                              color: "white",
-                              border: "none",
-                              borderRadius: 4,
-                              padding: "4px 10px",
-                              marginRight: 10,
-                            }}
-                          >
-                            צ'אט
-                            {unreadCount > 0 && (
-                              <span
-                                style={{ marginRight: 5, color: "#f87171" }}
-                              >
-                                ({unreadCount})
-                              </span>
-                            )}
-                          </button>
-                        </>
-                      )}
-
-                      {copy.status === "completed" && (
-                        <>
-                          <button
-                            onClick={async () => {
-                              handleUpdateCopyStatus(copy._id, "in progress");
-                              alert("הקידוד סומן כלא הושלם. תוכל לערוך שוב.");
-                            }}
-                            style={{
-                              marginTop: 8,
-                              backgroundColor: "#fcd34d",
-                              color: "black",
-                              border: "1px solid #aaa",
-                              borderRadius: 4,
-                              padding: "4px 8px",
-                              marginRight: 10,
-                            }}
-                          >
-                            תקן קידוד
-                          </button>
-
-                          <button
-                            onClick={() => navigate(`/copy-chat/${copy._id}`)}
-                            style={{
-                              marginTop: 8,
-                              backgroundColor: "#3b82f6",
-                              color: "white",
-                              border: "none",
-                              borderRadius: 4,
-                              padding: "4px 10px",
-                              marginRight: 10,
-                            }}
-                          >
-                            צ'אט
-                            {unreadCount > 0 && (
-                              <span
-                                style={{ marginRight: 5, color: "#f87171" }}
-                              >
-                                ({unreadCount})
-                              </span>
-                            )}
-                          </button>
-
-                          {comparisonsForThisCopy.length > 0 && (
+                      {/* Actions */}
+                      <div
+                        className="list-item-actions"
+                        style={{ marginTop: "12px" }}
+                      >
+                        {isInProgress && (
+                          <>
                             <button
                               onClick={() =>
-                                navigate(`/coder-compare/${copy._id}`)
+                                navigate(`/edit-statement/${copy._id}`)
                               }
-                              style={{
-                                marginTop: 8,
-                                backgroundColor: "#4ade80",
-                                color: "white",
-                                border: "none",
-                                borderRadius: 4,
-                                padding: "4px 10px",
-                                marginRight: 10,
-                              }}
+                              className="dashboard-btn btn-primary btn-sm"
                             >
-                              השווה עם עותקים
+                              <FaEdit /> Edit Coding
                             </button>
-                          )}
-                        </>
-                      )}
+
+                            <button
+                              onClick={() => navigate(`/copy-chat/${copy._id}`)}
+                              className="dashboard-btn btn-secondary btn-sm"
+                              style={{ position: "relative" }}
+                            >
+                              <FaComments /> Chat
+                              {unreadCount > 0 && (
+                                <span
+                                  className="dashboard-badge badge-danger"
+                                  style={{
+                                    marginLeft: "8px",
+                                    padding: "2px 8px",
+                                    fontSize: "11px",
+                                  }}
+                                >
+                                  <FaEnvelope /> {unreadCount}
+                                </span>
+                              )}
+                            </button>
+                          </>
+                        )}
+
+                        {isCompleted && (
+                          <>
+                            <button
+                              onClick={async () => {
+                                if (
+                                  window.confirm(
+                                    "Mark this coding as incomplete? You'll be able to edit it again."
+                                  )
+                                ) {
+                                  await handleUpdateCopyStatus(
+                                    copy._id,
+                                    "in progress"
+                                  );
+                                }
+                              }}
+                              className="dashboard-btn btn-secondary btn-sm"
+                            >
+                              <FaRedo /> Reopen for Editing
+                            </button>
+
+                            <button
+                              onClick={() => navigate(`/copy-chat/${copy._id}`)}
+                              className="dashboard-btn btn-secondary btn-sm"
+                              style={{ position: "relative" }}
+                            >
+                              <FaComments /> Chat
+                              {unreadCount > 0 && (
+                                <span
+                                  className="dashboard-badge badge-danger"
+                                  style={{
+                                    marginLeft: "8px",
+                                    padding: "2px 8px",
+                                    fontSize: "11px",
+                                  }}
+                                >
+                                  <FaEnvelope /> {unreadCount}
+                                </span>
+                              )}
+                            </button>
+
+                            {comparisonsForThisCopy.length > 0 && (
+                              <button
+                                onClick={() =>
+                                  navigate(`/coder-compare/${copy._id}`)
+                                }
+                                className="dashboard-btn btn-success btn-sm"
+                              >
+                                <FaCodeBranch /> Compare Copies
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </li>
                   );
                 })}

@@ -1,6 +1,4 @@
-//CopyContext.js
-
-import React, { createContext, useContext, useEffect } from "react";
+import React, { createContext, useContext } from "react";
 import { useData } from "./DataContext";
 import { useRefresh } from "./RefreshContext";
 import {

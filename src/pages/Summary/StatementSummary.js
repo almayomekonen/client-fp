@@ -41,7 +41,7 @@ export default function StatementSummary() {
         const data = await getColors();
         setColors(data);
       } catch (err) {
-        alert("❌ שגיאה בטעינת צבעים");
+        alert("❌ Error loading colors");
       }
     };
     loadColors();
@@ -62,7 +62,7 @@ export default function StatementSummary() {
     loadData();
   }, [statementId, statementById, copiesByStatementId]);
 
-  if (!statement) return <div>הצהרה לא נמצאה</div>;
+  if (!statement) return <div>Statement not found</div>;
 
   // איחוד כל הצבעים – גם מהרשימה וגם מהעותקים
   const colorCodesFromCopies = new Set();
@@ -75,11 +75,11 @@ export default function StatementSummary() {
   // סגנונות שמופעלים ב-styleSettings
   const commonStyles = [];
   if (styleSettings.boldEnabled)
-    commonStyles.push({ key: "bold", label: "בולד" });
+    commonStyles.push({ key: "bold", label: "Bold" });
   if (styleSettings.italicEnabled)
-    commonStyles.push({ key: "italic", label: "הטייה" });
+    commonStyles.push({ key: "italic", label: "Italic" });
   if (styleSettings.underlineEnabled)
-    commonStyles.push({ key: "underline", label: "קו תחתון" });
+    commonStyles.push({ key: "underline", label: "Underline" });
   const styleKeys = commonStyles.map((s) => s.key);
 
   // בונים את allColors: מסירים את הסגנונות שמופעלים ב-styleSettings
@@ -106,7 +106,7 @@ export default function StatementSummary() {
       >
         <thead>
           <tr>
-            <th style={{ border: "1px solid #ccc", padding: "8px" }}>מקודד</th>
+            <th style={{ border: "1px solid #ccc", padding: "8px" }}>Coder</th>
             {allColors.map((c) => (
               <th
                 key={`${type}-${c._id}`}
@@ -145,7 +145,7 @@ export default function StatementSummary() {
             return (
               <tr key={copy._id}>
                 <td style={{ border: "1px solid #ccc", padding: "8px" }}>
-                  {coder?.username || "ללא שם"}
+                  {coder?.username || "No name"}
                 </td>
 
                 {type === "marks" && (
@@ -199,16 +199,16 @@ export default function StatementSummary() {
 
   return (
     <div style={{ padding: 20, direction: "rtl" }}>
-      <h2>השוואת מקודדים עבור ההצהרה: {statement.name}</h2>
+      <h2>Comparison of coders for the statement: {statement.name}</h2>
 
-      <h3>סימונים</h3>
+      <h3>Symbols</h3>
       {renderTable("marks")}
 
-      <h3>מילים</h3>
+      <h3>Words</h3>
       {renderTable("words")}
 
       <button style={{ marginTop: 20 }} onClick={() => navigate(-1)}>
-        חזור
+        Back
       </button>
     </div>
   );

@@ -28,23 +28,30 @@ export function DataProvider({ children }) {
     return () => {
       roleChangeDetector.stop();
     };
-  }, [currentUser]);
+    // Only run when the role actually changes, not when the user object changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser?.role]);
 
   useEffect(() => {
     const initAuth = async () => {
       try {
-        console.log("🔍 Checking authentication...");
+        const storedUser = localStorage.getItem("currentUser");
+        if (storedUser) {
+          try {
+            JSON.parse(storedUser); // Just validate it's valid JSON
+          } catch (e) {
+            console.warn("⚠️ Invalid stored user data, clearing...");
+            localStorage.removeItem("currentUser");
+          }
+        }
 
-        // 🔥 תמיד בודק עם השרת, לא תלוי ב-localStorage
+        // ✅ Server is single source of truth - check auth first
         const authResult = await checkAuth();
 
         if (authResult.success) {
-          console.log("✅ User authenticated:", authResult.user);
           setCurrentUser(authResult.user);
-          // שמור ב-localStorage רק לשיפור UX (לא מקור האמת!)
           localStorage.setItem("currentUser", JSON.stringify(authResult.user));
         } else {
-          console.log("❌ User not authenticated");
           setCurrentUser(null);
           localStorage.removeItem("currentUser");
         }

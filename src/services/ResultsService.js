@@ -1,8 +1,11 @@
 // src/utils/editorActions.js
-import { Editor, Path }  from 'slate';
+import { Editor, Path } from "slate";
 
-
-export const calculateWordCounts = (value, startOffset = null, endOffset = null) => {
+export const calculateWordCounts = (
+  value,
+  startOffset = null,
+  endOffset = null
+) => {
   const counts = {};
   let totalWords = 0;
 
@@ -19,7 +22,7 @@ export const calculateWordCounts = (value, startOffset = null, endOffset = null)
             highlight: node.highlight || null,
             underline: !!node.underline,
             bold: !!node.bold,
-            italic: !!node.italic
+            italic: !!node.italic,
           });
         }
       }
@@ -30,13 +33,13 @@ export const calculateWordCounts = (value, startOffset = null, endOffset = null)
     }
 
     // בסיום כל בלוק (פסקה) — הוספת שורה חדשה
-    fullText.push('\n');
+    fullText.push("\n");
     styleMap.push({}); // בלי סטייל
   };
 
   buildMaps(value);
 
-  const joinedText = fullText.join('');
+  const joinedText = fullText.join("");
   const wordRegex = /\S+/g;
 
   let match;
@@ -73,7 +76,7 @@ export const calculateWordCounts = (value, startOffset = null, endOffset = null)
 
     // עדכון מונים
     if (foundHighlights.size > 0) {
-      counts['totalColor'] = (counts['totalColor'] || 0) + 1;
+      counts["totalColor"] = (counts["totalColor"] || 0) + 1;
     }
 
     for (const color of foundHighlights) {
@@ -81,26 +84,25 @@ export const calculateWordCounts = (value, startOffset = null, endOffset = null)
     }
 
     if (foundUnderline) {
-      counts['underline'] = (counts['underline'] || 0) + 1;
+      counts["underline"] = (counts["underline"] || 0) + 1;
     }
     if (foundBold) {
-      counts['bold'] = (counts['bold'] || 0) + 1;
+      counts["bold"] = (counts["bold"] || 0) + 1;
     }
     if (foundItalic) {
-      counts['italic'] = (counts['italic'] || 0) + 1;
+      counts["italic"] = (counts["italic"] || 0) + 1;
     }
 
     totalWords++;
   }
 
-  counts['total'] = totalWords;
+  counts["total"] = totalWords;
   return counts;
 };
 
-
 export const calculateWordCountsForSelection = (editor, value) => {
-    if (!editor.selection) {
-    alert('יש לבחור קטע טקסט קודם');
+  if (!editor.selection) {
+    alert("Please select a text segment before");
     return;
   }
   if (!value) return null;
@@ -118,7 +120,7 @@ export const calculateWordCountsForSelection = (editor, value) => {
         if (node.text !== undefined) {
           if (Path.equals(currentPath, anchorPath)) {
             globalOffset += anchorOffset;
-            throw 'FOUND';
+            throw "FOUND"; // eslint-disable-line no-throw-literal
           } else {
             globalOffset += node.text.length;
           }
@@ -137,22 +139,14 @@ export const calculateWordCountsForSelection = (editor, value) => {
     try {
       traverse(value);
     } catch (e) {
-      if (e !== 'FOUND') throw e;
+      if (e !== "FOUND") throw e;
     }
 
     return globalOffset;
   };
 
-  const start = getGlobalOffsetFromValue(
-    value,
-    anchor.path,
-    anchor.offset
-  );
-  const end = getGlobalOffsetFromValue(
-    value,
-    focus.path,
-    focus.offset
-  );
+  const start = getGlobalOffsetFromValue(value, anchor.path, anchor.offset);
+  const end = getGlobalOffsetFromValue(value, focus.path, focus.offset);
 
   const startOffset = Math.min(start, end);
   const endOffset = Math.max(start, end);
@@ -160,10 +154,9 @@ export const calculateWordCountsForSelection = (editor, value) => {
   return calculateWordCounts(value, startOffset, endOffset);
 };
 
-
 export const calculateSelectionCounts = (editor, setSelectionCounts) => {
   if (!editor.selection) {
-    alert('יש לבחור קטע טקסט קודם');
+    alert("Please select a text segment before");
     return;
   }
 
@@ -179,7 +172,7 @@ export const calculateSelectionCounts = (editor, setSelectionCounts) => {
     let prevItalic = null;
 
     for (const child of node.children) {
-      if (typeof child.text !== 'string') continue;
+      if (typeof child.text !== "string") continue;
 
       const currentHighlight = child.highlight || null;
       const currentUnderline = !!child.underline;
@@ -191,15 +184,15 @@ export const calculateSelectionCounts = (editor, setSelectionCounts) => {
       }
 
       if (currentUnderline !== prevUnderline && currentUnderline) {
-        tempCounts['underline'] = (tempCounts['underline'] || 0) + 1;
+        tempCounts["underline"] = (tempCounts["underline"] || 0) + 1;
       }
 
       if (currentBold !== prevBold && currentBold) {
-        tempCounts['bold'] = (tempCounts['bold'] || 0) + 1;
+        tempCounts["bold"] = (tempCounts["bold"] || 0) + 1;
       }
 
       if (currentItalic !== prevItalic && currentItalic) {
-        tempCounts['italic'] = (tempCounts['italic'] || 0) + 1;
+        tempCounts["italic"] = (tempCounts["italic"] || 0) + 1;
       }
 
       prevHighlight = currentHighlight;
@@ -212,49 +205,49 @@ export const calculateSelectionCounts = (editor, setSelectionCounts) => {
   setSelectionCounts(tempCounts);
 };
 
-
-
 export const renderKeyLabel = (key, value) => {
-  let label = '';
+  let label = "";
 
-  if (key === 'totalColor') {
-    label = 'מילים צבועות בצבע כלשהו';
-  } else if (key === 'total') {
-    label = 'סה״כ מילים בטקסט';
-  } else if (key === 'underline') {
-    label = 'קו תחתון';
-  } else if (key === 'bold') {
-    label = 'מודגש';
-  } else if (key === 'italic') {
-    label = 'נטוי';
+  if (key === "totalColor") {
+    label = "Words colored in any color";
+  } else if (key === "total") {
+    label = "Total words in text";
+  } else if (key === "underline") {
+    label = "Underline";
+  } else if (key === "bold") {
+    label = "Bold";
+  } else if (key === "italic") {
+    label = "Italic";
   }
 
   const isKnownKey =
-    key === 'totalColor' ||
-    key === 'total' ||
-    key === 'underline' ||
-    key === 'bold' ||
-    key === 'italic';
+    key === "totalColor" ||
+    key === "total" ||
+    key === "underline" ||
+    key === "bold" ||
+    key === "italic";
 
   if (isKnownKey) {
-    // ידוע => תיאור + מספר
+    // Known => Description + Number
     return (
-      <span style={{ display: 'flex', alignItems: 'center' }}>
-        <span>{label}: {value}</span>
+      <span style={{ display: "flex", alignItems: "center" }}>
+        <span>
+          {label}: {value}
+        </span>
       </span>
     );
   } else {
-    // צבע => ריבוע צבע + מספר
+    // Color => Color square + Number
     return (
-      <span style={{ display: 'flex', alignItems: 'center' }}>
+      <span style={{ display: "flex", alignItems: "center" }}>
         <span
           style={{
-            display: 'inline-block',
+            display: "inline-block",
             width: 12,
             height: 12,
             backgroundColor: key,
             marginRight: 6,
-            border: '1px solid #333'
+            border: "1px solid #333",
           }}
         />
         <span>{value}</span>
@@ -262,6 +255,3 @@ export const renderKeyLabel = (key, value) => {
     );
   }
 };
-
-
-

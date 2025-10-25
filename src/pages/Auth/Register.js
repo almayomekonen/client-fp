@@ -51,8 +51,8 @@ export default function RegisterPage() {
       <div className="auth-card">
         <div className="auth-header">
           <div className="auth-logo">📝</div>
-          <h1 className="auth-title">הרשמה</h1>
-          <p className="auth-subtitle">צור חשבון חדש במערכת</p>
+          <h1 className="auth-title">Registration</h1>
+          <p className="auth-subtitle">Create a new account</p>
         </div>
 
         {step === 1 && (
@@ -60,7 +60,7 @@ export default function RegisterPage() {
             <div className="auth-form-group">
               <input
                 name="username"
-                placeholder="שם משתמש"
+                placeholder="Username"
                 value={form.username}
                 onChange={handleChange}
                 className="auth-input"
@@ -71,7 +71,7 @@ export default function RegisterPage() {
               <input
                 type="password"
                 name="password"
-                placeholder="סיסמה"
+                placeholder="Password"
                 value={form.password}
                 onChange={handleChange}
                 className="auth-input"
@@ -82,7 +82,7 @@ export default function RegisterPage() {
               <input
                 type="password"
                 name="confirmPassword"
-                placeholder="אימות סיסמה"
+                placeholder="Confirm Password"
                 value={form.confirmPassword}
                 onChange={handleChange}
                 className="auth-input"
@@ -96,15 +96,15 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 className="auth-select"
               >
-                <option value="coder">מקודד</option>
-                <option value="investigator">חוקר</option>
+                <option value="coder">Coder</option>
+                <option value="investigator">Researcher</option>
               </select>
             </div>
             <div className="auth-form-group">
               <input
                 name="email"
                 type="email"
-                placeholder="אימייל"
+                placeholder="Email"
                 value={form.email}
                 onChange={handleChange}
                 className="auth-input"
@@ -112,7 +112,7 @@ export default function RegisterPage() {
               />
             </div>
             <button onClick={handleSendCode} className="auth-btn">
-              שלח קוד
+              Send Code
             </button>
           </div>
         )}
@@ -121,7 +121,7 @@ export default function RegisterPage() {
           <div className="auth-form">
             <div className="auth-form-group">
               <input
-                placeholder="קוד אימות"
+                placeholder="Verification Code"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 className="auth-input"
@@ -129,21 +129,21 @@ export default function RegisterPage() {
               />
             </div>
             <button onClick={handleVerifyCode} className="auth-btn">
-              אמת
+              Verify
             </button>
           </div>
         )}
 
         {step === 4 && (
           <button onClick={handleRegister} className="auth-btn">
-            הירשם
+            Register
           </button>
         )}
 
         {message && (
           <div
             className={`auth-message ${
-              message.includes("שגיאה") ? "error" : "success"
+              message.toLowerCase().includes("error") ? "error" : "success"
             }`}
           >
             {message}
@@ -151,7 +151,7 @@ export default function RegisterPage() {
         )}
 
         <div className="auth-link">
-          כבר יש לך חשבון? <Link to="/">להתחברות</Link>
+          Already have an account? <Link to="/">Login</Link>
         </div>
       </div>
     </div>

@@ -18,7 +18,7 @@ export default function LoginForm({ onSubmit, onForgotPassword }) {
           type="text"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          placeholder="שם משתמש"
+          placeholder="Username"
           className="auth-input"
           required
         />
@@ -29,14 +29,14 @@ export default function LoginForm({ onSubmit, onForgotPassword }) {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="סיסמה"
+          placeholder="Password"
           className="auth-input"
           required
         />
       </div>
 
       <button type="submit" className="auth-btn">
-        <FaSignInAlt /> התחבר
+        <FaSignInAlt /> Login
       </button>
 
       <button
@@ -45,7 +45,7 @@ export default function LoginForm({ onSubmit, onForgotPassword }) {
         className="auth-btn"
         style={{ marginTop: "12px", background: "#666666" }}
       >
-        <FaKey /> שכחתי סיסמה
+        <FaKey /> Forgot Password
       </button>
     </form>
   );

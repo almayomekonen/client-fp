@@ -14,26 +14,45 @@ export const createExperimentOnServer = async ({
     body: JSON.stringify({ name, description, investigatorId, defaultTaskId }),
   });
 
-  if (!res.ok) throw new Error("שגיאה ביצירת ניסוי");
+  if (!res.ok) throw new Error("Error creating experiment");
   return await res.json();
 };
 
 export const deleteExperimentFromServer = async (experimentId) => {
-  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/experiments/${experimentId}`, {
-    method: "DELETE",
-    credentials: "include",
-  });
+  const res = await fetchWithRoleCheck(
+    `${API_BASE_URL}/api/experiments/${experimentId}`,
+    {
+      method: "DELETE",
+      credentials: "include",
+    }
+  );
 
-  if (!res.ok) throw new Error("שגיאה במחיקת ניסוי");
+  if (!res.ok) throw new Error("Error deleting experiment");
   return await res.json();
 };
 
 export const fetchExperimentsFromServer = async () => {
-  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/experiments`, {
-    credentials: "include",
-  });
-  if (!res.ok) throw new Error("שגיאה בקבלת ניסויים");
-  return await res.json();
+  try {
+    const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/experiments`, {
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      const errorData = await res
+        .json()
+        .catch(() => ({ message: "Unknown error" }));
+      console.error("❌ Server error:", res.status, errorData);
+      throw new Error(
+        errorData.message || `Error getting experiments (${res.status})`
+      );
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error("❌ Error fetching experiments:", err);
+    throw err;
+  }
 };
 
 export async function updateExperimentOnServer(experimentId, updateFields) {
@@ -48,17 +67,20 @@ export async function updateExperimentOnServer(experimentId, updateFields) {
   );
 
   if (!response.ok) {
-    throw new Error("Failed to update experiment");
+    throw new Error("Error updating experiment");
   }
 
   return await response.json();
 }
 
 export const fetchExperimentById = async (experimentId) => {
-  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/experiments/${experimentId}`, {
-    credentials: "include",
-  });
-  if (!res.ok) throw new Error("שגיאה בקבלת ניסוי");
+  const res = await fetchWithRoleCheck(
+    `${API_BASE_URL}/api/experiments/${experimentId}`,
+    {
+      credentials: "include",
+    }
+  );
+  if (!res.ok) throw new Error("Error getting experiment");
   return await res.json();
 };
 
@@ -69,17 +91,29 @@ export const fetchExperimentsByInvestigatorId = async (investigatorId) => {
       credentials: "include",
     }
   );
-  if (!res.ok) throw new Error("שגיאה בקבלת ניסויים של החוקר");
+  if (!res.ok) throw new Error("Error getting experiments by investigator");
   return await res.json();
 };
 
 export const fetchInvestigatorNameByExperimentId = async (experimentId) => {
-  const res = await fetchWithRoleCheck(
-    `${API_BASE_URL}/api/experiments/${experimentId}/investigatorName`,
-    {
-      credentials: "include",
+  try {
+    const res = await fetchWithRoleCheck(
+      `${API_BASE_URL}/api/experiments/${experimentId}/investigatorName`,
+      {
+        credentials: "include",
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res
+        .json()
+        .catch(() => ({ message: "Unknown error" }));
+      throw new Error(errorData.message || "Error getting investigator name");
     }
-  );
-  if (!res.ok) throw new Error("שגיאה בקבלת שם החוקר");
-  return await res.json();
+
+    return await res.json();
+  } catch (err) {
+    console.error(`❌ Error fetching investigator name:`, err);
+    throw err;
+  }
 };

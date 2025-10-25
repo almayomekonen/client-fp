@@ -42,22 +42,26 @@ const Sidebar = ({ role, onLogout }) => {
 
     if (role === "admin") {
       return [
-        { path: "/adminHome", icon: <FaHome />, label: "כל הניסויים" },
-        { path: "/task-management", icon: <FaTasks />, label: "כל המשימות" },
-        { path: "/admin-panel", icon: <FaUsers />, label: "ניהול משתמשים" },
-        { path: "/manage-colors", icon: <FaPalette />, label: "ניהול צבעים" },
+        { path: "/adminHome", icon: <FaHome />, label: "All Experiments" },
+        { path: "/task-management", icon: <FaTasks />, label: "All Tasks" },
+        { path: "/admin-panel", icon: <FaUsers />, label: "User Management" },
+        {
+          path: "/manage-colors",
+          icon: <FaPalette />,
+          label: "Color Management",
+        },
         {
           path: "/investigatorHome",
           icon: <FaMicroscope />,
-          label: "הניסויים שלי",
+          label: "My Experiments",
         },
-        { path: "/coderHome", icon: <FaEdit />, label: "הקידודים שלי" },
+        { path: "/coderHome", icon: <FaEdit />, label: "My Codings" },
         {
           path: "/task-investigator",
           icon: <FaChartBar />,
-          label: "המשימות שיצרתי",
+          label: "Tasks I Created",
         },
-        { path: "/task-coder", icon: <FaFileAlt />, label: "המשימות שלי" },
+        { path: "/task-coder", icon: <FaFileAlt />, label: "My Tasks" },
       ];
     }
 
@@ -66,22 +70,22 @@ const Sidebar = ({ role, onLogout }) => {
         {
           path: "/investigatorHome",
           icon: <FaMicroscope />,
-          label: "הניסויים שלי",
+          label: "My Experiments",
         },
-        { path: "/coderHome", icon: <FaEdit />, label: "הקידודים שלי" },
+        { path: "/coderHome", icon: <FaEdit />, label: "My Codings" },
         {
           path: "/task-investigator",
           icon: <FaChartBar />,
-          label: "המשימות שיצרתי",
+          label: "Tasks I Created",
         },
-        { path: "/task-coder", icon: <FaFileAlt />, label: "המשימות שלי" },
+        { path: "/task-coder", icon: <FaFileAlt />, label: "My Tasks" },
       ];
     }
 
     if (role === "coder") {
       return [
-        { path: "/coderHome", icon: <FaEdit />, label: "הקידודים שלי" },
-        { path: "/task-coder", icon: <FaFileAlt />, label: "המשימות שלי" },
+        { path: "/coderHome", icon: <FaEdit />, label: "My Codings" },
+        { path: "/task-coder", icon: <FaFileAlt />, label: "My Tasks" },
       ];
     }
 
@@ -96,7 +100,7 @@ const Sidebar = ({ role, onLogout }) => {
       <button
         className={`sidebar-toggle ${isOpen ? "open" : "closed"}`}
         onClick={toggleSidebar}
-        aria-label={isOpen ? "סגור תפריט" : "פתח תפריט"}
+        aria-label={isOpen ? "Close menu" : "Open menu"}
       >
         {isOpen ? <FaChevronLeft /> : <FaChevronRight />}
       </button>
@@ -117,9 +121,9 @@ const Sidebar = ({ role, onLogout }) => {
                     {currentUser?.username}
                   </div>
                   <div className="sidebar-role-badge">
-                    {role === "admin" && "מנהל"}
-                    {role === "investigator" && "חוקר"}
-                    {role === "coder" && "מקודד"}
+                    {role === "admin" && "Admin"}
+                    {role === "investigator" && "Researcher"}
+                    {role === "coder" && "Coder"}
                   </div>
                 </div>
               </div>
@@ -153,12 +157,12 @@ const Sidebar = ({ role, onLogout }) => {
           <button
             className="sidebar-logout"
             onClick={handleLogout}
-            title={!isOpen ? "התנתק" : ""}
+            title={!isOpen ? "Logout" : ""}
           >
             <span className="sidebar-icon">
               <FaSignOutAlt />
             </span>
-            {isOpen && <span className="sidebar-label">התנתק</span>}
+            {isOpen && <span className="sidebar-label">Logout</span>}
           </button>
         </div>
       </div>

@@ -5,10 +5,11 @@ import Sidebar from "./Sidebar";
 import "./Layout.css";
 
 const Layout = ({ children }) => {
-  const { currentUser } = useData();
+  const { currentUser, isAuthChecked } = useData();
   const { logout } = useUsers();
 
-  if (!currentUser) {
+  // Don't show sidebar until auth is checked to prevent flash of wrong UI
+  if (!isAuthChecked || !currentUser) {
     return <div className="main-content">{children}</div>;
   }
 

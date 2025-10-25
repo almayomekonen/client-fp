@@ -19,14 +19,14 @@ export default function CopyChatPage() {
   return (
     <div className="chat-page-container">
       <button onClick={() => navigate(-1)} className="chat-back-btn">
-        <FaArrowRight /> חזרה
+        <FaArrowRight /> Back
       </button>
 
       <div className="chat-page-header">
         <h1 className="chat-page-title">
-          <FaComments /> צ'אט העתק
+          <FaComments /> Copy Chat
         </h1>
-        <p className="chat-page-subtitle">שיחה על ההעתק</p>
+        <p className="chat-page-subtitle">Conversation about the copy</p>
       </div>
 
       <div className="chat-wrapper">

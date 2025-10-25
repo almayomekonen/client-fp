@@ -20,7 +20,6 @@ export function StatementProvider({ children }) {
     refreshTaskMessages,
   } = useRefresh();
 
-  // --- יצירת הצהרה ---
   const addStatement = async (name, text, groupId, experimentId) => {
     return await createStatementOnServerService({
       name,
@@ -30,12 +29,10 @@ export function StatementProvider({ children }) {
     });
   };
 
-  // --- הצהרות לפי קבוצה ---
   const statementsByGroupId = async (groupId) => {
     return await fetchStatementsByGroupIdService(groupId);
   };
 
-  // --- הצהרה לפי ID ---
   const statementById = async (statementId) => {
     return await fetchStatementByIdService(statementId);
   };

@@ -55,14 +55,14 @@ export function CopyMessageProvider({ children }) {
 
 */
 
-import React, { createContext, useContext } from 'react';
-import { useData } from './DataContext';
-import { useRefresh } from './RefreshContext';
+import React, { createContext, useContext } from "react";
+import { useData } from "./DataContext";
+import { useRefresh } from "./RefreshContext";
 import {
   createCopyMessageOnServer,
   deleteCopyMessageFromServer,
-  updateCopyMessageOnServer as updateCopyMessageOnServerService
-} from '../api/CopyMessageApi';
+  updateCopyMessageOnServer as updateCopyMessageOnServerService,
+} from "../api/CopyMessageApi";
 
 const CopyMessageContext = createContext();
 export const useCopyMessage = () => useContext(CopyMessageContext);
@@ -71,36 +71,46 @@ export function CopyMessageProvider({ children }) {
   const { copyMessages } = useData();
   const { refreshCopyMessages } = useRefresh();
 
-  const sendMessage = async (copyId, senderId, text, replyToMessageId = null) => {
+  const sendMessage = async (
+    copyId,
+    senderId,
+    text,
+    replyToMessageId = null
+  ) => {
     await createCopyMessageOnServer(copyId, senderId, text, replyToMessageId);
     await refreshCopyMessages();
   };
 
   const markAsRead = async (messageId, userId) => {
-await updateCopyMessageOnServerService(messageId, { addToReadBy: userId });
+    await updateCopyMessageOnServerService(messageId, { addToReadBy: userId });
     await refreshCopyMessages();
   };
 
   const getMessagesForCopy = (copyId) => {
     return copyMessages
-      .filter(m => m.copyId === copyId)
+      .filter((m) => m.copyId === copyId)
       .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
   };
 
   const getUnreadCount = (copyId, userId) => {
-    return copyMessages
-      .filter(m => m.copyId === copyId && !m.readBy.includes(userId))
-      .length;
+    return copyMessages.filter(
+      (m) => m.copyId === copyId && !m.readBy.includes(userId)
+    ).length;
   };
 
   const messageById = (messageId) => {
-    return copyMessages.find(m => m._id === messageId) || null;
+    return copyMessages.find((m) => m._id === messageId) || null;
   };
 
   const deleteCopyMessage = async (messageId) => {
-    await deleteCopyMessageFromServer(messageId);
+    try {
+      await deleteCopyMessageFromServer(messageId);
+      await refreshCopyMessages();
+    } catch (error) {
+      console.error("Error deleting message:", error);
+      throw error;
+    }
   };
-
 
   return (
     <CopyMessageContext.Provider

@@ -48,7 +48,8 @@ export default function TaskForInvestigator() {
           fetchedExperiments.current.add(task.experimentId);
           promises.push(
             experimentById(task.experimentId).then((exp) => {
-              if (exp) names[task.experimentId] = exp.name || "ניסוי לא נמצא";
+              if (exp)
+                names[task.experimentId] = exp.name || "Experiment not found";
             })
           );
         }
@@ -135,7 +136,7 @@ export default function TaskForInvestigator() {
           height: "100vh",
         }}
       >
-        <div>טוען...</div>
+        <div>Loading...</div>
       </div>
     );
   }
@@ -143,7 +144,7 @@ export default function TaskForInvestigator() {
   if (!currentUser) return null;
 
   const getCoderName = (coderId) =>
-    users.find((u) => u._id === coderId)?.username || "משתמש לא נמצא";
+    users.find((u) => u._id === coderId)?.username || "User not found";
 
   const handleDeleteTask = async (taskId) => {
     await deleteTask(taskId);
@@ -155,8 +156,8 @@ export default function TaskForInvestigator() {
       <ul className="ml-6 mt-2 list-disc">
         {taskCopies.map((copy) => (
           <li key={copy._id}>
-            הצהרה {statementsCache[copy.statementId]?.name || "טוען..."} -
-            סטטוס: {copy.status}
+            Statement {statementsCache[copy.statementId]?.name || "Loading..."}{" "}
+            - Status: {copy.status}
           </li>
         ))}
       </ul>
@@ -165,8 +166,10 @@ export default function TaskForInvestigator() {
 
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">המשימות שיצרתי</h2>
-      {researcherTasks.length === 0 && <p>לא יצרת משימות עדיין.</p>}
+      <h2 className="text-2xl font-bold mb-4">Tasks I Created</h2>
+      {researcherTasks.length === 0 && (
+        <p>You haven't created any tasks yet.</p>
+      )}
       <ul className="space-y-4">
         {researcherTasks.map((task) => (
           <li
@@ -183,21 +186,21 @@ export default function TaskForInvestigator() {
                 }
               >
                 <p>
-                  <strong>ניסוי:</strong>{" "}
-                  {experimentNames[task.experimentId] || "טוען..."}
+                  <strong>Experiment:</strong>{" "}
+                  {experimentNames[task.experimentId] || "Loading..."}
                 </p>
                 <p>
-                  <strong>מקודד:</strong> {getCoderName(task.coderId)}
+                  <strong>Coder:</strong> {getCoderName(task.coderId)}
                 </p>
                 <p>
-                  <strong>אחוז מהניסוי:</strong>{" "}
+                  <strong>Percentage of experiment:</strong>{" "}
                   {experimentPercentMap[task._id] ?? 0}%
                 </p>
                 <p>
-                  <strong>התקדמות:</strong> {taskProgress(task._id)}%
+                  <strong>Progress:</strong> {taskProgress(task._id)}%
                 </p>
                 <p>
-                  <strong>הודעות שלא נקראו:</strong>{" "}
+                  <strong>Unread messages:</strong>{" "}
                   {getUnreadCount(task._id, currentUser._id)}
                 </p>
               </div>
@@ -205,7 +208,7 @@ export default function TaskForInvestigator() {
                 onClick={() => handleDeleteTask(task._id)}
                 className="text-red-600 underline text-sm ml-4"
               >
-                מחק משימה
+                Delete Task
               </button>
             </div>
             {selectedTaskId === task._id && (
@@ -215,13 +218,13 @@ export default function TaskForInvestigator() {
                   onClick={() => navigate(`/task-chat/${task._id}`)}
                   className="text-blue-600 underline text-sm ml-4"
                 >
-                  עבור לצ'אט
+                  Go to Chat
                 </button>
                 <button
                   onClick={() => navigate(`/task-summary/${task._id}`)}
                   className="text-green-600 underline text-sm"
                 >
-                  סיכום משימה
+                  Task Summary
                 </button>
               </>
             )}

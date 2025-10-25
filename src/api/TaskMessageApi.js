@@ -12,7 +12,7 @@ export const createTaskMessageOnServer = async (
     credentials: "include",
     body: JSON.stringify({ taskId, senderId, text, replyToMessageId }),
   });
-  if (!res.ok) throw new Error("שגיאה בשליחת הודעת משימה");
+  if (!res.ok) throw new Error("Error sending task message");
   return await res.json();
 };
 
@@ -20,7 +20,7 @@ export const fetchTaskMessagesFromServer = async () => {
   const res = await fetch(`${API_BASE_URL}/api/taskMessages`, {
     credentials: "include",
   });
-  if (!res.ok) throw new Error("שגיאה בקבלת הודעות משימה");
+  if (!res.ok) throw new Error("Error fetching task messages");
   return await res.json();
 };
 
@@ -29,7 +29,10 @@ export const deleteTaskMessageFromServer = async (messageId) => {
     method: "DELETE",
     credentials: "include",
   });
-  if (!res.ok) throw new Error("שגיאה במחיקת הודעת משימה");
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || "Error deleting task message");
+  }
   return await res.json();
 };
 
@@ -41,6 +44,6 @@ export const updateTaskMessageOnServer = async (messageId, updateFields) => {
     body: JSON.stringify(updateFields),
   });
 
-  if (!res.ok) throw new Error("שגיאה בעדכון ההודעה");
+  if (!res.ok) throw new Error("Error updating task message");
   return await res.json();
 };

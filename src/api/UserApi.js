@@ -2,22 +2,48 @@ import { API_BASE_URL } from "./config";
 import { fetchWithRoleCheck } from "./fetchWithRoleCheck";
 
 export async function fetchUsersFromServer() {
-  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/users`, {
-    credentials: "include",
-  });
-  const data = await res.json();
-  return data;
+  try {
+    const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/users`, {
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      const errorData = await res
+        .json()
+        .catch(() => ({ message: "Unknown error" }));
+      throw new Error(errorData.message || `Server error: ${res.status}`);
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error("❌ Error fetching users:", err);
+    throw err;
+  }
 }
 
 export async function deleteUserFromServer(userId) {
-  const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/users/${userId}`, {
-    method: "DELETE",
-    credentials: "include",
-  });
+  try {
+    const res = await fetchWithRoleCheck(
+      `${API_BASE_URL}/api/users/${userId}`,
+      {
+        method: "DELETE",
+        credentials: "include",
+      }
+    );
 
-  if (!res.ok) {
+    if (!res.ok) {
+      const data = await res
+        .json()
+        .catch(() => ({ message: "שגיאה לא ידועה" }));
+      throw new Error(data.message || "שגיאה במחיקת משתמש");
+    }
+
     const data = await res.json();
-    throw new Error(data.message || "שגיאה במחיקת משתמש");
+    return data;
+  } catch (err) {
+    console.error("Error deleting user:", err);
+    throw err;
   }
 }
 
@@ -36,9 +62,6 @@ export const updateUserOnServer = async (userId, updateFields) => {
 
 export async function login(username, password) {
   try {
-    console.log("🔐 Attempting login for:", username);
-    console.log("📡 API_BASE_URL:", API_BASE_URL);
-
     const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -46,13 +69,8 @@ export async function login(username, password) {
       body: JSON.stringify({ username, password }),
     });
 
-    console.log("📨 Response status:", res.status);
-    console.log("🍪 Response headers:", res.headers);
-
     const data = await res.json();
     if (!res.ok) return { success: false, message: data.message };
-
-    console.log("✅ Login successful, user:", data.user);
 
     return { success: true, user: data.user };
   } catch (err) {
@@ -61,7 +79,7 @@ export async function login(username, password) {
   }
 }
 
-export async function logout(setCurrentUser) {
+export async function logout(setCurrentUser, navigate) {
   try {
     await fetchWithRoleCheck(`${API_BASE_URL}/api/auth/logout`, {
       method: "POST",
@@ -71,34 +89,45 @@ export async function logout(setCurrentUser) {
     setCurrentUser(null);
     localStorage.removeItem("currentUser");
 
-    console.log("✅ Logged out successfully");
+    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    document.cookie =
+      "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=" +
+      window.location.hostname +
+      ";";
+
+    if (navigate) {
+      navigate("/", { replace: true });
+    }
   } catch (err) {
     console.error("שגיאה בעת התנתקות:", err);
 
+    // Even on error, clear everything
     setCurrentUser(null);
     localStorage.removeItem("currentUser");
+    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    document.cookie =
+      "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=" +
+      window.location.hostname +
+      ";";
+
+    if (navigate) {
+      navigate("/", { replace: true });
+    }
   }
 }
 
 export async function checkAuth() {
   try {
-    console.log("📡 Checking auth at:", `${API_BASE_URL}/api/auth/me`);
-    console.log("🍪 Sending credentials: include");
-
     const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/auth/me`, {
       method: "GET",
       credentials: "include",
     });
 
-    console.log("📨 Auth check response status:", res.status);
-
     if (res.ok) {
       const data = await res.json();
-      console.log("✅ Auth successful, user:", data.user?.username);
       return { success: true, user: data.user };
     }
 
-    console.log("❌ Auth check failed:", res.status);
     return { success: false };
   } catch (err) {
     console.error("💥 Auth check error:", err);

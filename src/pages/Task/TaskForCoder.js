@@ -18,7 +18,7 @@ export default function TaskForCoder() {
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [experimentNames, setExperimentNames] = useState({});
   const [statementsCache, setStatementsCache] = useState({});
-  const [experimentPercentMap, setExperimentPercentMap] = useState({}); // אחוזי ניסוי
+  const [experimentPercentMap, setExperimentPercentMap] = useState({}); // Experiment percentages
 
   // Use refs to track what we've already fetched
   const fetchedStatements = useRef(new Set());
@@ -37,7 +37,7 @@ export default function TaskForCoder() {
   );
 
   const getInvestigatorName = (investigatorId) =>
-    users.find((u) => u._id === investigatorId)?.username || "משתמש לא נמצא";
+    users.find((u) => u._id === investigatorId)?.username || "User not found";
 
   useEffect(() => {
     const fetchStatementsForTasks = async () => {
@@ -80,7 +80,8 @@ export default function TaskForCoder() {
           fetchedExperiments.current.add(task.experimentId);
           promises.push(
             experimentById(task.experimentId).then((exp) => {
-              if (exp) names[task.experimentId] = exp.name || "ניסוי לא נמצא";
+              if (exp)
+                names[task.experimentId] = exp.name || "Experiment not found";
             })
           );
         }
@@ -136,7 +137,7 @@ export default function TaskForCoder() {
           height: "100vh",
         }}
       >
-        <div>טוען...</div>
+        <div>Loading...</div>
       </div>
     );
   }
@@ -149,8 +150,8 @@ export default function TaskForCoder() {
       <ul className="ml-6 mt-2 list-disc">
         {taskCopies.map((copy) => (
           <li key={copy._id}>
-            הצהרה {statementsCache[copy.statementId]?.name || "טוען..."} -
-            סטטוס: {copy.status}
+            Statement {statementsCache[copy.statementId]?.name || "Loading..."}{" "}
+            - Status: {copy.status}
           </li>
         ))}
       </ul>
@@ -159,8 +160,8 @@ export default function TaskForCoder() {
 
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">המשימות שלי</h2>
-      {researcherTasks.length === 0 && <p>אין לך משימות עדיין.</p>}
+      <h2 className="text-2xl font-bold mb-4">My Tasks</h2>
+      {researcherTasks.length === 0 && <p>You don't have any tasks yet.</p>}
       <ul className="space-y-4">
         {researcherTasks.map((task) => (
           <li
@@ -177,22 +178,22 @@ export default function TaskForCoder() {
                 }
               >
                 <p>
-                  <strong>ניסוי:</strong>{" "}
-                  {experimentNames[task.experimentId] || "טוען..."}
+                  <strong>Experiment:</strong>{" "}
+                  {experimentNames[task.experimentId] || "Loading..."}
                 </p>
                 <p>
-                  <strong>חוקר:</strong>{" "}
+                  <strong>Researcher:</strong>{" "}
                   {getInvestigatorName(task.investigatorId)}
                 </p>
                 <p>
-                  <strong>אחוז מהניסוי:</strong>{" "}
+                  <strong>Experiment Completion:</strong>{" "}
                   {experimentPercentMap[task._id] ?? 0}%
                 </p>
                 <p>
-                  <strong>התקדמות:</strong> {taskProgress(task._id)}%
+                  <strong>Progress:</strong> {taskProgress(task._id)}%
                 </p>
                 <p>
-                  <strong>הודעות שלא נקראו:</strong>{" "}
+                  <strong>Unread Messages:</strong>{" "}
                   {getUnreadCount(task._id, currentUser._id)}
                 </p>
               </div>
@@ -204,13 +205,13 @@ export default function TaskForCoder() {
                   onClick={() => navigate(`/task-chat/${task._id}`)}
                   className="text-blue-600 underline text-sm ml-4"
                 >
-                  עבור לצ'אט
+                  Go to Chat
                 </button>
                 <button
                   onClick={() => navigate(`/task-summary/${task._id}`)}
                   className="text-green-600 underline text-sm"
                 >
-                  סיכום משימה
+                  Task Summary
                 </button>
               </>
             )}

@@ -19,14 +19,14 @@ export default function TaskChatPage() {
   return (
     <div className="chat-page-container">
       <button onClick={() => navigate(-1)} className="chat-back-btn">
-        <FaArrowRight /> חזרה
+        <FaArrowRight /> Back
       </button>
 
       <div className="chat-page-header">
         <h1 className="chat-page-title">
-          <FaComments /> צ'אט משימה
+          <FaComments /> Task Chat
         </h1>
-        <p className="chat-page-subtitle">שיחה על המשימה</p>
+        <p className="chat-page-subtitle">Conversation about the task</p>
       </div>
 
       <div className="chat-wrapper">

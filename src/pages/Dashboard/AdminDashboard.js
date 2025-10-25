@@ -28,7 +28,7 @@ export default function AdminHomePage() {
 
   const [experiments, setExperiments] = useState([]);
   const [groups, setGroups] = useState([]);
-  const [statements, setStatements] = useState([]); // ← state חדש להצהרות
+  const [statements, setStatements] = useState([]); // New state for statements
   const [expandedExperimentId, setExpandedExperimentId] = useState(null);
   const [expandedGroupId, setExpandedGroupId] = useState(null);
   const [expandedStatementId, setExpandedStatementId] = useState(null);
@@ -36,36 +36,49 @@ export default function AdminHomePage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // רק אחרי שבדיקת האותנטיקציה הושלמה
     if (isAuthChecked && !currentUser) {
       navigate("/", { replace: true });
     }
   }, [currentUser, isAuthChecked, navigate]);
 
-  // טעינת ניסויים
   useEffect(() => {
     const loadExperiments = async () => {
+      if (!isAuthChecked || !currentUser) {
+        return;
+      }
+
       try {
         const data = await fetchExperiments();
         const dataWithInvestigatorNames = await Promise.all(
           data.map(async (exp) => {
-            const name = await investigatorNameByExperimentId(exp._id);
-            return { ...exp, investigatorName: name || "לא ידוע" };
+            try {
+              const name = await investigatorNameByExperimentId(exp._id);
+              return { ...exp, investigatorName: name || "Unknown" };
+            } catch (nameErr) {
+              console.warn(
+                `Could not get investigator name for experiment ${exp._id}`
+              );
+              return { ...exp, investigatorName: "Unknown" };
+            }
           })
         );
         setExperiments(dataWithInvestigatorNames);
-      } catch {
-        alert("❌ שגיאה בטעינת ניסויים");
+      } catch (err) {
+        console.error("❌ Error loading experiments:", err);
+        alert(
+          `❌ Error loading experiments: ${err.message || "Unknown error"}`
+        );
       }
     };
     loadExperiments();
-  }, [fetchExperiments, investigatorNameByExperimentId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthChecked, currentUser]);
 
-  // אם עדיין בודקים אותנטיקציה, הצג טעינה
+  // If still checking authentication, show loading
   if (!isAuthChecked) {
     return (
       <div className="loading-container">
-        <div>טוען</div>
+        <div>Loading</div>
         <div className="loading-spinner"></div>
       </div>
     );
@@ -73,7 +86,7 @@ export default function AdminHomePage() {
 
   if (!currentUser) return null;
 
-  // פתיחת/סגירת ניסוי
+  // Open/close experiment
   const toggleExperiment = async (id) => {
     if (expandedExperimentId === id) {
       setExpandedExperimentId(null);
@@ -86,11 +99,11 @@ export default function AdminHomePage() {
       const loadedGroups = await groupsByExperimentId(id);
       setGroups(loadedGroups);
     } catch {
-      alert("❌ שגיאה בטעינת קבוצות");
+      alert("❌ Error loading groups");
     }
   };
 
-  // פתיחת/סגירת קבוצה → טענת הצהרות מהשרת
+  // Open/close group → load statements from server
   const toggleGroup = async (id) => {
     if (expandedGroupId === id) {
       setExpandedGroupId(null);
@@ -103,7 +116,7 @@ export default function AdminHomePage() {
       const loadedStatements = await statementsByGroupId(id);
       setStatements(loadedStatements);
     } catch {
-      alert("❌ שגיאה בטעינת הצהרות");
+      alert("❌ Error loading statements");
     }
   };
 
@@ -115,15 +128,17 @@ export default function AdminHomePage() {
     <div className="admin-dashboard">
       <div className="dashboard-header">
         <h1 className="dashboard-title">
-          <FaMicroscope /> ניהול ניסויים
+          <FaMicroscope /> Experiment Management
         </h1>
-        <p className="dashboard-subtitle">צפייה וניהול של כל הניסויים במערכת</p>
+        <p className="dashboard-subtitle">
+          View and manage all experiments in the system
+        </p>
       </div>
 
       {experiments.length === 0 ? (
         <div className="empty-state">
           <div className="empty-state-icon">📊</div>
-          <p className="empty-state-text">אין ניסויים במערכת</p>
+          <p className="empty-state-text">No experiments in the system</p>
         </div>
       ) : (
         <ul className="experiments-list">
@@ -136,7 +151,7 @@ export default function AdminHomePage() {
                 <div className="experiment-info">
                   <div className="experiment-name">{exp.name}</div>
                   <div className="experiment-investigator">
-                    חוקר: {exp.investigatorName || "לא ידוע"}
+                    Researcher: {exp.investigatorName || "Unknown"}
                   </div>
                 </div>
                 <div
@@ -186,7 +201,7 @@ export default function AdminHomePage() {
                                       }
                                       className="btn-dashboard btn-compare"
                                     >
-                                      <FaBalanceScale /> השווה קידודים
+                                      <FaBalanceScale /> Compare Codings
                                     </button>
                                   )}
                                   <button
@@ -197,7 +212,7 @@ export default function AdminHomePage() {
                                     }
                                     className="btn-dashboard btn-summary"
                                   >
-                                    <FaChartLine /> סיכום הצהרה
+                                    <FaChartLine /> Statement Summary
                                   </button>
                                 </div>
                               </div>
@@ -215,7 +230,7 @@ export default function AdminHomePage() {
                                               );
                                             } else {
                                               alert(
-                                                "לא ניתן לצפות בהצהרה לפני שהקידוד הושלם"
+                                                "Cannot view statement before coding is completed"
                                               );
                                             }
                                           }}
@@ -227,7 +242,7 @@ export default function AdminHomePage() {
                                         >
                                           {users.find(
                                             (user) => user._id === copy.coderId
-                                          )?.username || "לא ידוע"}
+                                          )?.username || "Unknown"}
                                         </div>
 
                                         <div className="copy-actions">
@@ -237,7 +252,7 @@ export default function AdminHomePage() {
                                             }
                                             className="btn-dashboard btn-chat"
                                           >
-                                            <FaComments /> צ'אט
+                                            <FaComments /> Chat
                                           </button>
 
                                           {getUnreadCount(

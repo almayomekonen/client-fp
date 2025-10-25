@@ -63,7 +63,6 @@ export default function InvestigatorHomePage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // רק אחרי שבדיקת האותנטיקציה הושלמה
     if (isAuthChecked && !currentUser) {
       navigate("/", { replace: true });
     }
@@ -71,13 +70,23 @@ export default function InvestigatorHomePage() {
 
   useEffect(() => {
     const fetchExperiments = async () => {
-      if (currentUser?._id) {
+      if (!isAuthChecked || !currentUser?._id) {
+        return;
+      }
+
+      try {
         const exps = await experimentsByInvestigatorId(currentUser._id);
         setRelevantExperiments(exps);
+      } catch (err) {
+        console.error("❌ Error loading experiments:", err);
+        alert(
+          `❌ Error loading experiments: ${err.message || "Unknown error"}`
+        );
       }
     };
     fetchExperiments();
-  }, [currentUser, experimentsByInvestigatorId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthChecked, currentUser]);
 
   const toggleExperiment = async (id) => {
     if (expandedExperimentId === id) {
@@ -91,7 +100,7 @@ export default function InvestigatorHomePage() {
       const loadedGroups = await groupsByExperimentId(id);
       setGroups(loadedGroups);
     } catch {
-      alert("❌ שגיאה בטעינת קבוצות");
+      alert("❌ Error loading groups");
     }
   };
 
@@ -107,7 +116,7 @@ export default function InvestigatorHomePage() {
       const loadedStatements = await statementsByGroupId(groupId);
       setStatements(loadedStatements);
     } catch {
-      alert("❌ שגיאה בטעינת הצהרות");
+      alert("❌ Error loading statements");
     }
   };
 
@@ -115,11 +124,11 @@ export default function InvestigatorHomePage() {
     setExpandedStatementId(expandedStatementId === id ? null : id);
   };
 
-  // אם עדיין בודקים אותנטיקציה, הצג טעינה
+  // If still checking authentication, show loading
   if (!isAuthChecked) {
     return (
       <div className="loading-container">
-        <div>טוען</div>
+        <div>Loading</div>
         <div className="loading-spinner"></div>
       </div>
     );
@@ -127,10 +136,10 @@ export default function InvestigatorHomePage() {
 
   if (!currentUser) return null;
 
-  // --- פונקציות CRUD ---
+  // --- CRUD Functions ---
   const handleCreateExperiment = async (e) => {
     e.preventDefault();
-    if (!expName.trim()) return alert("נא למלא שם לניסוי");
+    if (!expName.trim()) return alert("Please enter an experiment name");
 
     const newExp = await addExperiment(expName, expDesc, currentUser._id);
     if (newExp) setRelevantExperiments((prev) => [...prev, newExp]);
@@ -140,7 +149,7 @@ export default function InvestigatorHomePage() {
   };
 
   const handleDeleteExperiment = async (experimentId) => {
-    if (window.confirm("האם אתה בטוח שברצונך למחוק את הניסוי?")) {
+    if (window.confirm("Are you sure you want to delete this experiment?")) {
       const success = await deleteExperiment(experimentId);
       if (success) {
         setRelevantExperiments((prev) =>
@@ -153,7 +162,7 @@ export default function InvestigatorHomePage() {
 
   const handleCreateGroup = async (e, experimentId) => {
     e.preventDefault();
-    if (!groupName.trim()) return alert("נא למלא שם לקבוצה");
+    if (!groupName.trim()) return alert("Please enter a group name");
     const newGroup = await addGroup(experimentId, groupName, groupDesc);
     if (newGroup) setGroups((prev) => [...prev, newGroup]);
     setGroupName("");
@@ -162,7 +171,7 @@ export default function InvestigatorHomePage() {
   };
 
   const handleDeleteGroup = async (groupId) => {
-    if (window.confirm("האם למחוק את הקבוצה?")) {
+    if (window.confirm("Delete this group?")) {
       const success = await deleteGroup(groupId);
       if (success) setGroups((prev) => prev.filter((g) => g._id !== groupId));
     }
@@ -171,7 +180,7 @@ export default function InvestigatorHomePage() {
   const handleCreateStatement = async (e, experimentId, groupId) => {
     e.preventDefault();
     if (!statementName.trim() || !statementText.trim())
-      return alert("נא למלא את כל השדות");
+      return alert("Please fill in all fields");
 
     const newStatement = await addStatement(
       statementName,
@@ -198,18 +207,18 @@ export default function InvestigatorHomePage() {
   };
 
   const handleDeleteStatement = async (statementId) => {
-    if (window.confirm("האם למחוק את ההצהרה?")) {
+    if (window.confirm("Delete this statement?")) {
       await deleteStatement(statementId);
       setStatements((prev) => prev.filter((s) => s._id !== statementId));
     }
   };
 
   const handleDeleteCopy = async (copyId) => {
-    if (window.confirm("האם למחוק את העתק?")) await deleteCopy(copyId);
+    if (window.confirm("Delete this copy?")) await deleteCopy(copyId);
   };
 
   const handleCreateCopy = async (experimentId, groupId, statementId) => {
-    if (!selectedUserIdForCopy) return alert("בחר מקודד קודם");
+    if (!selectedUserIdForCopy) return alert("Select coder first");
     await addTaskForCopy(
       experimentId,
       groupId,
@@ -221,14 +230,16 @@ export default function InvestigatorHomePage() {
   };
 
   const handleCreateTask = async (experimentId) => {
-    if (!selectedUserIdForTask) return alert("בחר מקודד קודם");
+    if (!selectedUserIdForTask) return alert("Select coder first");
     const percentStr = window.prompt(
-      "כמה אחוז מהצהרות הניסוי לשייך למקודד זה? (0-100)"
+      "What percentage of experiment statements to assign to this coder? (0-100)"
     );
     if (!percentStr) return;
     const percent = parseFloat(percentStr);
     if (isNaN(percent) || percent < 0 || percent > 100)
-      return alert("אחוזים לא חוקיים. יש להזין מספר בין 0 ל-100");
+      return alert(
+        "Invalid percentage. Please enter a number between 0 and 100"
+      );
     await addTask(
       experimentId,
       currentUser._id,
@@ -243,9 +254,11 @@ export default function InvestigatorHomePage() {
     <div className="dashboard-container">
       <div className="dashboard-header">
         <h1 className="dashboard-title">
-          <FaMicroscope /> הניסויים שלי
+          <FaMicroscope /> My Experiments
         </h1>
-        <p className="dashboard-subtitle">ניהול וצפייה בכל הניסויים שיצרתי</p>
+        <p className="dashboard-subtitle">
+          Manage and view all experiments I created
+        </p>
       </div>
 
       {!showExpForm ? (
@@ -253,38 +266,38 @@ export default function InvestigatorHomePage() {
           onClick={() => setShowExpForm(true)}
           className="investigator-add-btn"
         >
-          <FaPlus /> הוסף ניסוי חדש
+          <FaPlus /> Add New Experiment
         </button>
       ) : (
         <form onSubmit={handleCreateExperiment} className="investigator-form">
           <div className="investigator-form-group">
-            <label className="form-label">שם הניסוי</label>
+            <label className="form-label">Experiment Name</label>
             <input
               value={expName}
               onChange={(e) => setExpName(e.target.value)}
               className="investigator-form-input"
-              placeholder="הכנס שם לניסוי"
+              placeholder="Enter experiment name"
             />
           </div>
           <div className="investigator-form-group">
-            <label className="form-label">תיאור הניסוי</label>
+            <label className="form-label">Experiment Description</label>
             <textarea
               value={expDesc}
               onChange={(e) => setExpDesc(e.target.value)}
               className="investigator-form-textarea"
-              placeholder="הכנס תיאור לניסוי"
+              placeholder="Enter experiment description"
             />
           </div>
           <div className="investigator-form-actions">
             <button type="submit" className="investigator-add-btn">
-              <FaSave /> שמור
+              <FaSave /> Save
             </button>
             <button
               type="button"
               onClick={() => setShowExpForm(false)}
               className="btn-secondary"
             >
-              <FaTimes /> ביטול
+              <FaTimes /> Cancel
             </button>
           </div>
         </form>
@@ -300,22 +313,60 @@ export default function InvestigatorHomePage() {
               >
                 <FaFileAlt /> {exp.name}
               </div>
-              <button
-                onClick={() => handleDeleteExperiment(exp._id)}
-                className="investigator-delete-btn"
+              <div
+                style={{ display: "flex", gap: "8px", alignItems: "center" }}
               >
-                <FaTrash /> מחק ניסוי
-              </button>
+                <button
+                  onClick={() => handleDeleteExperiment(exp._id)}
+                  className="investigator-delete-btn"
+                >
+                  <FaTrash /> Delete Experiment
+                </button>
+              </div>
             </div>
 
             {expandedExperimentId === exp._id && (
               <div className="mt-4">
+                {/* Task creation UI - once per experiment */}
+                <div
+                  className="mt-4"
+                  style={{
+                    marginBottom: "20px",
+                    padding: "15px",
+                    backgroundColor: "#f0f8ff",
+                    borderRadius: "8px",
+                    border: "1px solid #b0d4f1",
+                  }}
+                >
+                  <h4 style={{ marginBottom: "10px", color: "#333" }}>
+                    Create Task for Experiment
+                  </h4>
+                  <select
+                    value={selectedUserIdForTask}
+                    onChange={(e) => setSelectedUserIdForTask(e.target.value)}
+                    className="investigator-select"
+                    style={{ marginBottom: "10px" }}
+                  >
+                    <option value="">Select coder for task</option>
+                    {users.map((user) => (
+                      <option key={user._id} value={user._id}>
+                        {user.username}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => handleCreateTask(exp._id)}
+                    className="btn-primary"
+                  >
+                    <FaUsers /> Create Task for Experiment
+                  </button>
+                </div>
                 {showGroupForm !== exp._id ? (
                   <button
                     onClick={() => setShowGroupForm(exp._id)}
                     className="investigator-add-btn"
                   >
-                    <FaFolderOpen /> הוסף קבוצה
+                    <FaFolderOpen /> Add Group
                   </button>
                 ) : (
                   <form
@@ -326,24 +377,24 @@ export default function InvestigatorHomePage() {
                       value={groupName}
                       onChange={(e) => setGroupName(e.target.value)}
                       className="investigator-form-input"
-                      placeholder="שם הקבוצה"
+                      placeholder="Group Name"
                     />
                     <textarea
                       value={groupDesc}
                       onChange={(e) => setGroupDesc(e.target.value)}
                       className="investigator-form-textarea"
-                      placeholder="תיאור"
+                      placeholder="Description"
                     />
                     <div className="investigator-form-actions">
                       <button type="submit" className="investigator-add-btn">
-                        <FaSave /> שמור
+                        <FaSave /> Save
                       </button>
                       <button
                         type="button"
                         onClick={() => setShowGroupForm(null)}
                         className="btn-secondary"
                       >
-                        <FaTimes /> ביטול
+                        <FaTimes /> Cancel
                       </button>
                     </div>
                   </form>
@@ -362,7 +413,7 @@ export default function InvestigatorHomePage() {
                         onClick={() => handleDeleteGroup(group._id)}
                         className="investigator-delete-btn"
                       >
-                        <FaTrash /> מחק קבוצה
+                        <FaTrash /> Delete Group
                       </button>
                     </div>
 
@@ -373,7 +424,7 @@ export default function InvestigatorHomePage() {
                             onClick={() => setShowStatementForm(group._id)}
                             className="investigator-add-btn"
                           >
-                            <FaFileAlt /> הוסף הצהרה
+                            <FaFileAlt /> Add Statement
                           </button>
                         ) : (
                           <form
@@ -386,27 +437,27 @@ export default function InvestigatorHomePage() {
                               value={statementName}
                               onChange={(e) => setStatementName(e.target.value)}
                               className="investigator-form-input"
-                              placeholder="שם ההצהרה"
+                              placeholder="Statement Name"
                             />
                             <textarea
                               value={statementText}
                               onChange={(e) => setStatementText(e.target.value)}
                               className="investigator-form-textarea"
-                              placeholder="תוכן ההצהרה"
+                              placeholder="Statement Content"
                             />
                             <div className="investigator-form-actions">
                               <button
                                 type="submit"
                                 className="investigator-add-btn"
                               >
-                                <FaSave /> שמור
+                                <FaSave /> Save
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setShowStatementForm(null)}
                                 className="btn-secondary"
                               >
-                                <FaTimes /> ביטול
+                                <FaTimes /> Cancel
                               </button>
                             </div>
                           </form>
@@ -434,7 +485,7 @@ export default function InvestigatorHomePage() {
                                     }
                                     className="text-blue-500 hover:text-blue-700 underline"
                                   >
-                                    <FaChartLine /> השווה קידודים
+                                    <FaChartLine /> Compare Codings
                                   </button>
                                 )}
                                 <button
@@ -445,7 +496,7 @@ export default function InvestigatorHomePage() {
                                   }
                                   className="text-green-500 hover:text-green-700 underline"
                                 >
-                                  <FaFileAlt /> סיכום הצהרה
+                                  <FaFileAlt /> Statement Summary
                                 </button>
                                 <button
                                   onClick={() =>
@@ -453,7 +504,7 @@ export default function InvestigatorHomePage() {
                                   }
                                   className="investigator-delete-btn text-sm"
                                 >
-                                  <FaTrash /> מחק
+                                  <FaTrash /> Delete
                                 </button>
                               </div>
                             </div>
@@ -467,7 +518,7 @@ export default function InvestigatorHomePage() {
                                   }
                                   className="investigator-select"
                                 >
-                                  <option value="">בחר מקודד</option>
+                                  <option value="">Select Coder</option>
                                   {users.map((user) => (
                                     <option key={user._id} value={user._id}>
                                       {user.username}
@@ -484,7 +535,7 @@ export default function InvestigatorHomePage() {
                                   }
                                   className="investigator-add-btn"
                                 >
-                                  <FaPlus /> הוסף העתק
+                                  <FaPlus /> Add Copy
                                 </button>
 
                                 {copiesByStatementId(statement._id).map(
@@ -501,7 +552,7 @@ export default function InvestigatorHomePage() {
                                             );
                                           else
                                             alert(
-                                              "לא ניתן לצפות בהצהרה לפני שהקידוד הושלם"
+                                              "Cannot view statement before coding is completed"
                                             );
                                         }}
                                         className={`cursor-pointer ${
@@ -512,7 +563,7 @@ export default function InvestigatorHomePage() {
                                       >
                                         {users.find(
                                           (user) => user._id === copy.coderId
-                                        )?.username || "לא ידוע"}
+                                        )?.username || "Unknown"}
                                       </div>
                                       <div className="flex items-center space-x-2">
                                         <button
@@ -521,7 +572,7 @@ export default function InvestigatorHomePage() {
                                           }
                                           className="text-blue-500 text-sm"
                                         >
-                                          <FaComments /> צ'אט
+                                          <FaComments /> Chat
                                         </button>
                                         <span className="investigator-unread-count">
                                           {getUnreadCount(
@@ -535,7 +586,7 @@ export default function InvestigatorHomePage() {
                                           }
                                           className="investigator-delete-btn text-sm"
                                         >
-                                          <FaTrash /> מחק
+                                          <FaTrash /> Delete
                                         </button>
                                       </div>
                                     </div>
@@ -545,29 +596,6 @@ export default function InvestigatorHomePage() {
                             )}
                           </div>
                         ))}
-
-                        <div className="mt-4">
-                          <select
-                            value={selectedUserIdForTask}
-                            onChange={(e) =>
-                              setSelectedUserIdForTask(e.target.value)
-                            }
-                            className="investigator-select"
-                          >
-                            <option value="">בחר מקודד למשימה</option>
-                            {users.map((user) => (
-                              <option key={user._id} value={user._id}>
-                                {user.username}
-                              </option>
-                            ))}
-                          </select>
-                          <button
-                            onClick={() => handleCreateTask(exp._id)}
-                            className="btn-primary"
-                          >
-                            <FaUsers /> צור משימה לניסוי
-                          </button>
-                        </div>
                       </div>
                     )}
                   </div>

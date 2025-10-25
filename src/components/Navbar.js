@@ -26,9 +26,9 @@ function Navbar() {
   };
 
   const getRoleName = (role) => {
-    if (role === "admin") return "👑 מנהל";
-    if (role === "investigator") return "🔬 חוקר";
-    if (role === "coder") return "✏️ מקודד";
+    if (role === "admin") return "👑 Admin";
+    if (role === "investigator") return "🔬 Researcher";
+    if (role === "coder") return "✏️ Coder";
     return "";
   };
 
@@ -40,7 +40,7 @@ function Navbar() {
       links.push(
         <Link key="adminHome" to="/adminHome" className="navbar-link">
           <span className="navbar-icon">🏠</span>
-          <span className="navbar-text">בית</span>
+          <span className="navbar-text">Home</span>
         </Link>,
         <Link
           key="investigatorHome"
@@ -48,15 +48,15 @@ function Navbar() {
           className="navbar-link"
         >
           <span className="navbar-icon">🔬</span>
-          <span className="navbar-text">הניסויים שלי</span>
+          <span className="navbar-text">My Experiments</span>
         </Link>,
         <Link key="coderHome" to="/coderHome" className="navbar-link">
           <span className="navbar-icon">✏️</span>
-          <span className="navbar-text">הקידודים שלי</span>
+          <span className="navbar-text">My Codings</span>
         </Link>,
         <Link key="admin-panel" to="/admin-panel" className="navbar-link">
           <span className="navbar-icon">👥</span>
-          <span className="navbar-text">ניהול משתמשים</span>
+          <span className="navbar-text">User Management</span>
         </Link>,
         <Link
           key="task-management"
@@ -64,7 +64,7 @@ function Navbar() {
           className="navbar-link"
         >
           <span className="navbar-icon">📋</span>
-          <span className="navbar-text">כל המשימות</span>
+          <span className="navbar-text">All Tasks</span>
         </Link>,
         <Link
           key="task-investigator"
@@ -72,15 +72,15 @@ function Navbar() {
           className="navbar-link"
         >
           <span className="navbar-icon">📊</span>
-          <span className="navbar-text">המשימות שיצרתי</span>
+          <span className="navbar-text">Tasks I Created</span>
         </Link>,
         <Link key="manage-colors" to="/manage-colors" className="navbar-link">
           <span className="navbar-icon">🎨</span>
-          <span className="navbar-text">ניהול צבעים</span>
+          <span className="navbar-text">Color Management</span>
         </Link>,
         <Link key="task-coder" to="/task-coder" className="navbar-link">
           <span className="navbar-icon">📝</span>
-          <span className="navbar-text">המשימות שלי</span>
+          <span className="navbar-text">My Tasks</span>
         </Link>
       );
     }
@@ -93,11 +93,11 @@ function Navbar() {
           className="navbar-link"
         >
           <span className="navbar-icon">🏠</span>
-          <span className="navbar-text">בית</span>
+          <span className="navbar-text">Home</span>
         </Link>,
         <Link key="coderHome" to="/coderHome" className="navbar-link">
           <span className="navbar-icon">✏️</span>
-          <span className="navbar-text">הקידודים שלי</span>
+          <span className="navbar-text">My Codings</span>
         </Link>,
         <Link
           key="task-investigator"
@@ -105,11 +105,11 @@ function Navbar() {
           className="navbar-link"
         >
           <span className="navbar-icon">📊</span>
-          <span className="navbar-text">המשימות שיצרתי</span>
+          <span className="navbar-text">Tasks I Created</span>
         </Link>,
         <Link key="task-coder" to="/task-coder" className="navbar-link">
           <span className="navbar-icon">📝</span>
-          <span className="navbar-text">המשימות שלי</span>
+          <span className="navbar-text">My Tasks</span>
         </Link>
       );
     }
@@ -118,11 +118,11 @@ function Navbar() {
       links.push(
         <Link key="coderHome" to="/coderHome" className="navbar-link">
           <span className="navbar-icon">🏠</span>
-          <span className="navbar-text">בית</span>
+          <span className="navbar-text">Home</span>
         </Link>,
         <Link key="task-coder" to="/task-coder" className="navbar-link">
           <span className="navbar-icon">📝</span>
-          <span className="navbar-text">המשימות שלי</span>
+          <span className="navbar-text">My Tasks</span>
         </Link>
       );
     }
@@ -135,7 +135,7 @@ function Navbar() {
       <div className="navbar-container">
         <div className="navbar-logo">
           <span className="logo-icon">📊</span>
-          <span className="logo-text">מערכת קידוד</span>
+          <span className="logo-text">Coding System</span>
         </div>
 
         <div className="navbar-links">{renderLinks()}</div>
@@ -151,7 +151,7 @@ function Navbar() {
               </div>
               <button onClick={handleLogout} className="navbar-logout-btn">
                 <span className="navbar-icon">🚪</span>
-                <span className="navbar-text">התנתק</span>
+                <span className="navbar-text">Logout</span>
               </button>
             </>
           )}
