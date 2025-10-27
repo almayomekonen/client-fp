@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useRegistrations } from "../../context/RegistrationContext";
 import { useEmailVerification } from "../../context/EmailVerificationContext";
 import "../../styles/Auth.css";
@@ -7,6 +7,7 @@ import "../../styles/Auth.css";
 export default function RegisterPage() {
   const { register } = useRegistrations();
   const { sendVerificationCode, verifyCode } = useEmailVerification();
+  const navigate = useNavigate();
 
   const [form, setForm] = useState({
     username: "",
@@ -43,7 +44,23 @@ export default function RegisterPage() {
       form.role,
       form.email
     );
-    setMessage(result.message);
+
+    if (result.success) {
+      // Show success message and redirect to login after 2 seconds
+      setMessage(
+        "✅ Registration successful! Your account is pending admin approval. You will be redirected to login..."
+      );
+      setTimeout(() => {
+        navigate("/", {
+          state: {
+            message:
+              "Registration successful! Please wait for admin approval before logging in.",
+          },
+        });
+      }, 2000);
+    } else {
+      setMessage(result.message);
+    }
   };
 
   return (

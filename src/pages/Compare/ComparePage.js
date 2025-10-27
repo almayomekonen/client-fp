@@ -285,6 +285,63 @@ export default function ComparePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statementId]);
 
+  // 🔴 Real-time comment synchronization for both copies
+  useEffect(() => {
+    if (!socket || !copyA || !copyB) return;
+
+    const handleCommentCreated = (data) => {
+      // Update comments for Copy A
+      if (data.copyId === copyA._id) {
+        setLocalCommentsA((prevComments) => {
+          const exists = prevComments.some((c) => c._id === data.comment._id);
+          if (exists) return prevComments;
+          return [...prevComments, data.comment];
+        });
+        console.log("✅ Real-time comment added to Copy A:", data.comment);
+      }
+      // Update comments for Copy B
+      if (data.copyId === copyB._id) {
+        setLocalCommentsB((prevComments) => {
+          const exists = prevComments.some((c) => c._id === data.comment._id);
+          if (exists) return prevComments;
+          return [...prevComments, data.comment];
+        });
+        console.log("✅ Real-time comment added to Copy B:", data.comment);
+      }
+    };
+
+    const handleCommentDeleted = (data) => {
+      // Delete comment from Copy A
+      if (data.copyId === copyA._id) {
+        setLocalCommentsA((prevComments) =>
+          prevComments.filter((c) => c._id !== data.commentId)
+        );
+        console.log(
+          "✅ Real-time comment deleted from Copy A:",
+          data.commentId
+        );
+      }
+      // Delete comment from Copy B
+      if (data.copyId === copyB._id) {
+        setLocalCommentsB((prevComments) =>
+          prevComments.filter((c) => c._id !== data.commentId)
+        );
+        console.log(
+          "✅ Real-time comment deleted from Copy B:",
+          data.commentId
+        );
+      }
+    };
+
+    socket.on("commentCreated", handleCommentCreated);
+    socket.on("commentDeleted", handleCommentDeleted);
+
+    return () => {
+      socket.off("commentCreated", handleCommentCreated);
+      socket.off("commentDeleted", handleCommentDeleted);
+    };
+  }, [socket, copyA, copyB]);
+
   const getRenderLeaf =
     (setActiveComment) =>
     ({ leaf, attributes, children }) => {
@@ -1202,8 +1259,26 @@ export default function ComparePage() {
                     <div className="comment-modal-body">
                       {activeComment.map((c) => (
                         <div key={c._id} className="comment-item">
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              marginBottom: "6px",
+                              fontSize: "0.85rem",
+                              color: "#666",
+                            }}
+                          >
+                            <FaUser style={{ fontSize: "0.75rem" }} />
+                            <strong>{c.userId?.username || "Unknown"}</strong>
+                            <span>•</span>
+                            <span>
+                              {new Date(c.createdAt).toLocaleDateString()}{" "}
+                              {new Date(c.createdAt).toLocaleTimeString()}
+                            </span>
+                          </div>
                           <div className="comment-text">{c.text}</div>
-                          {currentUser?._id === c.userId && (
+                          {currentUser?._id === c.userId?._id && (
                             <button
                               onClick={() => {
                                 if (window.confirm("Delete this comment?")) {

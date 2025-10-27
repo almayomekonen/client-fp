@@ -9,11 +9,11 @@ export async function register(
   email
 ) {
   if (!username || !password || !confirmPassword || !role || !email) {
-    return { success: false, message: "נא למלא את כל השדות" };
+    return { success: false, message: "Please fill in all fields" };
   }
 
   if (password !== confirmPassword) {
-    return { success: false, message: "הסיסמאות אינן תואמות" };
+    return { success: false, message: "Passwords do not match" };
   }
 
   try {

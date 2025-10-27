@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useUsers } from "../../context/UserContext";
 import { useData } from "../../context/DataContext";
 import LoginForm from "../../components/Auth/LoginForm";
@@ -10,8 +10,18 @@ export default function LoginPage() {
   const { currentUser, isAuthChecked } = useData();
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [message, setMessage] = useState("");
+
+  // Check if there's a message from registration redirect
+  useEffect(() => {
+    if (location.state?.message) {
+      setMessage(location.state.message);
+      // Clear the state so message doesn't persist on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   // If user is already authenticated, redirect to their home page
   useEffect(() => {

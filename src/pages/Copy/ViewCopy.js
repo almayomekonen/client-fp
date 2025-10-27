@@ -11,6 +11,7 @@ import {
   FaTrash,
   FaSave,
   FaFileAlt,
+  FaUser,
 } from "react-icons/fa";
 import { useCopy } from "../../context/CopyContext";
 import { useStatement } from "../../context/StatementContext";
@@ -18,6 +19,7 @@ import { useData } from "../../context/DataContext";
 import { useEdit } from "../../context/EditContext";
 import { useComment } from "../../context/CommentContext";
 import { useResult } from "../../context/ResultContext";
+import { useSocket } from "../../context/SocketContext";
 import "../../styles/Dashboard.css";
 
 export default function ViewStatementWithComments() {
@@ -36,6 +38,7 @@ export default function ViewStatementWithComments() {
     renderKeyLabel,
   } = useResult();
   const { addComment, deleteComment, fetchCommentsByCopyId } = useComment();
+  const { socket } = useSocket();
 
   const [value, setValue] = useState(null);
   const [counts, setCounts] = useState({});
@@ -104,6 +107,41 @@ export default function ViewStatementWithComments() {
     editor,
     calculateWordCounts,
   ]);
+
+  useEffect(() => {
+    if (!socket || !copyId) return;
+
+    const handleCommentCreated = (data) => {
+      // Only update if the comment is for this copy
+      if (data.copyId === copyId) {
+        setLocalComments((prevComments) => {
+          // Avoid duplicates
+          const exists = prevComments.some((c) => c._id === data.comment._id);
+          if (exists) return prevComments;
+          return [...prevComments, data.comment];
+        });
+        console.log("✅ Real-time comment added:", data.comment);
+      }
+    };
+
+    const handleCommentDeleted = (data) => {
+      // Only update if the comment is for this copy
+      if (data.copyId === copyId) {
+        setLocalComments((prevComments) =>
+          prevComments.filter((c) => c._id !== data.commentId)
+        );
+        console.log("✅ Real-time comment deleted:", data.commentId);
+      }
+    };
+
+    socket.on("commentCreated", handleCommentCreated);
+    socket.on("commentDeleted", handleCommentDeleted);
+
+    return () => {
+      socket.off("commentCreated", handleCommentCreated);
+      socket.off("commentDeleted", handleCommentDeleted);
+    };
+  }, [socket, copyId]);
 
   // Calculate global offset from Slate selection
   const getGlobalOffsetFromValue = (value, anchorPath, anchorOffset) => {
@@ -532,14 +570,34 @@ export default function ViewStatementWithComments() {
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "start",
+                      gap: "12px",
                     }}
                   >
-                    <p style={{ margin: 0, flex: 1 }}>{c.text}</p>
-                    {currentUser?._id === c.userId && (
+                    <div style={{ flex: 1 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          marginBottom: "6px",
+                          fontSize: "0.85rem",
+                          color: "#666",
+                        }}
+                      >
+                        <FaUser style={{ fontSize: "0.75rem" }} />
+                        <strong>{c.userId?.username || "Unknown"}</strong>
+                        <span>•</span>
+                        <span>
+                          {new Date(c.createdAt).toLocaleDateString()}{" "}
+                          {new Date(c.createdAt).toLocaleTimeString()}
+                        </span>
+                      </div>
+                      <p style={{ margin: 0 }}>{c.text}</p>
+                    </div>
+                    {currentUser?._id === c.userId?._id && (
                       <button
                         onClick={() => handleRemoveComment(c._id)}
                         className="dashboard-btn btn-danger btn-sm"
-                        style={{ marginLeft: "12px" }}
                       >
                         <FaTrash />
                       </button>

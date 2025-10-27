@@ -137,6 +137,26 @@ export function RefreshProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthChecked, currentUser?._id]);
 
+  const refreshAll = useCallback(async () => {
+    console.log("🔄 Refreshing all data...");
+    await Promise.all([
+      refreshCopies(),
+      refreshTasks(),
+      refreshUsers(),
+      refreshRegistrationRequests(),
+      refreshCopyMessages(),
+      refreshTaskMessages(),
+    ]);
+    console.log("✅ All data refreshed");
+  }, [
+    refreshCopies,
+    refreshTasks,
+    refreshUsers,
+    refreshRegistrationRequests,
+    refreshCopyMessages,
+    refreshTaskMessages,
+  ]);
+
   return (
     <RefreshContext.Provider
       value={{
@@ -146,6 +166,7 @@ export function RefreshProvider({ children }) {
         refreshRegistrationRequests,
         refreshCopyMessages,
         refreshTaskMessages,
+        refreshAll,
       }}
     >
       {children}

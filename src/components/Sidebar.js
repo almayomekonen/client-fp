@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useData } from "../context/DataContext";
+import { useRefresh } from "../context/RefreshContext";
 import {
   FaHome,
   FaTasks,
@@ -24,6 +25,7 @@ const Sidebar = ({ role, onLogout }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { currentUser } = useData();
+  const { refreshAll } = useRefresh();
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
@@ -34,6 +36,16 @@ const Sidebar = ({ role, onLogout }) => {
       onLogout();
     }
     navigate("/");
+  };
+
+  const handleNavigation = async (path) => {
+    if (location.pathname === path) {
+      // Already on this page, refresh data
+      await refreshAll();
+    } else {
+      // Navigate to new page
+      navigate(path);
+    }
   };
 
   // Define menu items based on role
@@ -139,17 +151,25 @@ const Sidebar = ({ role, onLogout }) => {
 
         <nav className="sidebar-nav">
           {menuItems.map((item, index) => (
-            <Link
+            <div
               key={index}
-              to={item.path}
+              onClick={() => handleNavigation(item.path)}
               className={`sidebar-link ${
                 location.pathname === item.path ? "active" : ""
               }`}
               title={!isOpen ? item.label : ""}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleNavigation(item.path);
+                }
+              }}
             >
               <span className="sidebar-icon">{item.icon}</span>
               {isOpen && <span className="sidebar-label">{item.label}</span>}
-            </Link>
+            </div>
           ))}
         </nav>
 

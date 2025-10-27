@@ -3,7 +3,7 @@ import { fetchWithRoleCheck } from "./fetchWithRoleCheck";
 
 export async function sendVerificationCode(email) {
   if (!email) {
-    return { success: false, message: "נא להזין אימייל" };
+    return { success: false, message: "Please enter email" };
   }
 
   try {
