@@ -11,13 +11,18 @@ const CommentContext = createContext();
 export const useComment = () => useContext(CommentContext);
 
 export function CommentProvider({ children }) {
-  //יצירת הערה
+  // Create comment
   const addComment = async (userId, copyId, text, offset) => {
-    const r = await createCommentOnServerService(userId, copyId, text, offset);
-    return r.newComment;
+    const newComment = await createCommentOnServerService(
+      userId,
+      copyId,
+      text,
+      offset
+    );
+    return newComment;
   };
 
-  //מחיקת הערה
+  // Delete comment
   const deleteComment = async (commentId) => {
     await deleteCommentFromServerService(commentId);
   };
