@@ -1,12 +1,18 @@
 import { API_BASE_URL } from "./config";
 import { fetchWithRoleCheck } from "./fetchWithRoleCheck";
 
-export const createCommentOnServer = async (userId, copyId, text, offset) => {
+export const createCommentOnServer = async (
+  userId,
+  copyId,
+  text,
+  offset,
+  replyTo = null
+) => {
   const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/comments`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ userId, copyId, text, offset }),
+    body: JSON.stringify({ userId, copyId, text, offset, replyTo }),
   });
 
   if (!res.ok) throw new Error("Error creating comment");

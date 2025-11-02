@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { checkAuth } from "../api/UserApi";
 import { roleChangeDetector } from "../services/RoleChangeDetector";
+import { useSocket } from "./SocketContext";
 
 const DataContext = createContext();
 export const useData = () => useContext(DataContext);
@@ -15,6 +16,7 @@ export function DataProvider({ children }) {
   const [taskMessages, setTaskMessages] = useState([]);
   const [copyMessages, setCopyMessages] = useState([]);
   const [isAuthChecked, setIsAuthChecked] = useState(false);
+  const { socket } = useSocket();
 
   // ✅ Start role change detection when user logs in
   useEffect(() => {
@@ -66,6 +68,133 @@ export function DataProvider({ children }) {
 
     initAuth();
   }, []);
+
+  // 🔴 Real-time Socket.io listeners for copies and tasks
+  useEffect(() => {
+    if (!socket) {
+      console.log("⚠️ Socket not available yet in DataContext");
+      return;
+    }
+
+    console.log("✅ Socket.io listeners ACTIVE in DataContext", {
+      socketId: socket.id,
+      connected: socket.connected,
+    });
+
+    // Copy events
+    const handleCopyCreated = ({ copy }) => {
+      console.log("🔴 Copy created:", copy);
+      setCopies((prev) => [...prev, copy]);
+    };
+
+    const handleCopyUpdated = ({ copy }) => {
+      console.log("🔴 Copy updated:", copy);
+      setCopies((prev) => prev.map((c) => (c._id === copy._id ? copy : c)));
+    };
+
+    const handleCopyDeleted = ({ copyId }) => {
+      console.log("🔴 Copy deleted:", copyId);
+      setCopies((prev) => prev.filter((c) => c._id !== copyId));
+    };
+
+    // Task events
+    const handleTaskCreated = ({ task }) => {
+      console.log("🔴🔴🔴 [REAL-TIME] Task CREATED via Socket.io:", task);
+      setTasks((prev) => {
+        const newTasks = [...prev, task];
+        console.log(
+          `✅ Task added! Total tasks: ${prev.length} → ${newTasks.length}`
+        );
+        return newTasks;
+      });
+    };
+
+    const handleTaskUpdated = ({ task }) => {
+      console.log("🔴🔴🔴 [REAL-TIME] Task UPDATED via Socket.io:", task);
+      setTasks((prev) => {
+        const updated = prev.map((t) => (t._id === task._id ? task : t));
+        console.log(`✅ Task updated! ID: ${task._id}`);
+        return updated;
+      });
+    };
+
+    const handleTaskDeleted = ({ taskId }) => {
+      console.log("🔴🔴🔴 [REAL-TIME] Task DELETED via Socket.io:", taskId);
+      setTasks((prev) => {
+        const filtered = prev.filter((t) => t._id !== taskId);
+        console.log(
+          `✅ Task deleted! Total tasks: ${prev.length} → ${filtered.length}`
+        );
+        return filtered;
+      });
+    };
+
+    // CopyMessage events
+    const handleCopyMessageCreated = ({ message }) => {
+      console.log("🔴 Copy message created:", message);
+      setCopyMessages((prev) => [...prev, message]);
+    };
+
+    const handleCopyMessageUpdated = ({ message }) => {
+      console.log("🔴 Copy message updated:", message);
+      setCopyMessages((prev) =>
+        prev.map((m) => (m._id === message._id ? message : m))
+      );
+    };
+
+    const handleCopyMessageDeleted = ({ messageId }) => {
+      console.log("🔴 Copy message deleted:", messageId);
+      setCopyMessages((prev) => prev.filter((m) => m._id !== messageId));
+    };
+
+    // TaskMessage events
+    const handleTaskMessageCreated = ({ message }) => {
+      console.log("🔴 Task message created:", message);
+      setTaskMessages((prev) => [...prev, message]);
+    };
+
+    const handleTaskMessageUpdated = ({ message }) => {
+      console.log("🔴 Task message updated:", message);
+      setTaskMessages((prev) =>
+        prev.map((m) => (m._id === message._id ? message : m))
+      );
+    };
+
+    const handleTaskMessageDeleted = ({ messageId }) => {
+      console.log("🔴 Task message deleted:", messageId);
+      setTaskMessages((prev) => prev.filter((m) => m._id !== messageId));
+    };
+
+    // Register listeners
+    socket.on("copyCreated", handleCopyCreated);
+    socket.on("copyUpdated", handleCopyUpdated);
+    socket.on("copyDeleted", handleCopyDeleted);
+    socket.on("taskCreated", handleTaskCreated);
+    socket.on("taskUpdated", handleTaskUpdated);
+    socket.on("taskDeleted", handleTaskDeleted);
+    socket.on("copyMessageCreated", handleCopyMessageCreated);
+    socket.on("copyMessageUpdated", handleCopyMessageUpdated);
+    socket.on("copyMessageDeleted", handleCopyMessageDeleted);
+    socket.on("taskMessageCreated", handleTaskMessageCreated);
+    socket.on("taskMessageUpdated", handleTaskMessageUpdated);
+    socket.on("taskMessageDeleted", handleTaskMessageDeleted);
+
+    // Cleanup
+    return () => {
+      socket.off("copyCreated", handleCopyCreated);
+      socket.off("copyUpdated", handleCopyUpdated);
+      socket.off("copyDeleted", handleCopyDeleted);
+      socket.off("taskCreated", handleTaskCreated);
+      socket.off("taskUpdated", handleTaskUpdated);
+      socket.off("taskDeleted", handleTaskDeleted);
+      socket.off("copyMessageCreated", handleCopyMessageCreated);
+      socket.off("copyMessageUpdated", handleCopyMessageUpdated);
+      socket.off("copyMessageDeleted", handleCopyMessageDeleted);
+      socket.off("taskMessageCreated", handleTaskMessageCreated);
+      socket.off("taskMessageUpdated", handleTaskMessageUpdated);
+      socket.off("taskMessageDeleted", handleTaskMessageDeleted);
+    };
+  }, [socket]);
 
   return (
     <DataContext.Provider

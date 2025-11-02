@@ -12,12 +12,13 @@ export const useComment = () => useContext(CommentContext);
 
 export function CommentProvider({ children }) {
   // Create comment
-  const addComment = async (userId, copyId, text, offset) => {
+  const addComment = async (userId, copyId, text, offset, replyTo = null) => {
     const newComment = await createCommentOnServerService(
       userId,
       copyId,
       text,
-      offset
+      offset,
+      replyTo
     );
     return newComment;
   };

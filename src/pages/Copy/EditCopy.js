@@ -71,6 +71,8 @@ export default function StatementEditor() {
   const [commentKey, setCommentKey] = useState(0);
   const [activeComment, setActiveComment] = useState(null);
   const [isAddingComment, setIsAddingComment] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [replyText, setReplyText] = useState("");
 
   const [colors, setColors] = useState([]);
   const [styleSettings, setStyleSettings] = useState({});
@@ -357,6 +359,28 @@ export default function StatementEditor() {
     setValue(decoratedText);
     setCounts(colorCounts);
     setActiveComment(null);
+  };
+
+  // Reply to comment
+  const handleReplyToComment = async (parentCommentId) => {
+    if (!replyText.trim()) return alert("Please enter reply text");
+
+    // For replies, use the parent comment's offset
+    const parentComment = localComments.find((c) => c._id === parentCommentId);
+    const offset = parentComment ? parentComment.offset : null;
+
+    const createdReply = await addComment(
+      currentUser._id,
+      copyId,
+      replyText,
+      offset,
+      parentCommentId
+    );
+    const updatedLocalComments = [...localComments, createdReply];
+    setLocalComments(updatedLocalComments);
+    setCommentKey((prev) => prev + 1);
+    setReplyingTo(null);
+    setReplyText("");
   };
 
   if (!value)
@@ -735,48 +759,162 @@ export default function StatementEditor() {
             </div>
 
             <ul className="dashboard-list">
-              {activeComment.map((c) => (
-                <li key={c._id} className="list-item">
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "start",
-                      gap: "12px",
-                    }}
-                  >
-                    <div style={{ flex: 1 }}>
+              {activeComment
+                .filter((c) => !c.replyTo)
+                .map((c) => {
+                  const replies = activeComment.filter(
+                    (r) => r.replyTo === c._id
+                  );
+                  return (
+                    <li key={c._id} className="list-item">
                       <div
                         style={{
                           display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          marginBottom: "6px",
-                          fontSize: "0.85rem",
-                          color: "#666",
+                          justifyContent: "space-between",
+                          alignItems: "start",
+                          gap: "12px",
                         }}
                       >
-                        <FaUser style={{ fontSize: "0.75rem" }} />
-                        <strong>{c.userId?.username || "Unknown"}</strong>
-                        <span>•</span>
-                        <span>
-                          {new Date(c.createdAt).toLocaleDateString()}{" "}
-                          {new Date(c.createdAt).toLocaleTimeString()}
-                        </span>
+                        <div style={{ flex: 1 }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              marginBottom: "6px",
+                              fontSize: "0.85rem",
+                              color: "#666",
+                            }}
+                          >
+                            <FaUser style={{ fontSize: "0.75rem" }} />
+                            <strong>{c.userId?.username || "Unknown"}</strong>
+                            <span>•</span>
+                            <span>
+                              {new Date(c.createdAt).toLocaleDateString()}{" "}
+                              {new Date(c.createdAt).toLocaleTimeString()}
+                            </span>
+                          </div>
+                          <p style={{ margin: 0, marginBottom: "8px" }}>
+                            {c.text}
+                          </p>
+
+                          {/* Reply button */}
+                          <button
+                            onClick={() => setReplyingTo(c._id)}
+                            className="dashboard-btn btn-secondary btn-sm"
+                            style={{ fontSize: "0.75rem", padding: "4px 8px" }}
+                          >
+                            <FaComment style={{ marginRight: "4px" }} /> Reply
+                          </button>
+
+                          {/* Reply input */}
+                          {replyingTo === c._id && (
+                            <div style={{ marginTop: "12px" }}>
+                              <textarea
+                                value={replyText}
+                                onChange={(e) => setReplyText(e.target.value)}
+                                placeholder="Write a reply..."
+                                className="dashboard-input"
+                                style={{
+                                  width: "100%",
+                                  minHeight: "60px",
+                                  marginBottom: "8px",
+                                }}
+                              />
+                              <div style={{ display: "flex", gap: "8px" }}>
+                                <button
+                                  onClick={() => handleReplyToComment(c._id)}
+                                  className="dashboard-btn btn-primary btn-sm"
+                                >
+                                  Send Reply
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setReplyingTo(null);
+                                    setReplyText("");
+                                  }}
+                                  className="dashboard-btn btn-secondary btn-sm"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Display replies */}
+                          {replies.length > 0 && (
+                            <div
+                              style={{
+                                marginTop: "12px",
+                                marginLeft: "24px",
+                                paddingLeft: "12px",
+                                borderLeft: "3px solid #e0e0e0",
+                              }}
+                            >
+                              {replies.map((reply) => (
+                                <div
+                                  key={reply._id}
+                                  style={{ marginBottom: "12px" }}
+                                >
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "8px",
+                                      marginBottom: "4px",
+                                      fontSize: "0.85rem",
+                                      color: "#666",
+                                    }}
+                                  >
+                                    <FaUser style={{ fontSize: "0.75rem" }} />
+                                    <strong>
+                                      {reply.userId?.username || "Unknown"}
+                                    </strong>
+                                    <span>•</span>
+                                    <span>
+                                      {new Date(
+                                        reply.createdAt
+                                      ).toLocaleDateString()}{" "}
+                                      {new Date(
+                                        reply.createdAt
+                                      ).toLocaleTimeString()}
+                                    </span>
+                                  </div>
+                                  <p style={{ margin: 0, fontSize: "0.95rem" }}>
+                                    {reply.text}
+                                  </p>
+                                  {currentUser?._id === reply.userId?._id && (
+                                    <button
+                                      onClick={() =>
+                                        handleRemoveComment(reply._id)
+                                      }
+                                      className="dashboard-btn btn-danger btn-sm"
+                                      style={{
+                                        fontSize: "0.75rem",
+                                        padding: "2px 6px",
+                                        marginTop: "4px",
+                                      }}
+                                    >
+                                      <FaTrash />
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        {currentUser?._id === c.userId?._id && (
+                          <button
+                            onClick={() => handleRemoveComment(c._id)}
+                            className="dashboard-btn btn-danger btn-sm"
+                          >
+                            <FaTrash />
+                          </button>
+                        )}
                       </div>
-                      <p style={{ margin: 0 }}>{c.text}</p>
-                    </div>
-                    {currentUser?._id === c.userId?._id && (
-                      <button
-                        onClick={() => handleRemoveComment(c._id)}
-                        className="dashboard-btn btn-danger btn-sm"
-                      >
-                        <FaTrash />
-                      </button>
-                    )}
-                  </div>
-                </li>
-              ))}
+                    </li>
+                  );
+                })}
             </ul>
           </div>
         </div>
