@@ -165,6 +165,44 @@ export function DataProvider({ children }) {
       setTaskMessages((prev) => prev.filter((m) => m._id !== messageId));
     };
 
+    // Registration Request events
+    const handleRegistrationRequestCreated = ({ request }) => {
+      console.log("🔴🔴🔴 [REAL-TIME] Registration Request CREATED:", request);
+      setRegistrationRequests((prev) => {
+        const newRequests = [...prev, request];
+        console.log(`✅ Registration request added! Total: ${prev.length} → ${newRequests.length}`);
+        return newRequests;
+      });
+    };
+
+    const handleRegistrationRequestApproved = ({ requestId }) => {
+      console.log("🔴🔴🔴 [REAL-TIME] Registration Request APPROVED:", requestId);
+      setRegistrationRequests((prev) => {
+        const filtered = prev.filter((r) => r._id !== requestId);
+        console.log(`✅ Registration request removed! Total: ${prev.length} → ${filtered.length}`);
+        return filtered;
+      });
+    };
+
+    const handleRegistrationRequestRejected = ({ requestId }) => {
+      console.log("🔴🔴🔴 [REAL-TIME] Registration Request REJECTED:", requestId);
+      setRegistrationRequests((prev) => {
+        const filtered = prev.filter((r) => r._id !== requestId);
+        console.log(`✅ Registration request removed! Total: ${prev.length} → ${filtered.length}`);
+        return filtered;
+      });
+    };
+
+    // User events
+    const handleUserCreated = ({ user }) => {
+      console.log("🔴🔴🔴 [REAL-TIME] User CREATED:", user);
+      setUsers((prev) => {
+        const newUsers = [...prev, user];
+        console.log(`✅ User added! Total users: ${prev.length} → ${newUsers.length}`);
+        return newUsers;
+      });
+    };
+
     // Register listeners
     socket.on("copyCreated", handleCopyCreated);
     socket.on("copyUpdated", handleCopyUpdated);
@@ -178,6 +216,10 @@ export function DataProvider({ children }) {
     socket.on("taskMessageCreated", handleTaskMessageCreated);
     socket.on("taskMessageUpdated", handleTaskMessageUpdated);
     socket.on("taskMessageDeleted", handleTaskMessageDeleted);
+    socket.on("registrationRequestCreated", handleRegistrationRequestCreated);
+    socket.on("registrationRequestApproved", handleRegistrationRequestApproved);
+    socket.on("registrationRequestRejected", handleRegistrationRequestRejected);
+    socket.on("userCreated", handleUserCreated);
 
     // Cleanup
     return () => {
@@ -193,6 +235,10 @@ export function DataProvider({ children }) {
       socket.off("taskMessageCreated", handleTaskMessageCreated);
       socket.off("taskMessageUpdated", handleTaskMessageUpdated);
       socket.off("taskMessageDeleted", handleTaskMessageDeleted);
+      socket.off("registrationRequestCreated", handleRegistrationRequestCreated);
+      socket.off("registrationRequestApproved", handleRegistrationRequestApproved);
+      socket.off("registrationRequestRejected", handleRegistrationRequestRejected);
+      socket.off("userCreated", handleUserCreated);
     };
   }, [socket]);
 

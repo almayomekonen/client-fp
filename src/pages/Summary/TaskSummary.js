@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
+import {
+  Document,
+  Packer,
+  Paragraph,
+  Table,
+  TableCell,
+  TableRow,
+  WidthType,
+  TextRun,
+} from "docx";
+import { saveAs } from "file-saver";
 import { useTask } from "../../context/TaskContext";
 import { useCopy } from "../../context/CopyContext";
 import { useStatement } from "../../context/StatementContext";
@@ -10,6 +21,7 @@ import { useColor } from "../../context/ColorContext";
 import { useStyleSetting } from "../../context/StyleSettingContext";
 import { useExperiment } from "../../context/ExperimentContext";
 import { useData } from "../../context/DataContext";
+import { fetchGroupById } from "../../api/GroupApi";
 
 export default function TaskSummary() {
   const { taskId } = useParams();
@@ -30,6 +42,7 @@ export default function TaskSummary() {
   const [task, setTask] = useState(null);
   const [copies, setCopies] = useState([]);
   const [statementsCache, setStatementsCache] = useState({});
+  const [groupsCache, setGroupsCache] = useState({});
   const [experiment, setExperiment] = useState(null);
 
   // טעינת סגנון
@@ -108,6 +121,39 @@ export default function TaskSummary() {
     loadStatements();
   }, [copies, statementById]);
 
+  // טעינת קבוצות אסינכרונית
+  useEffect(() => {
+    const loadGroups = async () => {
+      if (Object.keys(statementsCache).length === 0) return;
+
+      const uniqueGroupIds = [
+        ...new Set(
+          Object.values(statementsCache)
+            .map((stmt) => stmt.groupId)
+            .filter(Boolean)
+        ),
+      ];
+
+      for (const groupId of uniqueGroupIds) {
+        if (!groupsCache[groupId]) {
+          try {
+            const group = await fetchGroupById(groupId);
+            if (group) {
+              setGroupsCache((prev) => ({
+                ...prev,
+                [groupId]: group,
+              }));
+            }
+          } catch (error) {
+            console.error(`Error loading group ${groupId}:`, error);
+          }
+        }
+      }
+    };
+
+    loadGroups();
+  }, [statementsCache, groupsCache]);
+
   if (!task) return <div>Task not found</div>;
 
   // בודקים את כל הקודים שנמצאים ב-colorCounts
@@ -139,14 +185,8 @@ export default function TaskSummary() {
       })),
   ].filter((c) => c.name !== null);
 
-  // Export to Excel function
-  const handleExportToExcel = () => {
-    if (!task || !experiment || copies.length === 0) {
-      alert("Cannot export: Missing data");
-      return;
-    }
-
-    // Get coder name from task
+  // Helper function to get export metadata
+  const getExportMetadata = () => {
     const coder = users.find((u) => u._id === task.coderId);
     const coderName = coder?.username || "Unknown";
     const experimentName = experiment.name || "Unknown";
@@ -157,78 +197,280 @@ export default function TaskSummary() {
         day: "2-digit",
       })
       .replace(/\//g, "-");
+    return { coderName, experimentName, exportDate };
+  };
 
-    // Prepare data for Codings sheet
-    const codingsData = [];
+  // Export to Excel function
+  const handleExportToExcel = () => {
+    try {
+      if (!task || !experiment || copies.length === 0) {
+        alert("Cannot export: Missing data");
+        return;
+      }
 
-    // Header row
-    const codingsHeader = [
-      "Statement",
-      ...allColors.map((c) => c.name),
-      ...commonStyles.map((s) => s.label),
-    ];
-    codingsData.push(codingsHeader);
+      const { coderName, experimentName, exportDate } = getExportMetadata();
 
-    // Data rows
-    copies.forEach((copy) => {
-      const statement = statementsCache[copy.statementId];
-      const row = [
-        statement?.name || "No name",
-        ...allColors.map((c) => copy.colorCounts?.[c.code] || 0),
-        ...commonStyles.map((s) => copy.colorCounts?.[s.key] || 0),
+      // Prepare data for Codings sheet
+      const codingsData = [];
+
+      // Header row
+      const codingsHeader = [
+        "Statement",
+        "Group Name",
+        ...allColors.map((c) => c.name),
+        ...commonStyles.map((s) => s.label),
       ];
-      codingsData.push(row);
-    });
+      codingsData.push(codingsHeader);
 
-    // Prepare data for Words sheet
-    const wordsData = [];
+      // Data rows
+      copies.forEach((copy) => {
+        const statement = statementsCache[copy.statementId];
+        const group = statement?.groupId ? groupsCache[statement.groupId] : null;
+        const row = [
+          statement?.name || "No name",
+          group?.name || "No group",
+          ...allColors.map((c) => copy.colorCounts?.[c.code] || 0),
+          ...commonStyles.map((s) => copy.colorCounts?.[s.key] || 0),
+        ];
+        codingsData.push(row);
+      });
 
-    // Header row
-    const wordsHeader = [
-      "Statement",
-      ...allColors.map((c) => c.name),
-      ...commonStyles.map((s) => s.label),
-    ];
-    wordsData.push(wordsHeader);
+      // Prepare data for Words sheet
+      const wordsData = [];
 
-    // Data rows
-    copies.forEach((copy) => {
-      const statement = statementsCache[copy.statementId];
-      const baseText = statement?.text || [
-        { type: "paragraph", children: [{ text: "" }] },
+      // Header row
+      const wordsHeader = [
+        "Statement",
+        "Group Name",
+        ...allColors.map((c) => c.name),
+        ...commonStyles.map((s) => s.label),
       ];
-      const decoratedText = applyHighlightsToText(
-        baseText,
-        copy.highlights || [],
-        [],
-        []
-      );
-      const wordCounts = calculateWordCounts(decoratedText);
+      wordsData.push(wordsHeader);
 
-      const row = [
-        statement?.name || "No name",
-        ...allColors.map((c) => wordCounts?.[c.code] || 0),
-        ...commonStyles.map((s) => wordCounts?.[s.key] || 0),
-      ];
-      wordsData.push(row);
-    });
+      // Data rows
+      copies.forEach((copy) => {
+        const statement = statementsCache[copy.statementId];
+        const group = statement?.groupId ? groupsCache[statement.groupId] : null;
+        const baseText = statement?.text || [
+          { type: "paragraph", children: [{ text: "" }] },
+        ];
+        const decoratedText = applyHighlightsToText(
+          baseText,
+          copy.highlights || [],
+          [],
+          []
+        );
+        const wordCounts = calculateWordCounts(decoratedText);
 
-    // Create workbook
-    const wb = XLSX.utils.book_new();
+        const row = [
+          statement?.name || "No name",
+          group?.name || "No group",
+          ...allColors.map((c) => wordCounts?.[c.code] || 0),
+          ...commonStyles.map((s) => wordCounts?.[s.key] || 0),
+        ];
+        wordsData.push(row);
+      });
 
-    // Create Codings sheet
-    const codingsSheet = XLSX.utils.aoa_to_sheet(codingsData);
-    XLSX.utils.book_append_sheet(wb, codingsSheet, "Codings");
+      // Create workbook
+      const wb = XLSX.utils.book_new();
 
-    // Create Words sheet
-    const wordsSheet = XLSX.utils.aoa_to_sheet(wordsData);
-    XLSX.utils.book_append_sheet(wb, wordsSheet, "Words");
+      // Create Codings sheet
+      const codingsSheet = XLSX.utils.aoa_to_sheet(codingsData);
+      XLSX.utils.book_append_sheet(wb, codingsSheet, "Codings");
 
-    // Generate filename
-    const filename = `${experimentName} - ${coderName} - ${exportDate}.xlsx`;
+      // Create Words sheet
+      const wordsSheet = XLSX.utils.aoa_to_sheet(wordsData);
+      XLSX.utils.book_append_sheet(wb, wordsSheet, "Words");
 
-    // Save file
-    XLSX.writeFile(wb, filename);
+      // Generate filename
+      const filename = `${experimentName} - ${coderName} - ${exportDate}.xlsx`;
+
+      // Save file
+      XLSX.writeFile(wb, filename);
+    } catch (error) {
+      console.error("❌ Excel export error:", error);
+      alert(`Export failed: ${error.message}`);
+    }
+  };
+
+  // Export to Word function
+  const handleExportToWord = async () => {
+    try {
+      if (!task || !experiment || copies.length === 0) {
+        alert("Cannot export: Missing data");
+        return;
+      }
+
+      const { coderName, experimentName, exportDate } = getExportMetadata();
+
+      // Create header rows for table
+      const headerRow = new TableRow({
+        children: [
+          new TableCell({
+            children: [
+              new Paragraph({
+                children: [new TextRun({ text: "Statement", bold: true })],
+              }),
+            ],
+            width: { size: 2500, type: WidthType.DXA },
+          }),
+          new TableCell({
+            children: [
+              new Paragraph({
+                children: [new TextRun({ text: "Group Name", bold: true })],
+              }),
+            ],
+            width: { size: 2000, type: WidthType.DXA },
+          }),
+          ...allColors.map(
+            (c) =>
+              new TableCell({
+                children: [
+                  new Paragraph({
+                    children: [new TextRun({ text: c.name, bold: true })],
+                  }),
+                ],
+                width: { size: 1500, type: WidthType.DXA },
+              })
+          ),
+          ...commonStyles.map(
+            (s) =>
+              new TableCell({
+                children: [
+                  new Paragraph({
+                    children: [new TextRun({ text: s.label, bold: true })],
+                  }),
+                ],
+                width: { size: 1000, type: WidthType.DXA },
+              })
+          ),
+        ],
+      });
+
+      // Create data rows for Codings
+      const codingsDataRows = copies.map((copy) => {
+        const statement = statementsCache[copy.statementId];
+        const group = statement?.groupId ? groupsCache[statement.groupId] : null;
+        return new TableRow({
+          children: [
+            new TableCell({
+              children: [new Paragraph(statement?.name || "No name")],
+            }),
+            new TableCell({
+              children: [new Paragraph(group?.name || "No group")],
+            }),
+            ...allColors.map(
+              (c) =>
+                new TableCell({
+                  children: [
+                    new Paragraph((copy.colorCounts?.[c.code] || 0).toString()),
+                  ],
+                })
+            ),
+            ...commonStyles.map(
+              (s) =>
+                new TableCell({
+                  children: [
+                    new Paragraph((copy.colorCounts?.[s.key] || 0).toString()),
+                  ],
+                })
+            ),
+          ],
+        });
+      });
+
+      // Create data rows for Words
+      const wordsDataRows = copies.map((copy) => {
+        const statement = statementsCache[copy.statementId];
+        const group = statement?.groupId ? groupsCache[statement.groupId] : null;
+        const baseText = statement?.text || [
+          { type: "paragraph", children: [{ text: "" }] },
+        ];
+        const decoratedText = applyHighlightsToText(
+          baseText,
+          copy.highlights || [],
+          [],
+          []
+        );
+        const wordCounts = calculateWordCounts(decoratedText);
+
+        return new TableRow({
+          children: [
+            new TableCell({
+              children: [new Paragraph(statement?.name || "No name")],
+            }),
+            new TableCell({
+              children: [new Paragraph(group?.name || "No group")],
+            }),
+            ...allColors.map(
+              (c) =>
+                new TableCell({
+                  children: [
+                    new Paragraph((wordCounts?.[c.code] || 0).toString()),
+                  ],
+                })
+            ),
+            ...commonStyles.map(
+              (s) =>
+                new TableCell({
+                  children: [
+                    new Paragraph((wordCounts?.[s.key] || 0).toString()),
+                  ],
+                })
+            ),
+          ],
+        });
+      });
+
+      // Create tables
+      const codingsTable = new Table({
+        rows: [headerRow, ...codingsDataRows],
+        width: { size: 100, type: WidthType.PERCENTAGE },
+      });
+
+      const wordsTable = new Table({
+        rows: [headerRow, ...wordsDataRows],
+        width: { size: 100, type: WidthType.PERCENTAGE },
+      });
+
+      // Create document
+      const doc = new Document({
+        sections: [
+          {
+            children: [
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Codings", bold: true, size: 32 }),
+                ],
+                spacing: { after: 200 },
+              }),
+              codingsTable,
+              new Paragraph({
+                text: "",
+                spacing: { before: 400, after: 200 },
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Words", bold: true, size: 32 }),
+                ],
+                spacing: { after: 200 },
+              }),
+              wordsTable,
+            ],
+          },
+        ],
+      });
+
+      // Generate filename
+      const filename = `${experimentName} - ${coderName} - ${exportDate}.docx`;
+
+      // Save file
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, filename);
+    } catch (error) {
+      console.error("❌ Word export error:", error);
+      alert(`Export failed: ${error.message}`);
+    }
   };
 
   const renderTable = (type) => (
@@ -245,6 +487,9 @@ export default function TaskSummary() {
           <tr>
             <th style={{ border: "1px solid #ccc", padding: "8px" }}>
               Statement
+            </th>
+            <th style={{ border: "1px solid #ccc", padding: "8px" }}>
+              Group Name
             </th>
             {allColors.map((c) => (
               <th
@@ -271,6 +516,7 @@ export default function TaskSummary() {
         <tbody>
           {copies.map((copy) => {
             const statement = statementsCache[copy.statementId];
+            const group = statement?.groupId ? groupsCache[statement.groupId] : null;
             const baseText = statement?.text || [
               { type: "paragraph", children: [{ text: "" }] },
             ];
@@ -286,6 +532,9 @@ export default function TaskSummary() {
               <tr key={copy._id}>
                 <td style={{ border: "1px solid #ccc", padding: "8px" }}>
                   {statement?.name || "No name"}
+                </td>
+                <td style={{ border: "1px solid #ccc", padding: "8px" }}>
+                  {group?.name || "No group"}
                 </td>
                 {allColors.map((c) => (
                   <td
@@ -324,22 +573,75 @@ export default function TaskSummary() {
         }}
       >
         <h2>Task Summary</h2>
-        <button
-          onClick={handleExportToExcel}
+        <div
           style={{
-            padding: "10px 20px",
-            backgroundColor: "#4CAF50",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-            fontSize: "14px",
-            fontWeight: "bold",
+            display: "flex",
+            gap: "10px",
+            alignItems: "center",
+            flexWrap: "wrap",
           }}
-          disabled={!task || !experiment || copies.length === 0}
         >
-          📊 Export to Excel
-        </button>
+          {copies.length === 0 && (
+            <div
+              style={{
+                fontSize: "13px",
+                color: "#d32f2f",
+                backgroundColor: "#ffebee",
+                padding: "8px 12px",
+                borderRadius: "4px",
+                border: "1px solid #ef5350",
+                flex: "1 1 100%",
+              }}
+            >
+              ⚠️ No completed copies to export. Please complete at least one
+              copy first.
+            </div>
+          )}
+          <button
+            onClick={handleExportToExcel}
+            style={{
+              padding: "10px 20px",
+              backgroundColor:
+                !task || !experiment || copies.length === 0
+                  ? "#999"
+                  : "#4CAF50",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor:
+                !task || !experiment || copies.length === 0
+                  ? "not-allowed"
+                  : "pointer",
+              fontSize: "14px",
+              fontWeight: "bold",
+            }}
+            disabled={!task || !experiment || copies.length === 0}
+          >
+            📊 Export to Excel
+          </button>
+          <button
+            onClick={handleExportToWord}
+            style={{
+              padding: "10px 20px",
+              backgroundColor:
+                !task || !experiment || copies.length === 0
+                  ? "#999"
+                  : "#2196F3",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor:
+                !task || !experiment || copies.length === 0
+                  ? "not-allowed"
+                  : "pointer",
+              fontSize: "14px",
+              fontWeight: "bold",
+            }}
+            disabled={!task || !experiment || copies.length === 0}
+          >
+            📄 Export to Word
+          </button>
+        </div>
       </div>
       <h3>Codings</h3>
       {renderTable("marks")}

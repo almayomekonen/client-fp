@@ -12,6 +12,7 @@ import {
   FaSave,
   FaFileAlt,
   FaUser,
+  FaFileWord,
 } from "react-icons/fa";
 import { useCopy } from "../../context/CopyContext";
 import { useStatement } from "../../context/StatementContext";
@@ -19,7 +20,9 @@ import { useData } from "../../context/DataContext";
 import { useEdit } from "../../context/EditContext";
 import { useComment } from "../../context/CommentContext";
 import { useResult } from "../../context/ResultContext";
+import { useColor } from "../../context/ColorContext";
 import { useSocket } from "../../context/SocketContext";
+import { exportCopyToWord } from "../../utils/wordExport";
 import "../../styles/Dashboard.css";
 
 export default function ViewStatementWithComments() {
@@ -38,6 +41,7 @@ export default function ViewStatementWithComments() {
     renderKeyLabel,
   } = useResult();
   const { addComment, deleteComment, fetchCommentsByCopyId } = useComment();
+  const { getColors } = useColor();
   const { socket } = useSocket();
 
   const [value, setValue] = useState(null);
@@ -54,11 +58,25 @@ export default function ViewStatementWithComments() {
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyText, setReplyText] = useState("");
   const [statementsMap, setStatementsMap] = useState({}); // statementId -> statement
+  const [colors, setColors] = useState([]);
 
   // Redirect if no user - only after auth check is complete
   useEffect(() => {
     if (isAuthChecked && !currentUser) navigate("/", { replace: true });
   }, [currentUser, isAuthChecked, navigate]);
+
+  // Load colors
+  useEffect(() => {
+    const loadColors = async () => {
+      try {
+        const fetchedColors = await getColors();
+        setColors(fetchedColors);
+      } catch (err) {
+        console.error("Error loading colors", err);
+      }
+    };
+    loadColors();
+  }, [getColors]);
 
   // Load copy, statement, and comments
   useEffect(() => {
@@ -247,6 +265,8 @@ export default function ViewStatementWithComments() {
       [],
       updatedLocalComments
     );
+
+    // Clear selection after adding comment
     editor.selection = null;
     setValue(decoratedText);
     setNewComment("");
@@ -274,6 +294,8 @@ export default function ViewStatementWithComments() {
       [],
       updatedLocalComments
     );
+
+    // Clear selection to prevent invalid path errors
     editor.selection = null;
     setValue(decoratedText);
     setActiveComment(null);
@@ -299,6 +321,31 @@ export default function ViewStatementWithComments() {
     setCommentKey((prev) => prev + 1);
     setReplyingTo(null);
     setReplyText("");
+  };
+
+  // Export to Word
+  const handleExportToWord = async () => {
+    try {
+      const statement = statementsMap[copy?.statementId];
+      const statementName = statement?.name || "Untitled Statement";
+
+      await exportCopyToWord({
+        copyId: copy?._id,
+        slateValue: value,
+        counts,
+        wordCounts,
+        comments: localComments,
+        colors,
+        users: [],
+        copyName: `Statement_View_${currentUser?.username || "User"}`,
+        statementName,
+      });
+
+      alert("✅ Document exported successfully!");
+    } catch (error) {
+      console.error("❌ Export error:", error);
+      alert("❌ Failed to export document. Please try again.");
+    }
   };
 
   if (!value)
@@ -338,14 +385,21 @@ export default function ViewStatementWithComments() {
             <h3 className="card-title" style={{ marginBottom: "16px" }}>
               <FaChartBar /> Analysis Tools
             </h3>
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: "12px",
+              }}
+            >
               <button
                 onClick={() =>
                   calculateSelectionCounts(editor, setSelectionCounts)
                 }
-                className="dashboard-btn btn-secondary btn-sm"
+                className="dashboard-btn btn-secondary"
+                style={{ width: "100%", justifyContent: "center" }}
               >
-                <FaEye /> Show Selection Codings
+                <FaEye style={{ marginRight: "6px" }} /> Show Selection Codings
               </button>
               <button
                 onClick={() =>
@@ -353,9 +407,24 @@ export default function ViewStatementWithComments() {
                     calculateWordCountsForSelection(editor, value)
                   )
                 }
-                className="dashboard-btn btn-secondary btn-sm"
+                className="dashboard-btn btn-secondary"
+                style={{ width: "100%", justifyContent: "center" }}
               >
-                <FaChartBar /> Show Selection Words
+                <FaChartBar style={{ marginRight: "6px" }} /> Show Selection
+                Words
+              </button>
+              <button
+                onClick={handleExportToWord}
+                className="dashboard-btn btn-primary"
+                style={{
+                  width: "100%",
+                  justifyContent: "center",
+                  backgroundColor: "#2196F3",
+                  fontSize: "15px",
+                  fontWeight: "600",
+                }}
+              >
+                <FaFileWord style={{ marginRight: "6px" }} /> Export to Word
               </button>
             </div>
           </div>
@@ -424,16 +493,6 @@ export default function ViewStatementWithComments() {
             </div>
 
             <div>
-              <h4
-                style={{
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  marginBottom: "12px",
-                  color: "#666",
-                }}
-              >
-                Word Count:
-              </h4>
               {Object.entries(wordCounts).length > 0 ? (
                 Object.entries(wordCounts).map(([key, num]) => (
                   <div key={key} style={{ marginBottom: "8px" }}>

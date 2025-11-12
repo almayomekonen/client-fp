@@ -54,3 +54,16 @@ export const fetchGroupsByExperimentId = async (experimentId) => {
   }
   return await res.json();
 };
+
+export const fetchGroupById = async (groupId) => {
+  const res = await fetchWithRoleCheck(
+    `${API_BASE_URL}/api/groups/${groupId}`,
+    {
+      credentials: "include",
+    }
+  );
+  if (!res.ok) {
+    throw new Error("Failed to fetch group");
+  }
+  return await res.json();
+};

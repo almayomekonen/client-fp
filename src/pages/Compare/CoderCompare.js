@@ -1,10 +1,4 @@
-import React, {
-  useMemo,
-  useCallback,
-  useState,
-  useEffect,
-  useRef,
-} from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { createEditor, Path } from "slate";
 import { Slate, Editable, withReact } from "slate-react";
@@ -167,17 +161,13 @@ export default function CoderComparePage() {
     if (!isAuthChecked || !currentUser) return;
 
     // Wait for copies to be loaded
-    const copyExists = copies.some((c) => c._id === copyId);
-    if (!copyExists) {
-      return; // Copy data not loaded yet, wait for next render
+    const mainCopy = copyById(copyId);
+    if (!mainCopy) {
+      console.log("⏳ Waiting for copy data to load...");
+      return;
     }
 
     async function fetchInitialData() {
-      const mainCopy = await copyById(copyId);
-      if (!mainCopy) {
-        console.error("Copy not found:", copyId);
-        return;
-      }
       const s = await statementById(mainCopy.statementId);
       if (!s) {
         console.error("Statement not found:", mainCopy.statementId);

@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { createEditor, Path } from "slate";
+import { createEditor } from "slate";
 import { Slate, Editable, withReact } from "slate-react";
 import {
   FaEdit,
@@ -19,6 +19,7 @@ import {
   FaEye,
   FaHighlighter,
   FaUser,
+  FaFileWord,
 } from "react-icons/fa";
 
 import { useEdit } from "../../context/EditContext";
@@ -30,6 +31,7 @@ import { useResult } from "../../context/ResultContext";
 import { useColor } from "../../context/ColorContext";
 import { useStyleSetting } from "../../context/StyleSettingContext";
 import { useSocket } from "../../context/SocketContext";
+import { exportCopyToWord } from "../../utils/wordExport";
 import "../../styles/Dashboard.css";
 
 export default function StatementEditor() {
@@ -137,7 +139,6 @@ export default function StatementEditor() {
         commentsForCopy
       );
 
-      editor.selection = null;
       setValue(decoratedText);
       setCounts(copy?.colorCounts || {});
       setCopy(copy);
@@ -153,7 +154,6 @@ export default function StatementEditor() {
     applyHighlightsToText,
     fetchCommentsByCopyId,
     currentUser,
-    editor,
     calculateWordCounts,
   ]);
 
@@ -192,29 +192,43 @@ export default function StatementEditor() {
   }, [socket, copyId]);
 
   // Calculate global offset
-  const getGlobalOffsetFromValue = (value, anchorPath, anchorOffset) => {
+  const getGlobalOffsetFromSelection = () => {
+    if (!editor.selection) return null;
+
     let globalOffset = 0;
+    const { anchor } = editor.selection;
+
     const traverse = (nodes, path = []) => {
       for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i];
         const currentPath = [...path, i];
+
         if (node.text !== undefined) {
-          if (Path.equals(currentPath, anchorPath)) {
-            globalOffset += anchorOffset;
-            throw "FOUND"; // eslint-disable-line no-throw-literal
+          // Check if this is the target path
+          if (
+            currentPath.length === anchor.path.length &&
+            currentPath.every((val, idx) => val === anchor.path[idx])
+          ) {
+            globalOffset += anchor.offset;
+            return true; // Found
           } else {
             globalOffset += node.text.length;
           }
         }
-        if (node.children) traverse(node.children, currentPath);
-        if (path.length === 0 && i < nodes.length - 1) globalOffset += 1;
+
+        if (node.children) {
+          if (traverse(node.children, currentPath)) return true;
+        }
+
+        // Add newline between paragraphs
+        if (path.length === 0 && i < nodes.length - 1) {
+          globalOffset += 1;
+        }
       }
+      return false;
     };
-    try {
-      traverse(value);
-    } catch (e) {
-      if (e !== "FOUND") throw e;
-    }
+
+    traverse(value);
     return globalOffset;
   };
 
@@ -250,6 +264,54 @@ export default function StatementEditor() {
     );
   }, []);
 
+  // ✅ FIX: Update counts immediately after marking color
+  const handleMarkColor = (colorCode) => {
+    markColor(editor, colorCode);
+
+    // Force update the value to trigger re-render
+    const newValue = [...editor.children];
+    setValue(newValue);
+
+    // Update counts immediately
+    const { colorCounts } = extractHighlightsFromValue(newValue);
+    setCounts(colorCounts);
+    setWordCounts(calculateWordCounts(newValue));
+  };
+
+  // ✅ FIX: Clear all formatting and update immediately
+  const handleClearAll = () => {
+    removeFormatting(editor);
+
+    // Force update the value
+    const newValue = [...editor.children];
+    setValue(newValue);
+
+    // Reset counts
+    setCounts({});
+    setWordCounts(calculateWordCounts(newValue));
+  };
+
+  // ✅ FIX: Mark underline and update
+  const handleMarkUnderline = () => {
+    markUnderline(editor);
+    const newValue = [...editor.children];
+    setValue(newValue);
+  };
+
+  // ✅ FIX: Mark bold and update
+  const handleMarkBold = () => {
+    markBold(editor);
+    const newValue = [...editor.children];
+    setValue(newValue);
+  };
+
+  // ✅ FIX: Mark italic and update
+  const handleMarkItalic = () => {
+    markItalic(editor);
+    const newValue = [...editor.children];
+    setValue(newValue);
+  };
+
   const handleSave = async () => {
     if (!copy || !value) return;
     const editorValue = editor.children;
@@ -271,6 +333,7 @@ export default function StatementEditor() {
       [],
       localComments
     );
+    // Clear selection after save
     editor.selection = null;
     setValue(decoratedText);
     setCommentKey((prev) => prev + 1);
@@ -290,13 +353,20 @@ export default function StatementEditor() {
   };
 
   const handleAddComment = async () => {
-    if (!editor.selection)
+    if (!editor.selection) {
       return alert(
         "Please select a location in the text before adding a comment"
       );
-    if (!newComment) return alert("Please enter comment text");
-    const { anchor } = editor.selection;
-    const offset = getGlobalOffsetFromValue(value, anchor.path, anchor.offset);
+    }
+    if (!newComment.trim()) {
+      return alert("Please enter comment text");
+    }
+
+    const offset = getGlobalOffsetFromSelection();
+    if (offset === null) {
+      return alert("Could not determine text position");
+    }
+
     const createdComment = await addComment(
       currentUser._id,
       copyId,
@@ -323,8 +393,9 @@ export default function StatementEditor() {
       [],
       updatedLocalComments
     );
-    editor.selection = null;
 
+    // Clear selection after adding comment
+    editor.selection = null;
     setValue(decoratedText);
     setNewComment("");
     setCounts(colorCounts);
@@ -354,8 +425,9 @@ export default function StatementEditor() {
       [],
       updatedLocalComments
     );
-    editor.selection = null;
 
+    // Clear selection to prevent invalid path errors
+    editor.selection = null;
     setValue(decoratedText);
     setCounts(colorCounts);
     setActiveComment(null);
@@ -381,6 +453,31 @@ export default function StatementEditor() {
     setCommentKey((prev) => prev + 1);
     setReplyingTo(null);
     setReplyText("");
+  };
+
+  // Export to Word
+  const handleExportToWord = async () => {
+    try {
+      const statement = statementsMap[copy?.statementId];
+      const statementName = statement?.name || "Untitled Statement";
+
+      await exportCopyToWord({
+        copyId: copy?._id,
+        slateValue: editor.children,
+        counts,
+        wordCounts,
+        comments: localComments,
+        colors,
+        users: [],
+        copyName: `Coding_${currentUser?.username || "User"}`,
+        statementName,
+      });
+
+      alert("✅ Document exported successfully!");
+    } catch (error) {
+      console.error("Export error:", error);
+      alert("❌ Failed to export document. Please try again.");
+    }
   };
 
   if (!value)
@@ -433,7 +530,7 @@ export default function StatementEditor() {
               {colors.map((c) => (
                 <button
                   key={c._id}
-                  onClick={() => markColor(editor, c.code)}
+                  onClick={() => handleMarkColor(c.code)}
                   title={c.name}
                   className="dashboard-btn btn-sm"
                   style={{
@@ -443,6 +540,7 @@ export default function StatementEditor() {
                     height: "40px",
                     padding: 0,
                     minWidth: "40px",
+                    cursor: "pointer",
                   }}
                 />
               ))}
@@ -451,14 +549,14 @@ export default function StatementEditor() {
             {/* Action Buttons */}
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
               <button
-                onClick={() => removeFormatting(editor)}
+                onClick={handleClearAll}
                 className="dashboard-btn btn-danger btn-sm"
               >
                 <FaEraser /> Clear All
               </button>
               {styleSettings.underlineEnabled && (
                 <button
-                  onClick={() => markUnderline(editor)}
+                  onClick={handleMarkUnderline}
                   className="dashboard-btn btn-secondary btn-sm"
                 >
                   <FaUnderline /> Underline
@@ -466,7 +564,7 @@ export default function StatementEditor() {
               )}
               {styleSettings.boldEnabled && (
                 <button
-                  onClick={() => markBold(editor)}
+                  onClick={handleMarkBold}
                   className="dashboard-btn btn-secondary btn-sm"
                 >
                   <FaBold /> Bold
@@ -474,7 +572,7 @@ export default function StatementEditor() {
               )}
               {styleSettings.italicEnabled && (
                 <button
-                  onClick={() => markItalic(editor)}
+                  onClick={handleMarkItalic}
                   className="dashboard-btn btn-secondary btn-sm"
                 >
                   <FaItalic /> Italic
@@ -525,7 +623,6 @@ export default function StatementEditor() {
               <Editable
                 renderLeaf={renderLeaf}
                 placeholder="Select text to highlight..."
-                readOnly={true}
                 dir="auto"
                 style={{
                   minHeight: "400px",
@@ -540,18 +637,43 @@ export default function StatementEditor() {
             </Slate>
 
             {/* Action Buttons */}
-            <div style={{ marginTop: "20px", display: "flex", gap: "12px" }}>
+            <div
+              style={{
+                marginTop: "20px",
+                display: "flex",
+                gap: "12px",
+                flexWrap: "wrap",
+                padding: "16px",
+                backgroundColor: "#f5f5f5",
+                borderRadius: "8px",
+                border: "1px solid #e0e0e0",
+              }}
+            >
               <button
                 onClick={handleSave}
                 className="dashboard-btn btn-primary"
+                style={{ flex: "1 1 auto", minWidth: "150px" }}
               >
                 <FaSave /> Save Changes
               </button>
               <button
                 onClick={handleCloseCoding}
                 className="dashboard-btn btn-success"
+                style={{ flex: "1 1 auto", minWidth: "150px" }}
               >
                 <FaCheckCircle /> Complete Coding
+              </button>
+              <button
+                onClick={handleExportToWord}
+                className="dashboard-btn btn-secondary"
+                style={{
+                  flex: "1 1 auto",
+                  minWidth: "150px",
+                  backgroundColor: "#2196F3",
+                  fontSize: "15px",
+                }}
+              >
+                <FaFileWord style={{ marginRight: "6px" }} /> Export to Word
               </button>
             </div>
           </div>
@@ -590,16 +712,6 @@ export default function StatementEditor() {
             </div>
 
             <div>
-              <h4
-                style={{
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  marginBottom: "12px",
-                  color: "#666",
-                }}
-              >
-                Word Count:
-              </h4>
               {Object.entries(wordCounts).length > 0 ? (
                 Object.entries(wordCounts).map(([key, num]) => (
                   <div key={key} style={{ marginBottom: "8px" }}>

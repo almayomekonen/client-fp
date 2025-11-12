@@ -9,6 +9,8 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.10.0",
     "cors": "^2.8.5",
+    "docx": "^9.5.1",
+    "file-saver": "^2.0.5",
     "react": "^19.1.0",
     "react-color": "^2.19.3",
     "react-dom": "^19.1.0",
