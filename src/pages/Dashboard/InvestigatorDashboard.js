@@ -14,7 +14,6 @@ import {
   FaFileAlt,
   FaBalanceScale,
   FaChartLine,
-  FaComments,
   FaPlus,
   FaTrash,
   FaTimes,
@@ -596,20 +595,24 @@ export default function InvestigatorHomePage() {
                                         )?.username || "Unknown"}
                                       </div>
                                       <div className="flex items-center space-x-2">
-                                        <button
-                                          onClick={() =>
-                                            navigate(`/copy-chat/${copy._id}`)
-                                          }
-                                          className="text-blue-500 text-sm"
-                                        >
-                                          <FaComments /> Chat
-                                        </button>
-                                        <span className="investigator-unread-count">
-                                          {getUnreadCount(
-                                            copy._id,
-                                            currentUser._id
-                                          )}
-                                        </span>
+                                        {getUnreadCount(
+                                          copy._id,
+                                          currentUser._id
+                                        ) > 0 && (
+                                          <span
+                                            style={{
+                                              color: "#dc3545",
+                                              fontSize: "14px",
+                                              fontWeight: "600",
+                                            }}
+                                          >
+                                            ({getUnreadCount(
+                                              copy._id,
+                                              currentUser._id
+                                            )}{" "}
+                                            unread messages)
+                                          </span>
+                                        )}
                                         <button
                                           onClick={() =>
                                             handleDeleteCopy(copy._id)

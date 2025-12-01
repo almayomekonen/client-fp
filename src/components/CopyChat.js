@@ -16,13 +16,13 @@ export default function CopyChat({ copyId }) {
   const [newMessage, setNewMessage] = useState('');
   const [replyTo, setReplyTo] = useState(null);
 
-  // טוען הודעות מהשרת
+  // Load messages from server
   useEffect(() => {
     const loadMessages = async () => {
       const msgs = await getMessagesForCopy(copyId);
       setMessages(msgs);
 
-      // מסמן כנקרא
+      // Mark as read
       if (msgs.length > 0 && currentUser?._id) {
         for (const m of msgs) {
           if (!m.readBy.includes(currentUser._id)) {
@@ -35,7 +35,7 @@ export default function CopyChat({ copyId }) {
     loadMessages();
   }, [copyId, currentUser?._id, getMessagesForCopy, markAsRead]);
 
-  // שליחת הודעה חדשה
+  // Send new message
   const handleSend = async () => {
     if (!newMessage.trim()) return;
     await sendMessage(copyId, currentUser?._id, newMessage, replyTo?._id || null);
@@ -46,20 +46,20 @@ export default function CopyChat({ copyId }) {
     setMessages(msgs);
   };
 
-  // מחיקת הודעה
+  // Delete message
   const handleDeleteMessage = async (msgId) => {
     await deleteMessage(msgId);
     const msgs = await getMessagesForCopy(copyId);
     setMessages(msgs);
   };
 
-  // השגת שם משתמש
+  // Get username
   const getUserName = (userId) => {
     const user = users.find((u) => u._id === userId);
-    return user ? user.username : 'לא ידוע';
+    return user ? user.username : 'Unknown';
   };
 
-  // פורמט תאריך
+  // Format date
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return '';
     return new Date(timestamp).toLocaleString('he-IL', {
@@ -72,7 +72,7 @@ export default function CopyChat({ copyId }) {
     });
   };
 
-  // השבתה להודעה
+  // Reply to message
   const handleReply = async (msgId) => {
     const msg = await messageById(msgId);
     if (msg) setReplyTo(msg);
@@ -87,9 +87,9 @@ export default function CopyChat({ copyId }) {
           <div key={msg._id} className="mb-3 border-b pb-2">
             {msg.replyToMessageId && (
               <div className="text-xs text-gray-600 bg-gray-100 px-2 py-1 mb-1 rounded">
-                תגובה ל:{' '}
+                Reply to:{' '}
                 <strong>{getUserName(messages.find(m => m._id === msg.replyToMessageId)?.senderId)}:</strong>{' '}
-                {messages.find(m => m._id === msg.replyToMessageId)?.text || 'הודעה לא זמינה'}
+                {messages.find(m => m._id === msg.replyToMessageId)?.text || 'Message unavailable'}
               </div>
             )}
             <div>
@@ -102,14 +102,14 @@ export default function CopyChat({ copyId }) {
                   onClick={() => handleReply(msg._id)}
                   className="text-blue-500 text-xs ml-2"
                 >
-                  השב
+                  Reply
                 </button>
                 {msg.senderId === currentUser?._id && (
                   <button
                     onClick={() => handleDeleteMessage(msg._id)}
                     className="text-red-500 text-xs ml-2"
                   >
-                    מחק
+                    Delete
                   </button>
                 )}
               </span>
@@ -120,9 +120,9 @@ export default function CopyChat({ copyId }) {
 
       {replyTo && (
         <div className="mb-2 bg-yellow-100 p-2 rounded text-sm">
-          תגובה ל: <strong>{getUserName(replyTo.senderId)}:</strong> {replyTo.text}
+          Reply to: <strong>{getUserName(replyTo.senderId)}:</strong> {replyTo.text}
           <button onClick={cancelReply} className="ml-4 text-red-600 text-xs">
-            ביטול
+            Cancel
           </button>
         </div>
       )}
@@ -133,13 +133,13 @@ export default function CopyChat({ copyId }) {
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           className="border flex-1 p-2"
-          placeholder="כתוב הודעה…"
+          placeholder="Type a message..."
         />
         <button
           onClick={handleSend}
           className="bg-blue-500 text-white px-4 py-2 rounded"
         >
-          שלח
+          Send
         </button>
       </div>
     </div>

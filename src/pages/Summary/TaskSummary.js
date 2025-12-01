@@ -10,6 +10,9 @@ import {
   TableRow,
   WidthType,
   TextRun,
+  AlignmentType,
+  BorderStyle,
+  convertInchesToTwip,
 } from "docx";
 import { saveAs } from "file-saver";
 import { useTask } from "../../context/TaskContext";
@@ -45,7 +48,7 @@ export default function TaskSummary() {
   const [groupsCache, setGroupsCache] = useState({});
   const [experiment, setExperiment] = useState(null);
 
-  // טעינת סגנון
+  // Load style settings
   useEffect(() => {
     const loadStyle = async () => {
       const data = await getStyleSetting();
@@ -54,7 +57,7 @@ export default function TaskSummary() {
     loadStyle();
   }, [getStyleSetting]);
 
-  // טעינת צבעים
+  // Load colors
   useEffect(() => {
     const loadColors = async () => {
       try {
@@ -67,7 +70,7 @@ export default function TaskSummary() {
     loadColors();
   }, [getColors]);
 
-  // קבלת משימה ועותקים
+  // Get task and copies
   useEffect(() => {
     const loadTaskData = async () => {
       const t = taskById(taskId);
@@ -88,7 +91,7 @@ export default function TaskSummary() {
     loadTaskData();
   }, [taskById, copyById, taskId, experimentById]);
 
-  // טעינת הצהרות אסינכרונית
+  // Load statements asynchronously
   useEffect(() => {
     const loadStatements = async () => {
       if (copies.length === 0) return;
@@ -99,7 +102,7 @@ export default function TaskSummary() {
           (c) => !newCache[c.statementId]
         );
 
-        // אם הכל כבר קיים – אין צורך לעדכן
+        // If everything exists already, no need to update
         if (missingStatements.length === 0) return prevCache;
 
         (async () => {
@@ -121,7 +124,7 @@ export default function TaskSummary() {
     loadStatements();
   }, [copies, statementById]);
 
-  // טעינת קבוצות אסינכרונית
+  // Load groups asynchronously
   useEffect(() => {
     const loadGroups = async () => {
       if (Object.keys(statementsCache).length === 0) return;
@@ -156,7 +159,7 @@ export default function TaskSummary() {
 
   if (!task) return <div>Task not found</div>;
 
-  // בודקים את כל הקודים שנמצאים ב-colorCounts
+  // Check all codes found in colorCounts
   const colorCodesFromCopies = new Set();
   copies.forEach((copy) => {
     Object.keys(copy.colorCounts || {}).forEach((code) =>
@@ -164,16 +167,23 @@ export default function TaskSummary() {
     );
   });
 
-  // מגדירים סגנונות מה-styleSettings
+  // Define styles from styleSettings
   const commonStyles = [];
-  if (styleSettings.boldEnabled) commonStyles.push({ key: "bold", label: "B" });
+  if (styleSettings.boldEnabled)
+    commonStyles.push({ key: "bold", label: styleSettings.boldName || "Bold" });
   if (styleSettings.italicEnabled)
-    commonStyles.push({ key: "italic", label: "I" });
+    commonStyles.push({
+      key: "italic",
+      label: styleSettings.italicName || "Italic",
+    });
   if (styleSettings.underlineEnabled)
-    commonStyles.push({ key: "underline", label: "U" });
+    commonStyles.push({
+      key: "underline",
+      label: styleSettings.underlineName || "Underline",
+    });
   const styleKeys = commonStyles.map((s) => s.key);
 
-  // בונים את allColors
+  // Build allColors
   const allColors = [
     ...colors,
     ...Array.from(colorCodesFromCopies)
@@ -225,7 +235,9 @@ export default function TaskSummary() {
       // Data rows
       copies.forEach((copy) => {
         const statement = statementsCache[copy.statementId];
-        const group = statement?.groupId ? groupsCache[statement.groupId] : null;
+        const group = statement?.groupId
+          ? groupsCache[statement.groupId]
+          : null;
         const row = [
           statement?.name || "No name",
           group?.name || "No group",
@@ -250,7 +262,9 @@ export default function TaskSummary() {
       // Data rows
       copies.forEach((copy) => {
         const statement = statementsCache[copy.statementId];
-        const group = statement?.groupId ? groupsCache[statement.groupId] : null;
+        const group = statement?.groupId
+          ? groupsCache[statement.groupId]
+          : null;
         const baseText = statement?.text || [
           { type: "paragraph", children: [{ text: "" }] },
         ];
@@ -293,7 +307,7 @@ export default function TaskSummary() {
     }
   };
 
-  // Export to Word function
+  // Export to Word function - Table 1 only with full text
   const handleExportToWord = async () => {
     try {
       if (!task || !experiment || copies.length === 0) {
@@ -303,87 +317,87 @@ export default function TaskSummary() {
 
       const { coderName, experimentName, exportDate } = getExportMetadata();
 
-      // Create header rows for table
-      const headerRow = new TableRow({
-        children: [
-          new TableCell({
-            children: [
-              new Paragraph({
-                children: [new TextRun({ text: "Statement", bold: true })],
-              }),
-            ],
-            width: { size: 2500, type: WidthType.DXA },
-          }),
-          new TableCell({
-            children: [
-              new Paragraph({
-                children: [new TextRun({ text: "Group Name", bold: true })],
-              }),
-            ],
-            width: { size: 2000, type: WidthType.DXA },
-          }),
-          ...allColors.map(
-            (c) =>
-              new TableCell({
-                children: [
-                  new Paragraph({
-                    children: [new TextRun({ text: c.name, bold: true })],
-                  }),
-                ],
-                width: { size: 1500, type: WidthType.DXA },
-              })
-          ),
-          ...commonStyles.map(
-            (s) =>
-              new TableCell({
-                children: [
-                  new Paragraph({
-                    children: [new TextRun({ text: s.label, bold: true })],
-                  }),
-                ],
-                width: { size: 1000, type: WidthType.DXA },
-              })
-          ),
-        ],
-      });
+      // Build document sections
+      const sections = [];
 
-      // Create data rows for Codings
-      const codingsDataRows = copies.map((copy) => {
-        const statement = statementsCache[copy.statementId];
-        const group = statement?.groupId ? groupsCache[statement.groupId] : null;
-        return new TableRow({
+      // Document header
+      sections.push(
+        new Paragraph({
           children: [
-            new TableCell({
-              children: [new Paragraph(statement?.name || "No name")],
+            new TextRun({
+              text: `${experimentName} - ${coderName}`,
+              bold: true,
+              size: 48,
+              color: "1F4E78",
             }),
-            new TableCell({
-              children: [new Paragraph(group?.name || "No group")],
-            }),
-            ...allColors.map(
-              (c) =>
-                new TableCell({
-                  children: [
-                    new Paragraph((copy.colorCounts?.[c.code] || 0).toString()),
-                  ],
-                })
-            ),
-            ...commonStyles.map(
-              (s) =>
-                new TableCell({
-                  children: [
-                    new Paragraph((copy.colorCounts?.[s.key] || 0).toString()),
-                  ],
-                })
-            ),
           ],
-        });
-      });
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 400, after: 200 },
+        }),
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: `Generated: ${new Date().toLocaleString()}`,
+              italics: true,
+              size: 20,
+              color: "7F7F7F",
+            }),
+          ],
+          alignment: AlignmentType.RIGHT,
+          spacing: { after: 600 },
+        })
+      );
 
-      // Create data rows for Words
-      const wordsDataRows = copies.map((copy) => {
+      // For each copy, show the full text with formatting
+      for (const copy of copies) {
         const statement = statementsCache[copy.statementId];
-        const group = statement?.groupId ? groupsCache[statement.groupId] : null;
-        const baseText = statement?.text || [
+        const group = statement?.groupId
+          ? groupsCache[statement.groupId]
+          : null;
+
+        if (!statement) continue;
+
+        // Statement header
+        sections.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `${statement.name}`,
+                bold: true,
+                size: 36,
+                color: "1F4E78",
+              }),
+            ],
+            spacing: { before: 480, after: 240 },
+            border: {
+              bottom: {
+                color: "D0CECE",
+                space: 4,
+                style: BorderStyle.SINGLE,
+                size: 12,
+              },
+            },
+          })
+        );
+
+        if (group) {
+          sections.push(
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `Group: ${group.name}`,
+                  italics: true,
+                  size: 24,
+                  color: "666666",
+                }),
+              ],
+              spacing: { after: 200 },
+            })
+          );
+        }
+
+        // Apply highlights to get decorated text
+        const baseText = statement.text || [
           { type: "paragraph", children: [{ text: "" }] },
         ];
         const decoratedText = applyHighlightsToText(
@@ -392,71 +406,176 @@ export default function TaskSummary() {
           [],
           []
         );
+
+        // Calculate word counts for this copy
         const wordCounts = calculateWordCounts(decoratedText);
+        const totalWords = wordCounts.total || 0;
+        const totalHighlighted = wordCounts.totalColor || 0;
 
-        return new TableRow({
-          children: [
-            new TableCell({
-              children: [new Paragraph(statement?.name || "No name")],
-            }),
-            new TableCell({
-              children: [new Paragraph(group?.name || "No group")],
-            }),
-            ...allColors.map(
-              (c) =>
-                new TableCell({
+        // Extract formatted text runs
+        const textRuns = [];
+        const traverse = (nodes) => {
+          for (const node of nodes) {
+            if (node.text !== undefined) {
+              const runProps = {
+                text: node.text || " ",
+                size: 24,
+                font: "Calibri",
+              };
+
+              const highlightHex =
+                node.highlight || node.backgroundColor || node.bgColor;
+
+              if (node.bold) runProps.bold = true;
+              if (node.italic) runProps.italics = true;
+              if (node.underline) runProps.underline = { type: "single" };
+
+              if (highlightHex) {
+                const color = highlightHex.replace("#", "").toUpperCase();
+                runProps.shading = {
+                  fill: color,
+                  type: "solid",
+                  color: "000000",
+                };
+                const brightness = isLightColor(color);
+                runProps.color = brightness ? "000000" : "FFFFFF";
+              }
+
+              textRuns.push(new TextRun(runProps));
+            }
+            if (node.children) traverse(node.children);
+          }
+        };
+
+        traverse(decoratedText);
+
+        // Add formatted text as single paragraph
+        sections.push(
+          new Paragraph({
+            children: textRuns.length > 0 ? textRuns : [new TextRun(" ")],
+            spacing: { before: 200, after: 400 },
+          })
+        );
+
+        // Add statistics below the text
+        sections.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "Statistics",
+                bold: true,
+                size: 28,
+                color: "1F4E78",
+              }),
+            ],
+            spacing: { before: 300, after: 200 },
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `Total Word Count: `,
+                bold: true,
+                size: 24,
+              }),
+              new TextRun({
+                text: `${totalWords}`,
+                size: 24,
+                color: "2196F3",
+              }),
+            ],
+            spacing: { after: 100 },
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `Total Highlighted Words: `,
+                bold: true,
+                size: 24,
+              }),
+              new TextRun({
+                text: `${totalHighlighted}`,
+                size: 24,
+                color: "FF9800",
+              }),
+            ],
+            spacing: { after: 400 },
+          })
+        );
+
+        // Add color legend
+        const hasColors = Object.keys(wordCounts).some((key) =>
+          key.startsWith("#")
+        );
+        if (hasColors) {
+          sections.push(
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Color Breakdown",
+                  bold: true,
+                  size: 24,
+                  color: "666666",
+                }),
+              ],
+              spacing: { before: 200, after: 100 },
+            })
+          );
+
+          allColors.forEach((color) => {
+            const count = wordCounts[color.code] || 0;
+            if (count > 0) {
+              sections.push(
+                new Paragraph({
                   children: [
-                    new Paragraph((wordCounts?.[c.code] || 0).toString()),
+                    new TextRun({
+                      text: `  ${color.name}: ${count} words`,
+                      size: 22,
+                    }),
                   ],
+                  spacing: { after: 80 },
                 })
-            ),
-            ...commonStyles.map(
-              (s) =>
-                new TableCell({
-                  children: [
-                    new Paragraph((wordCounts?.[s.key] || 0).toString()),
-                  ],
-                })
-            ),
-          ],
-        });
-      });
+              );
+            }
+          });
+        }
 
-      // Create tables
-      const codingsTable = new Table({
-        rows: [headerRow, ...codingsDataRows],
-        width: { size: 100, type: WidthType.PERCENTAGE },
-      });
+        // Add page break between copies (except last one)
+        if (copy !== copies[copies.length - 1]) {
+          sections.push(
+            new Paragraph({
+              text: "",
+              pageBreakBefore: true,
+              spacing: { before: 480 },
+            })
+          );
+        }
+      }
 
-      const wordsTable = new Table({
-        rows: [headerRow, ...wordsDataRows],
-        width: { size: 100, type: WidthType.PERCENTAGE },
-      });
+      // Helper function to check if color is light
+      const isLightColor = (hexColor) => {
+        const hex = hexColor.replace("#", "");
+        const r = parseInt(hex.substr(0, 2), 16);
+        const g = parseInt(hex.substr(2, 2), 16);
+        const b = parseInt(hex.substr(4, 2), 16);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        return brightness > 155;
+      };
 
       // Create document
       const doc = new Document({
         sections: [
           {
-            children: [
-              new Paragraph({
-                children: [
-                  new TextRun({ text: "Codings", bold: true, size: 32 }),
-                ],
-                spacing: { after: 200 },
-              }),
-              codingsTable,
-              new Paragraph({
-                text: "",
-                spacing: { before: 400, after: 200 },
-              }),
-              new Paragraph({
-                children: [
-                  new TextRun({ text: "Words", bold: true, size: 32 }),
-                ],
-                spacing: { after: 200 },
-              }),
-              wordsTable,
-            ],
+            properties: {
+              page: {
+                margin: {
+                  top: convertInchesToTwip(1),
+                  right: convertInchesToTwip(1),
+                  bottom: convertInchesToTwip(1),
+                  left: convertInchesToTwip(1),
+                },
+              },
+            },
+            children: sections,
           },
         ],
       });
@@ -516,7 +635,9 @@ export default function TaskSummary() {
         <tbody>
           {copies.map((copy) => {
             const statement = statementsCache[copy.statementId];
-            const group = statement?.groupId ? groupsCache[statement.groupId] : null;
+            const group = statement?.groupId
+              ? groupsCache[statement.groupId]
+              : null;
             const baseText = statement?.text || [
               { type: "paragraph", children: [{ text: "" }] },
             ];

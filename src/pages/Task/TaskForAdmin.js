@@ -215,62 +215,44 @@ export default function TaskManagementPage() {
           </p>
         </div>
       ) : (
-        <ul className="task-list">
+        <div className="task-list">
           {tasks.map((task) => {
             const progress = taskProgress(task._id);
             const unreadCount = getUnreadCount(task._id, currentUser._id);
             const isExpanded = selectedTaskId === task._id;
 
             return (
-              <li key={task._id} className="task-card">
-                <div className="task-card-header">
-                  <div
-                    className="task-info"
-                    onClick={() =>
-                      setSelectedTaskId(isExpanded ? null : task._id)
-                    }
-                  >
+              <div key={task._id} className="task-card">
+                {/* Task Header */}
+                <div
+                  className="task-card-header"
+                  onClick={() => setSelectedTaskId(isExpanded ? null : task._id)}
+                >
+                  <div className="task-info">
                     <div className="task-experiment">
                       {isExpanded ? <FaChevronDown /> : <FaChevronRight />}
                       <FaMicroscope />
                       {experimentNames[task.experimentId] || "Loading..."}
                     </div>
-
                     <div className="task-meta">
-                      <div className="task-meta-item">
+                      <span className="task-meta-item">
                         <FaUser />
-                        <strong>Coder:</strong> {getCoderName(task.coderId)}
-                      </div>
-                      <div className="task-meta-item">
+                        Coder: {getCoderName(task.coderId)}
+                      </span>
+                      <span className="task-meta-item">
                         <FaChartLine />
-                        <strong>Experiment %:</strong>{" "}
-                        {experimentPercentMap[task._id] ?? 0}%
-                      </div>
+                        Experiment: {experimentPercentMap[task._id] ?? 0}%
+                      </span>
                       {unreadCount > 0 && (
-                        <div className="task-meta-item">
+                        <span className="task-meta-item">
                           <FaEnvelope />
                           <span className="task-badge badge-unread">
                             {unreadCount} unread
                           </span>
-                        </div>
+                        </span>
                       )}
                     </div>
-
-                    <div className="task-progress">
-                      <div className="progress-label">
-                        Task Progress: {progress}%
-                      </div>
-                      <div className="progress-bar-container">
-                        <div
-                          className="progress-bar-fill"
-                          style={{ width: `${progress}%` }}
-                        >
-                          {progress > 0 && `${progress}%`}
-                        </div>
-                      </div>
-                    </div>
                   </div>
-
                   <div className="task-actions">
                     <button
                       onClick={(e) => {
@@ -284,18 +266,43 @@ export default function TaskManagementPage() {
                   </div>
                 </div>
 
+                {/* Progress Bar */}
+                <div className="task-progress">
+                  <div className="progress-label">
+                    Task Progress: {progress}%
+                  </div>
+                  <div className="progress-bar-container">
+                    <div
+                      className="progress-bar-fill"
+                      style={{ width: `${progress}%` }}
+                    >
+                      {progress > 0 && `${progress}%`}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Expanded Details */}
                 {isExpanded && (
                   <div className="task-details">
+                    {/* Copies List */}
                     {renderCopies(task._id)}
+
+                    {/* Actions */}
                     <div className="task-details-actions">
                       <button
-                        onClick={() => navigate(`/task-chat/${task._id}`)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/task-chat/${task._id}`);
+                        }}
                         className="task-btn task-btn-chat"
                       >
                         <FaComments /> Go to Chat
                       </button>
                       <button
-                        onClick={() => navigate(`/task-summary/${task._id}`)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/task-summary/${task._id}`);
+                        }}
                         className="task-btn task-btn-summary"
                       >
                         <FaChartLine /> Task Summary
@@ -303,10 +310,10 @@ export default function TaskManagementPage() {
                     </div>
                   </div>
                 )}
-              </li>
+              </div>
             );
           })}
-        </ul>
+        </div>
       )}
     </div>
   );

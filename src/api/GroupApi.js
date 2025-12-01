@@ -7,7 +7,7 @@ export const createGroupOnServer = async ({
   experimentId,
 }) => {
   if (!name || !description) {
-    return { success: false, message: "נא למלא את כל שדות החובה" };
+    return { success: false, message: "Please fill in all required fields" };
   }
 
   const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/groups`, {

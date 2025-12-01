@@ -37,7 +37,7 @@ export function StatementProvider({ children }) {
     return await fetchStatementByIdService(statementId);
   };
 
-  // --- מחיקת הצהרה ---
+  // --- Delete statement ---
   const deleteStatement = async (id) => {
     await deleteStatementFromServerService(id);
     // ✅ Refresh ALL related data after deletion

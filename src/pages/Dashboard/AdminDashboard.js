@@ -13,8 +13,6 @@ import {
   FaFileAlt,
   FaBalanceScale,
   FaChartLine,
-  FaComments,
-  FaEnvelope,
 } from "react-icons/fa";
 import "./AdminDashboard.css";
 
@@ -246,30 +244,22 @@ export default function AdminHomePage() {
                                         </div>
 
                                         <div className="copy-actions">
-                                          <button
-                                            onClick={() =>
-                                              navigate(`/copy-chat/${copy._id}`)
-                                            }
-                                            className="btn-dashboard btn-chat"
-                                          >
-                                            <FaComments /> Chat
-                                          </button>
-
                                           {getUnreadCount(
                                             copy._id,
                                             currentUser?._id
                                           ) > 0 && (
-                                            <span className="unread-badge">
-                                              <FaEnvelope
-                                                style={{
-                                                  display: "inline",
-                                                  marginLeft: "4px",
-                                                }}
-                                              />
-                                              {getUnreadCount(
+                                            <span
+                                              style={{
+                                                color: "#dc3545",
+                                                fontSize: "14px",
+                                                fontWeight: "600",
+                                              }}
+                                            >
+                                              ({getUnreadCount(
                                                 copy._id,
                                                 currentUser?._id
-                                              )}
+                                              )}{" "}
+                                              unread messages)
                                             </span>
                                           )}
                                         </div>

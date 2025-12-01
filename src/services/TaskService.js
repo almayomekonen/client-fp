@@ -20,7 +20,7 @@ export const addTask = async (
     coderId,
   });
 
-  return { success: true, message: "המשימה התווספה בהצלחה" };
+  return { success: true, message: "Task added successfully" };
 };
 
 export const tasksByInvestigatorId = (tasks, { investigatorId }) => {
@@ -38,7 +38,7 @@ export const copiesForTask = async (
 ) => {
   const statementsInExperiment = await fetchStatementsByExperimentId(
     experimentId
-  ); // ← פונקציה חדשה ב-StatementContext
+  ); // ← New function in StatementContext
 
   const totalStatementsCount = statementsInExperiment.length;
 
@@ -139,19 +139,19 @@ export const experimentPercent = async (copies, tasks, { taskId }) => {
   const task = tasks.find((t) => t._id === taskId);
   if (!task.copiesId || task.copiesId.length === 0) return 0;
 
-  // כל ההצהרות של הניסוי הזה
+  // All statements of this experiment
   const expId = task.experimentId;
   const statementsInExperiment = await fetchStatementsByExperimentId(expId);
 
-  // מוצאים את כל העתקי ההצהרות שקשורים למשימה
+  // Find all statement copies related to the task
   const taskCopies = copies.filter((c) => task.copiesId.includes(c._id));
 
-  // מזהים את כל ההצהרות הייחודיות במשימה
+  // Identify all unique statements in the task
   const statementIdsInTask = [...new Set(taskCopies.map((c) => c.statementId))];
 
   if (statementsInExperiment.length === 0) return 0;
 
-  // אחוז ההצהרות מתוך כלל הצהרות הניסוי
+  // Percentage of statements out of all experiment statements
   const percent =
     (statementIdsInTask.length / statementsInExperiment.length) * 100;
   return percent.toFixed(0);

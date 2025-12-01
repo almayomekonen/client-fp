@@ -19,7 +19,7 @@ export function GroupProvider({ children }) {
     refreshTaskMessages,
   } = useRefresh();
 
-  //יצירת קבוצה
+  // Create group
   const addGroup = async (experimentId, name, description) => {
     return await createGroupOnServerpService({
       experimentId,
@@ -28,7 +28,7 @@ export function GroupProvider({ children }) {
     });
   };
 
-  //קבוצות לפי ניסוי
+  // Groups by experiment
   const groupsByExperimentId = async (experimentId) => {
     return await groupsByExperimentIdService(experimentId);
   };

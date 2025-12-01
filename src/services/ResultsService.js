@@ -1,5 +1,8 @@
 // src/utils/editorActions.js
+import React from "react";
 import { Editor, Path } from "slate";
+import ColorBadge from "../components/ColorBadge";
+import { getColorName, getStyleName } from "../utils/colorHelpers";
 
 export const calculateWordCounts = (
   value,
@@ -10,7 +13,7 @@ export const calculateWordCounts = (
   let totalWords = 0;
 
   const fullText = [];
-  const styleMap = []; // לכל תו: איזה סגנון יש שם
+  const styleMap = []; // For each character: what style is there
 
   const buildMaps = (nodes) => {
     for (const node of nodes) {
@@ -32,9 +35,9 @@ export const calculateWordCounts = (
       }
     }
 
-    // בסיום כל בלוק (פסקה) — הוספת שורה חדשה
+    // At the end of each block (paragraph) - add newline
     fullText.push("\n");
-    styleMap.push({}); // בלי סטייל
+    styleMap.push({}); // No style
   };
 
   buildMaps(value);
@@ -74,7 +77,7 @@ export const calculateWordCounts = (
       }
     }
 
-    // עדכון מונים
+    // Update counters
     if (foundHighlights.size > 0) {
       counts["totalColor"] = (counts["totalColor"] || 0) + 1;
     }
@@ -205,53 +208,156 @@ export const calculateSelectionCounts = (editor, setSelectionCounts) => {
   setSelectionCounts(tempCounts);
 };
 
-export const renderKeyLabel = (key, value) => {
-  let label = "";
-
+export const renderKeyLabel = (key, value, colors = [], styleSettings = {}) => {
+  // Special totals
   if (key === "totalColor") {
-    label = "Words colored in any color";
-  } else if (key === "total") {
-    label = "Total words in text";
-  } else if (key === "underline") {
-    label = "Underline";
-  } else if (key === "bold") {
-    label = "Bold";
-  } else if (key === "italic") {
-    label = "Italic";
-  }
-
-  const isKnownKey =
-    key === "totalColor" ||
-    key === "total" ||
-    key === "underline" ||
-    key === "bold" ||
-    key === "italic";
-
-  if (isKnownKey) {
-    // Known => Description + Number
     return (
-      <span style={{ display: "flex", alignItems: "center" }}>
-        <span>
-          {label}: {value}
-        </span>
-      </span>
-    );
-  } else {
-    // Color => Color square + Number
-    return (
-      <span style={{ display: "flex", alignItems: "center" }}>
-        <span
-          style={{
-            display: "inline-block",
-            width: 12,
-            height: 12,
-            backgroundColor: key,
-            marginRight: 6,
-            border: "1px solid #333",
-          }}
-        />
-        <span>{value}</span>
+      <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <span style={{ fontWeight: 500 }}>Words colored in any color:</span>
+        <span style={{ fontWeight: 700, color: "#1F4E78" }}>{value}</span>
       </span>
     );
   }
+
+  if (key === "total") {
+    return (
+      <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <span style={{ fontWeight: 500 }}>Total words in text:</span>
+        <span style={{ fontWeight: 700, color: "#1F4E78" }}>{value}</span>
+      </span>
+    );
+  }
+
+  // Semantic formatting styles
+  if (key === "underline") {
+    const name = getStyleName("underline", styleSettings);
+    return (
+      <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <ColorBadge type="underline" name={name} size="small" />
+        <span style={{ fontWeight: 700 }}>{value}</span>
+      </span>
+    );
+  }
+
+  if (key === "bold") {
+    const name = getStyleName("bold", styleSettings);
+    return (
+      <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <ColorBadge type="bold" name={name} size="small" />
+        <span style={{ fontWeight: 700 }}>{value}</span>
+      </span>
+    );
+  }
+
+  if (key === "italic") {
+    const name = getStyleName("italic", styleSettings);
+    return (
+      <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <ColorBadge type="italic" name={name} size="small" />
+        <span style={{ fontWeight: 700 }}>{value}</span>
+      </span>
+    );
+  }
+
+  // Color markers
+  const colorName = getColorName(key, colors);
+  return (
+    <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+      <ColorBadge type="color" name={colorName} color={key} size="small" />
+      <span style={{ fontWeight: 700 }}>{value}</span>
+    </span>
+  );
+};
+
+/**
+ * Build results table data for full text or selection
+ * Returns structure with columns (colors + formatting) and rows (codings count, words count)
+ */
+export const buildResultsTable = (
+  counts,
+  wordCounts,
+  colors = [],
+  styleSettings = {}
+) => {
+  // Build columns list: all colors + enabled formatting options
+  const columns = [];
+
+  // Add all colors
+  colors.forEach((color) => {
+    columns.push({
+      type: "color",
+      key: color.code,
+      name: color.name,
+      code: color.code,
+    });
+  });
+
+  // Add formatting options if enabled
+  if (styleSettings.underlineEnabled) {
+    columns.push({
+      type: "underline",
+      key: "underline",
+      name: styleSettings.underlineName || "Underline",
+    });
+  }
+
+  if (styleSettings.boldEnabled) {
+    columns.push({
+      type: "bold",
+      key: "bold",
+      name: styleSettings.boldName || "Bold",
+    });
+  }
+
+  if (styleSettings.italicEnabled) {
+    columns.push({
+      type: "italic",
+      key: "italic",
+      name: styleSettings.italicName || "Italic",
+    });
+  }
+
+  // Build rows data
+  const codingsRow = {};
+  const wordsRow = {};
+
+  columns.forEach((col) => {
+    codingsRow[col.key] = counts[col.key] || 0;
+    wordsRow[col.key] = wordCounts[col.key] || 0;
+  });
+
+  return {
+    columns,
+    codingsRow,
+    wordsRow,
+  };
+};
+
+/**
+ * Calculate additional statistics
+ */
+export const calculateAdditionalStats = (value, editor = null) => {
+  // Full text stats
+  const fullWordCounts = calculateWordCounts(value);
+  const totalWordsFullText = fullWordCounts.total || 0;
+  const totalColoredWordsFullText = fullWordCounts.totalColor || 0;
+
+  // Selection stats (if editor and selection provided)
+  let totalWordsSelection = 0;
+  let totalColoredWordsSelection = 0;
+
+  if (editor && editor.selection) {
+    const selectionWordCounts = calculateWordCountsForSelection(editor, value);
+    if (selectionWordCounts) {
+      totalWordsSelection = selectionWordCounts.total || 0;
+      totalColoredWordsSelection = selectionWordCounts.totalColor || 0;
+    }
+  }
+
+  return {
+    totalWordsFullText,
+    totalColoredWordsFullText,
+    totalWordsSelection,
+    totalColoredWordsSelection,
+  };
 };

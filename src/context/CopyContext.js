@@ -23,7 +23,7 @@ const CopyContext = createContext();
 export const useCopy = () => useContext(CopyContext);
 
 export function CopyProvider({ children }) {
-  //ייבוא דאטה
+  // Import data
   const { copies, tasks } = useData();
 
   const { refreshCopies } = useRefresh();
@@ -46,27 +46,27 @@ export function CopyProvider({ children }) {
     return result;
   };
 
-  //העתקים לפי הצהרה
+  // Copies by statement
   const copiesByStatementId = (statementId) => {
     return copiesByStatementIdService(copies, { statementId });
   };
 
-  //העתקים לפי משימה
+  // Copies by task
   const copiesByTaskId = (taskId) => {
     return copiesByTaskIdService(copies, tasks, { taskId });
   };
 
-  //העתקים לניסוי לפי מקודד
+  // Copies for experiment by coder
   const copiesForExperimentByCoderId = (coderId) => {
     return copiesForExperimentByCoderIdService(copies, { coderId });
   };
 
-  //העתק לפי ID
+  // Copy by ID
   const copyById = (copyId) => {
     return copyByIdService(copies, { copyId });
   };
 
-  //שמירת סימונים וכמויות
+  // Save highlights and counts
   const saveCopyWithHighlights = async (copyId, highlights, colorCounts) => {
     const r = await UpdateCopyOnServerService(copyId, {
       highlights,
@@ -76,23 +76,23 @@ export function CopyProvider({ children }) {
     return r;
   };
 
-  //עדכון סטטוס של העתק
+  // Update copy status
   const updateCopyStatus = async (copyId, status) => {
     await UpdateCopyOnServerService(copyId, { status });
     await refreshCopies();
   };
 
-  //העתק לפי הצהרה ומקודד
+  // Copy by statement and coder
   const copyByStatementAndUser = (statementId, userId) => {
     return copyByStatementAndUserService(copies, { statementId, userId });
   };
 
-  //אחוזי סיום קידודים
+  // Completion percentage of codings
   const calculateCompletionPercentage = (relevantCopies) => {
     return calculateCompletionPercentageService({ relevantCopies });
   };
 
-  //תאריך אחרון מבין תאריכי העדכון של ההעתקים
+  // Last update date from copies update dates
   const getLastUpdateDate = (relevantCopies) => {
     return getLastUpdateDateService({ relevantCopies });
   };

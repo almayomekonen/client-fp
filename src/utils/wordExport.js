@@ -293,7 +293,12 @@ const createCodedTextSection = (slateValue) => {
 /**
  * Create statistics table
  */
-const createStatisticsTable = (counts, wordCounts, colors = []) => {
+const createStatisticsTable = (
+  counts,
+  wordCounts,
+  colors = [],
+  styleSettings = {}
+) => {
   const hasData =
     (counts && Object.keys(counts).length > 0) ||
     (wordCounts && Object.keys(wordCounts).length > 0);
@@ -424,6 +429,12 @@ const createStatisticsTable = (counts, wordCounts, colors = []) => {
       if (key.startsWith("#")) {
         const colorObj = colors.find((c) => c.code === key);
         displayName = colorObj ? colorObj.name : key;
+      } else if (key === "bold") {
+        displayName = styleSettings.boldName || "Bold";
+      } else if (key === "italic") {
+        displayName = styleSettings.italicName || "Italic";
+      } else if (key === "underline") {
+        displayName = styleSettings.underlineName || "Underline";
       }
 
       const rowColor = index % 2 === 0 ? "FFFFFF" : "F9F9F9";
@@ -536,6 +547,12 @@ const createStatisticsTable = (counts, wordCounts, colors = []) => {
       if (key.startsWith("#")) {
         const colorObj = colors.find((c) => c.code === key);
         displayName = colorObj ? `${colorObj.name} (words)` : `${key} (words)`;
+      } else if (key === "bold") {
+        displayName = `${styleSettings.boldName || "Bold"} (words)`;
+      } else if (key === "italic") {
+        displayName = `${styleSettings.italicName || "Italic"} (words)`;
+      } else if (key === "underline") {
+        displayName = `${styleSettings.underlineName || "Underline"} (words)`;
       } else {
         displayName = `${key} (words)`;
       }
@@ -783,6 +800,7 @@ export const exportCopyToWord = async ({
   wordCounts,
   comments,
   colors,
+  styleSettings = {},
   users,
   copyName = "Coded Statement",
   statementName = "",
@@ -806,7 +824,9 @@ export const exportCopyToWord = async ({
 
     // Statistics
     sections.push(createSectionHeading("Statistics"));
-    sections.push(createStatisticsTable(counts, wordCounts, colors));
+    sections.push(
+      createStatisticsTable(counts, wordCounts, colors, styleSettings)
+    );
     sections.push(new Paragraph({ text: "", spacing: { after: 400 } }));
 
     // Comments
@@ -865,6 +885,7 @@ export const exportComparisonToWord = async ({
   commentsA,
   commentsB,
   colors,
+  styleSettings = {},
   users,
 }) => {
   try {
@@ -909,7 +930,9 @@ export const exportComparisonToWord = async ({
 
     sections.push(...createCodedTextSection(slateValueA));
     sections.push(createSectionHeading("Statistics - Copy A"));
-    sections.push(createStatisticsTable(countsA, wordCountsA, colors));
+    sections.push(
+      createStatisticsTable(countsA, wordCountsA, colors, styleSettings)
+    );
     sections.push(new Paragraph({ text: "", spacing: { after: 400 } }));
     sections.push(...createCommentsSection(commentsA, users));
 
@@ -948,7 +971,9 @@ export const exportComparisonToWord = async ({
 
     sections.push(...createCodedTextSection(slateValueB));
     sections.push(createSectionHeading("Statistics - Copy B"));
-    sections.push(createStatisticsTable(countsB, wordCountsB, colors));
+    sections.push(
+      createStatisticsTable(countsB, wordCountsB, colors, styleSettings)
+    );
     sections.push(new Paragraph({ text: "", spacing: { after: 400 } }));
     sections.push(...createCommentsSection(commentsB, users));
 

@@ -1,0 +1,75 @@
+/* Color Badge Component Styles */
+
+.color-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.color-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Size variants */
+.color-badge-small {
+  padding: 4px 8px;
+  font-size: 11px;
+  gap: 4px;
+}
+
+.color-badge-medium {
+  padding: 6px 12px;
+  font-size: 13px;
+  gap: 6px;
+}
+
+.color-badge-large {
+  padding: 8px 16px;
+  font-size: 15px;
+  gap: 8px;
+}
+
+/* Icon */
+.color-badge-icon {
+  display: inline-flex;
+  align-items: center;
+  font-size: 1em;
+}
+
+/* Name */
+.color-badge-name {
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* Table cell variant */
+.color-badge-table {
+  margin: 2px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .color-badge {
+    font-size: 12px;
+    padding: 5px 10px;
+  }
+
+  .color-badge-small {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+
+  .color-badge-large {
+    font-size: 14px;
+    padding: 7px 14px;
+  }
+}

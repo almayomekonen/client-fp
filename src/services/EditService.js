@@ -1,25 +1,28 @@
-import { Transforms }  from 'slate';
+import { Transforms } from "slate";
 
 export const applyHighlightsToText = ({
   baseText,
   highlights,
   diffs = [],
-  comments = []
+  comments = [],
 }) => {
-
   const fullText = baseText
-    .map(node => node.children.map(c => c.text).join(''))
-    .join('\n');
+    .map((node) => node.children.map((c) => c.text).join(""))
+    .join("\n");
 
-  const highlightOnly = highlights.filter(h => h.color);
-  const underlineOnly = highlights.filter(h => h.underline && !h.color);
-  const boldOnly = highlights.filter(h => h.bold && !h.color && !h.underline);
-  const italicOnly = highlights.filter(h => h.italic && !h.color && !h.underline);
+  const highlightOnly = highlights.filter((h) => h.color);
+  const underlineOnly = highlights.filter((h) => h.underline && !h.color);
+  const boldOnly = highlights.filter((h) => h.bold && !h.color && !h.underline);
+  const italicOnly = highlights.filter(
+    (h) => h.italic && !h.color && !h.underline
+  );
 
   const fragments = [];
   let currentIndex = 0;
 
-  const sorted = [...highlightOnly].sort((a, b) => a.startOffset - b.startOffset);
+  const sorted = [...highlightOnly].sort(
+    (a, b) => a.startOffset - b.startOffset
+  );
 
   sorted.forEach(({ color, startOffset, endOffset }) => {
     if (startOffset > currentIndex) {
@@ -48,13 +51,17 @@ export const applyHighlightsToText = ({
     });
   }
 
-  // 🔷 פונקציה כללית להוספת שכבות
+  // 🔷 General function to add layers
   const addLayerToFragments = (fragments, layerOnly, property) => {
-    return fragments.flatMap(fragment => {
+    return fragments.flatMap((fragment) => {
       if (fragment.startOffset === fragment.endOffset) return [fragment];
 
       const overlaps = layerOnly.filter(
-        h => !(h.endOffset <= fragment.startOffset || h.startOffset >= fragment.endOffset)
+        (h) =>
+          !(
+            h.endOffset <= fragment.startOffset ||
+            h.startOffset >= fragment.endOffset
+          )
       );
 
       if (overlaps.length === 0) return [fragment];
@@ -74,7 +81,10 @@ export const applyHighlightsToText = ({
 
         subFragments.push({
           ...fragment,
-          text: fullText.slice(Math.max(start, startOffset), Math.min(fragment.endOffset, endOffset)),
+          text: fullText.slice(
+            Math.max(start, startOffset),
+            Math.min(fragment.endOffset, endOffset)
+          ),
           startOffset: Math.max(start, startOffset),
           endOffset: Math.min(fragment.endOffset, endOffset),
           [property]: true,
@@ -97,14 +107,26 @@ export const applyHighlightsToText = ({
   };
 
   let fragmentsWithLayers = fragments;
-  fragmentsWithLayers = addLayerToFragments(fragmentsWithLayers, underlineOnly, 'underline');
-  fragmentsWithLayers = addLayerToFragments(fragmentsWithLayers, boldOnly, 'bold');
-  fragmentsWithLayers = addLayerToFragments(fragmentsWithLayers, italicOnly, 'italic');
+  fragmentsWithLayers = addLayerToFragments(
+    fragmentsWithLayers,
+    underlineOnly,
+    "underline"
+  );
+  fragmentsWithLayers = addLayerToFragments(
+    fragmentsWithLayers,
+    boldOnly,
+    "bold"
+  );
+  fragmentsWithLayers = addLayerToFragments(
+    fragmentsWithLayers,
+    italicOnly,
+    "italic"
+  );
 
-  // 🔷 פיצול לפי diffs
+  // 🔷 Split by diffs
   const splitFragmentsByDiffs = (fragments, diffs) => {
     const offsets = new Set();
-    diffs.forEach(d => {
+    diffs.forEach((d) => {
       offsets.add(d.startOffset);
       offsets.add(d.endOffset);
     });
@@ -113,7 +135,7 @@ export const applyHighlightsToText = ({
 
     const result = [];
 
-    fragments.forEach(fragment => {
+    fragments.forEach((fragment) => {
       const { startOffset, endOffset, text } = fragment;
 
       if (startOffset === endOffset) {
@@ -122,12 +144,12 @@ export const applyHighlightsToText = ({
       }
 
       const innerOffsets = sortedOffsets.filter(
-        o => o > startOffset && o < endOffset
+        (o) => o > startOffset && o < endOffset
       );
 
       if (innerOffsets.length === 0) {
         const isDiff = diffs.some(
-          d => !(d.endOffset <= startOffset || d.startOffset >= endOffset)
+          (d) => !(d.endOffset <= startOffset || d.startOffset >= endOffset)
         );
         result.push({ ...fragment, isDiff });
         return;
@@ -141,7 +163,7 @@ export const applyHighlightsToText = ({
         const subText = text.slice(prev - startOffset, next - startOffset);
 
         const isDiff = diffs.some(
-          d => !(d.endOffset <= prev || d.startOffset >= next)
+          (d) => !(d.endOffset <= prev || d.startOffset >= next)
         );
 
         result.push({
@@ -161,19 +183,19 @@ export const applyHighlightsToText = ({
 
   const fragmentsWithDiffs = splitFragmentsByDiffs(fragmentsWithLayers, diffs);
 
-  // 🔷 פיצול לפי comments
+  // 🔷 Split by comments
   const splitFragmentsByComments = (fragments, comments) => {
     if (!comments || comments.length === 0) return fragments;
 
     const result = [];
     let handledOffsets = new Set();
 
-    fragments.forEach(fragment => {
+    fragments.forEach((fragment) => {
       const { startOffset, endOffset, text } = fragment;
 
       const offsetsInThisFragment = comments
-        .filter(c => c.offset >= startOffset && c.offset < endOffset)
-        .map(c => c.offset)
+        .filter((c) => c.offset >= startOffset && c.offset < endOffset)
+        .map((c) => c.offset)
         .sort((a, b) => a - b);
 
       if (offsetsInThisFragment.length === 0) {
@@ -183,25 +205,25 @@ export const applyHighlightsToText = ({
 
       let prevOffset = startOffset;
 
-      offsetsInThisFragment.forEach(offset => {
+      offsetsInThisFragment.forEach((offset) => {
         if (offset > prevOffset) {
           result.push({
             ...fragment,
             text: text.slice(prevOffset - startOffset, offset - startOffset),
             startOffset: prevOffset,
-            endOffset: offset
+            endOffset: offset,
           });
         }
 
-        const commentsAtOffset = comments.filter(c => c.offset === offset);
+        const commentsAtOffset = comments.filter((c) => c.offset === offset);
         handledOffsets.add(offset);
 
         result.push({
           ...fragment,
-          text: '', // נקודה ריקה – הערה בלבד
+          text: "", // Empty point - comment only
           startOffset: offset,
           endOffset: offset,
-          comments: commentsAtOffset
+          comments: commentsAtOffset,
         });
 
         prevOffset = offset;
@@ -212,34 +234,37 @@ export const applyHighlightsToText = ({
           ...fragment,
           text: text.slice(prevOffset - startOffset),
           startOffset: prevOffset,
-          endOffset
+          endOffset,
         });
       }
     });
 
     const maxOffset = fragments[fragments.length - 1].endOffset;
     comments
-      .filter(c => c.offset === maxOffset && !handledOffsets.has(maxOffset))
-      .forEach(c => {
+      .filter((c) => c.offset === maxOffset && !handledOffsets.has(maxOffset))
+      .forEach((c) => {
         result.push({
-          text: '',
+          text: "",
           startOffset: maxOffset,
           endOffset: maxOffset,
-          comments: [c]
+          comments: [c],
         });
       });
 
     return result;
   };
 
-  const fragmentsWithComments = splitFragmentsByComments(fragmentsWithDiffs, comments);
+  const fragmentsWithComments = splitFragmentsByComments(
+    fragmentsWithDiffs,
+    comments
+  );
 
-  // 🔷 פיצול לפסקאות
+  // 🔷 Split into paragraphs
   const paragraphs = [];
   let currentParagraph = [];
 
-  fragmentsWithComments.forEach(fragment => {
-    const parts = fragment.text.split('\n');
+  fragmentsWithComments.forEach((fragment) => {
+    const parts = fragment.text.split("\n");
     let offset = fragment.startOffset;
 
     parts.forEach((part, idx) => {
@@ -262,7 +287,7 @@ export const applyHighlightsToText = ({
 
       if (idx < parts.length - 1) {
         paragraphs.push({
-          type: 'paragraph',
+          type: "paragraph",
           children: currentParagraph,
         });
         currentParagraph = [];
@@ -272,15 +297,13 @@ export const applyHighlightsToText = ({
 
   if (currentParagraph.length > 0) {
     paragraphs.push({
-      type: 'paragraph',
+      type: "paragraph",
       children: currentParagraph,
     });
   }
 
   return paragraphs;
 };
-
-
 
 export const extractHighlightsFromValue = ({ value }) => {
   const highlights = [];
@@ -294,7 +317,7 @@ export const extractHighlightsFromValue = ({ value }) => {
   for (let i = 0; i < value.length; i++) {
     const children = value[i].children;
 
-    // ---------- צבעים ----------
+    // ---------- Colors ----------
     let colorStartIndex = 0;
     let currentColor = children[0]?.highlight || null;
 
@@ -304,9 +327,20 @@ export const extractHighlightsFromValue = ({ value }) => {
 
       if (j === children.length || nextColor !== currentColor) {
         if (currentColor) {
-          const startOffset = globalOffset + children.slice(0, colorStartIndex).reduce((acc, c) => acc + c.text.length, 0);
-          const endOffset = startOffset + children.slice(colorStartIndex, j).reduce((acc, c) => acc + c.text.length, 0);
-          const text = children.slice(colorStartIndex, j).map(c => c.text).join('');
+          const startOffset =
+            globalOffset +
+            children
+              .slice(0, colorStartIndex)
+              .reduce((acc, c) => acc + c.text.length, 0);
+          const endOffset =
+            startOffset +
+            children
+              .slice(colorStartIndex, j)
+              .reduce((acc, c) => acc + c.text.length, 0);
+          const text = children
+            .slice(colorStartIndex, j)
+            .map((c) => c.text)
+            .join("");
 
           highlights.push({
             color: currentColor,
@@ -327,12 +361,12 @@ export const extractHighlightsFromValue = ({ value }) => {
 
     const handleLayer = (property, counts) => {
       let startIndex = null;
-      let buffer = '';
+      let buffer = "";
 
       for (let j = 0; j <= children.length; j++) {
         const child = children[j];
         const active = child?.[property];
-        const text = child?.text || '';
+        const text = child?.text || "";
 
         if (active && startIndex === null) {
           startIndex = j;
@@ -340,14 +374,18 @@ export const extractHighlightsFromValue = ({ value }) => {
         } else if (active && startIndex !== null) {
           buffer += text;
         } else if (!active && startIndex !== null) {
-          const startOffset = globalOffset + children.slice(0, startIndex).reduce((acc, c) => acc + c.text.length, 0);
+          const startOffset =
+            globalOffset +
+            children
+              .slice(0, startIndex)
+              .reduce((acc, c) => acc + c.text.length, 0);
           const endOffset = startOffset + buffer.length;
 
           highlights.push({
             color: null,
-            underline: property === 'underline',
-            bold: property === 'bold',
-            italic: property === 'italic',
+            underline: property === "underline",
+            bold: property === "bold",
+            italic: property === "italic",
             innerText: buffer,
             startOffset,
             endOffset,
@@ -356,19 +394,23 @@ export const extractHighlightsFromValue = ({ value }) => {
           counts[property] = (counts[property] || 0) + 1;
 
           startIndex = null;
-          buffer = '';
+          buffer = "";
         }
       }
 
       if (startIndex !== null && buffer) {
-        const startOffset = globalOffset + children.slice(0, startIndex).reduce((acc, c) => acc + c.text.length, 0);
+        const startOffset =
+          globalOffset +
+          children
+            .slice(0, startIndex)
+            .reduce((acc, c) => acc + c.text.length, 0);
         const endOffset = startOffset + buffer.length;
 
         highlights.push({
           color: null,
-          underline: property === 'underline',
-          bold: property === 'bold',
-          italic: property === 'italic',
+          underline: property === "underline",
+          bold: property === "bold",
+          italic: property === "italic",
           innerText: buffer,
           startOffset,
           endOffset,
@@ -378,9 +420,9 @@ export const extractHighlightsFromValue = ({ value }) => {
       }
     };
 
-    handleLayer('underline', underlineCounts);
-    handleLayer('bold', boldCounts);
-    handleLayer('italic', italicCounts);
+    handleLayer("underline", underlineCounts);
+    handleLayer("bold", boldCounts);
+    handleLayer("italic", italicCounts);
 
     globalOffset += children.reduce((acc, c) => acc + c.text.length, 0) + 1;
   }
@@ -396,30 +438,27 @@ export const extractHighlightsFromValue = ({ value }) => {
   };
 };
 
-
-
-
-// סימון צבע בטקסט
+// Mark color in text
 export const markColor = (editor, color) => {
   if (!editor?.selection) return;
   Transforms.setNodes(
     editor,
     { highlight: color },
-    { match: n => typeof n.text === 'string', split: true }
+    { match: (n) => typeof n.text === "string", split: true }
   );
 };
 
-// סימון קו תחתון
+// Mark underline
 export const markUnderline = (editor) => {
   if (!editor?.selection) return;
   Transforms.setNodes(
     editor,
     { underline: true },
-    { match: n => typeof n.text === 'string', split: true }
+    { match: (n) => typeof n.text === "string", split: true }
   );
 };
 
-// הסרת כל הסימונים
+// Remove all formatting
 
 export const removeFormatting = (editor) => {
   if (!editor?.selection) return;
@@ -432,7 +471,7 @@ export const removeFormatting = (editor) => {
       bold: null,
       italic: null,
     },
-    { match: n => typeof n.text === 'string', split: true }
+    { match: (n) => typeof n.text === "string", split: true }
   );
 
   Transforms.deselect(editor);
@@ -440,12 +479,10 @@ export const removeFormatting = (editor) => {
 
 export const markBold = (editor) => {
   if (!editor.selection) return;
-  editor.addMark('bold', true);
+  editor.addMark("bold", true);
 };
 
 export const markItalic = (editor) => {
   if (!editor.selection) return;
-  editor.addMark('italic', true);
+  editor.addMark("italic", true);
 };
-
-

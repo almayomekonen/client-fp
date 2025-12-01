@@ -228,6 +228,7 @@ export default function TaskForCoder() {
               >
                 <div className="task-info">
                   <div className="task-experiment">
+                    {isExpanded ? <FaChevronDown /> : <FaChevronRight />}
                     <FaMicroscope />
                     {experimentNames[task.experimentId] || "Loading..."}
                   </div>
@@ -236,41 +237,40 @@ export default function TaskForCoder() {
                       <FaUser />
                       Researcher: {getInvestigatorName(task.investigatorId)}
                     </span>
-                  </div>
-                </div>
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: "12px" }}
-                >
-                  {unreadCount > 0 && (
-                    <span className="task-badge badge-unread">
-                      <FaEnvelope /> {unreadCount}
+                    <span className="task-meta-item">
+                      <FaChartLine />
+                      Experiment: {expPercent}%
                     </span>
-                  )}
-                  {isExpanded ? <FaChevronDown /> : <FaChevronRight />}
+                    {unreadCount > 0 && (
+                      <span className="task-meta-item">
+                        <FaEnvelope />
+                        <span className="task-badge badge-unread">
+                          {unreadCount} unread
+                        </span>
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Progress Bar */}
               <div className="task-progress">
                 <div className="progress-label">
-                  <span>
-                    <FaChartLine /> Task Progress: {progress}%
-                  </span>
-                  <span>Experiment: {expPercent}%</span>
+                  Task Progress: {progress}%
                 </div>
                 <div className="progress-bar-container">
                   <div
                     className="progress-bar-fill"
                     style={{ width: `${progress}%` }}
                   >
-                    {progress > 10 && `${progress}%`}
+                    {progress > 0 && `${progress}%`}
                   </div>
                 </div>
               </div>
 
               {/* Expanded Details */}
               {isExpanded && (
-                <>
+                <div className="task-details">
                   {/* Copies List */}
                   {renderCopies(task._id)}
 
@@ -292,10 +292,10 @@ export default function TaskForCoder() {
                       }}
                       className="task-btn task-btn-summary"
                     >
-                      <FaFileAlt /> Task Summary
+                      <FaChartLine /> Task Summary
                     </button>
                   </div>
-                </>
+                </div>
               )}
             </div>
           );

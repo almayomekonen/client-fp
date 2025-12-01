@@ -63,7 +63,7 @@ export async function login(username, password) {
     const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include", // ← וודא שזה קיים!
+      credentials: "include", // ← Make sure this exists!
       body: JSON.stringify({ username, password }),
     });
 

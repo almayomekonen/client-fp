@@ -24,7 +24,7 @@ export function ExperimentProvider({ children }) {
     refreshTaskMessages,
   } = useRefresh();
 
-  // יצירת ניסוי חדש
+  // Create new experiment
   const addExperiment = async (name, description, investigatorId) => {
     const r = await addExperimentService({ name, description, investigatorId });
     return r.newExperiment;
@@ -33,17 +33,17 @@ export function ExperimentProvider({ children }) {
   const fetchExperiments = async () => {
     return await fetchExperimentsFromServer();
   };
-  // ניסוי לפי מזהה
+  // Experiment by ID
   const experimentById = async (experimentId) => {
     return await fetchExperimentById(experimentId);
   };
 
-  // ניסויים לפי מזהה חוקר
+  // Experiments by investigator ID
   const experimentsByInvestigatorId = async (investigatorId) => {
     return await fetchExperimentsByInvestigatorId(investigatorId);
   };
 
-  // שם החוקר לפי ניסוי
+  // Investigator name by experiment
   const investigatorNameByExperimentId = async (experimentId) => {
     return await fetchInvestigatorNameByExperimentId(experimentId);
   };

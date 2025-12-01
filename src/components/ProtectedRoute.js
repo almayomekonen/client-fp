@@ -5,7 +5,7 @@ import { useData } from "../context/DataContext";
 const ProtectedRoute = ({ children, requiredRole = null }) => {
   const { currentUser, isAuthChecked } = useData();
 
-  // אם עדיין בודקים אותנטיקציה, הצג טעינה
+  // If still checking authentication, show loading
   if (!isAuthChecked) {
     return (
       <div
@@ -18,17 +18,17 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
           fontSize: "18px",
         }}
       >
-        <div>טוען...</div>
+        <div>Loading...</div>
       </div>
     );
   }
 
-  // אם אין משתמש מחובר, הפנה להתחברות
+  // If no user logged in, redirect to login
   if (!currentUser) {
     return <Navigate to="/login" replace />;
   }
 
-  // אם נדרש תפקיד ספציפי ולמשתמש אין אותו
+  // If specific role required and user doesn't have it
   if (requiredRole && currentUser.role !== requiredRole) {
     return <Navigate to="/unauthorized" replace />;
   }

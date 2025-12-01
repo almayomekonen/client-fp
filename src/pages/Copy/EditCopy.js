@@ -32,6 +32,8 @@ import { useColor } from "../../context/ColorContext";
 import { useStyleSetting } from "../../context/StyleSettingContext";
 import { useSocket } from "../../context/SocketContext";
 import { exportCopyToWord } from "../../utils/wordExport";
+import CopyChat from "../../components/CopyChat";
+import ResultsTables from "../../components/ResultsTables";
 import "../../styles/Dashboard.css";
 
 export default function StatementEditor() {
@@ -54,6 +56,8 @@ export default function StatementEditor() {
     calculateWordCounts,
     calculateWordCountsForSelection,
     renderKeyLabel,
+    buildResultsTable,
+    calculateAdditionalStats,
   } = useResult();
   const { statementById } = useStatement();
   const { currentUser, isAuthChecked } = useData();
@@ -73,12 +77,15 @@ export default function StatementEditor() {
   const [commentKey, setCommentKey] = useState(0);
   const [activeComment, setActiveComment] = useState(null);
   const [isAddingComment, setIsAddingComment] = useState(false);
-  const [replyingTo, setReplyingTo] = useState(null);
-  const [replyText, setReplyText] = useState("");
 
   const [colors, setColors] = useState([]);
   const [styleSettings, setStyleSettings] = useState({});
   const [statementsMap, setStatementsMap] = useState({});
+
+  // New state for results tables
+  const [fullTextTable, setFullTextTable] = useState(null);
+  const [selectionTable, setSelectionTable] = useState(null);
+  const [additionalStats, setAdditionalStats] = useState(null);
 
   // User check
   useEffect(() => {
@@ -190,6 +197,48 @@ export default function StatementEditor() {
       socket.off("commentDeleted", handleCommentDeleted);
     };
   }, [socket, copyId]);
+
+  // Update results tables when data changes
+  useEffect(() => {
+    if (!value || !colors.length || !styleSettings) return;
+
+    // Build full text table
+    const fullTable = buildResultsTable(
+      counts,
+      wordCounts,
+      colors,
+      styleSettings
+    );
+    setFullTextTable(fullTable);
+
+    // Build selection table if we have selection data
+    if (selectionCounts && selectionWordCounts) {
+      const selTable = buildResultsTable(
+        selectionCounts,
+        selectionWordCounts,
+        colors,
+        styleSettings
+      );
+      setSelectionTable(selTable);
+    } else {
+      setSelectionTable(null);
+    }
+
+    // Calculate additional stats
+    const stats = calculateAdditionalStats(value, editor);
+    setAdditionalStats(stats);
+  }, [
+    value,
+    counts,
+    wordCounts,
+    selectionCounts,
+    selectionWordCounts,
+    colors,
+    styleSettings,
+    editor,
+    buildResultsTable,
+    calculateAdditionalStats,
+  ]);
 
   // Calculate global offset
   const getGlobalOffsetFromSelection = () => {
@@ -338,13 +387,11 @@ export default function StatementEditor() {
     setValue(decoratedText);
     setCommentKey((prev) => prev + 1);
     setWordCounts(calculateWordCounts(decoratedText));
-    alert("Changes saved successfully!");
   };
 
   const handleCloseCoding = async () => {
     if (!copy) return;
     await updateCopyStatus(copy._id, "completed");
-    alert("Coding completed!");
     if (currentUser?.role === "admin") navigate("/adminHome");
     else if (currentUser?.role === "investigator")
       navigate("/investigatorHome");
@@ -433,28 +480,6 @@ export default function StatementEditor() {
     setActiveComment(null);
   };
 
-  // Reply to comment
-  const handleReplyToComment = async (parentCommentId) => {
-    if (!replyText.trim()) return alert("Please enter reply text");
-
-    // For replies, use the parent comment's offset
-    const parentComment = localComments.find((c) => c._id === parentCommentId);
-    const offset = parentComment ? parentComment.offset : null;
-
-    const createdReply = await addComment(
-      currentUser._id,
-      copyId,
-      replyText,
-      offset,
-      parentCommentId
-    );
-    const updatedLocalComments = [...localComments, createdReply];
-    setLocalComments(updatedLocalComments);
-    setCommentKey((prev) => prev + 1);
-    setReplyingTo(null);
-    setReplyText("");
-  };
-
   // Export to Word
   const handleExportToWord = async () => {
     try {
@@ -468,12 +493,11 @@ export default function StatementEditor() {
         wordCounts,
         comments: localComments,
         colors,
+        styleSettings,
         users: [],
         copyName: `Coding_${currentUser?.username || "User"}`,
         statementName,
       });
-
-      alert("✅ Document exported successfully!");
     } catch (error) {
       console.error("Export error:", error);
       alert("❌ Failed to export document. Please try again.");
@@ -504,14 +528,15 @@ export default function StatementEditor() {
 
       {/* Main Content Grid */}
       <div
+        className="edit-copy-layout"
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 400px",
           gap: "20px",
         }}
       >
-        {/* Left Column - Editor */}
-        <div>
+        {/* Left Column - Editor (75%) */}
+        <div className="edit-copy-main-column">
           {/* Toolbar Card */}
           <div className="dashboard-card" style={{ marginBottom: "20px" }}>
             <h3 className="card-title" style={{ marginBottom: "16px" }}>
@@ -536,13 +561,25 @@ export default function StatementEditor() {
                   style={{
                     backgroundColor: c.code,
                     border: "2px solid #000",
-                    width: "40px",
-                    height: "40px",
-                    padding: 0,
-                    minWidth: "40px",
+                    padding: "6px 12px",
                     cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontWeight: "600",
+                    fontSize: "13px",
+                    color: (() => {
+                      const hex = c.code.replace("#", "");
+                      const r = parseInt(hex.substr(0, 2), 16);
+                      const g = parseInt(hex.substr(2, 2), 16);
+                      const b = parseInt(hex.substr(4, 2), 16);
+                      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                      return brightness > 155 ? "#000000" : "#FFFFFF";
+                    })(),
                   }}
-                />
+                >
+                  {c.name}
+                </button>
               ))}
             </div>
 
@@ -558,24 +595,27 @@ export default function StatementEditor() {
                 <button
                   onClick={handleMarkUnderline}
                   className="dashboard-btn btn-secondary btn-sm"
+                  style={{ textDecoration: "underline" }}
                 >
-                  <FaUnderline /> Underline
+                  <FaUnderline /> {styleSettings.underlineName || "Underline"}
                 </button>
               )}
               {styleSettings.boldEnabled && (
                 <button
                   onClick={handleMarkBold}
                   className="dashboard-btn btn-secondary btn-sm"
+                  style={{ fontWeight: "bold" }}
                 >
-                  <FaBold /> Bold
+                  <FaBold /> {styleSettings.boldName || "Bold"}
                 </button>
               )}
               {styleSettings.italicEnabled && (
                 <button
                   onClick={handleMarkItalic}
                   className="dashboard-btn btn-secondary btn-sm"
+                  style={{ fontStyle: "italic" }}
                 >
-                  <FaItalic /> Italic
+                  <FaItalic /> {styleSettings.italicName || "Italic"}
                 </button>
               )}
             </div>
@@ -588,22 +628,17 @@ export default function StatementEditor() {
             </h3>
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
               <button
-                onClick={() =>
-                  calculateSelectionCounts(editor, setSelectionCounts)
-                }
+                onClick={() => {
+                  calculateSelectionCounts(editor, setSelectionCounts);
+                  const wordCounts = calculateWordCountsForSelection(
+                    editor,
+                    value
+                  );
+                  setSelectionWordCounts(wordCounts);
+                }}
                 className="dashboard-btn btn-secondary btn-sm"
               >
-                <FaEye /> Show Selection Codings
-              </button>
-              <button
-                onClick={() =>
-                  setSelectionWordCounts(
-                    calculateWordCountsForSelection(editor, value)
-                  )
-                }
-                className="dashboard-btn btn-secondary btn-sm"
-              >
-                <FaChartBar /> Show Selection Words
+                <FaEye /> Analyze Selection
               </button>
             </div>
           </div>
@@ -620,20 +655,27 @@ export default function StatementEditor() {
               value={value}
               onChange={setValue}
             >
-              <Editable
-                renderLeaf={renderLeaf}
-                placeholder="Select text to highlight..."
-                dir="auto"
+              <div
                 style={{
                   minHeight: "400px",
+                  maxHeight: "600px",
+                  overflowY: "auto",
                   border: "2px solid #e0e0e0",
                   borderRadius: "8px",
                   padding: "20px",
-                  fontSize: "16px",
-                  lineHeight: "1.8",
                   backgroundColor: "#fafafa",
                 }}
-              />
+              >
+                <Editable
+                  renderLeaf={renderLeaf}
+                  placeholder="Select text to highlight..."
+                  dir="auto"
+                  style={{
+                    fontSize: "16px",
+                    lineHeight: "1.8",
+                  }}
+                />
+              </div>
             </Slate>
 
             {/* Action Buttons */}
@@ -679,107 +721,37 @@ export default function StatementEditor() {
           </div>
         </div>
 
-        {/* Right Column - Statistics & Comments */}
-        <div>
-          {/* Total Statistics */}
+        {/* Right Column - Chat Sidebar (25%) */}
+        <div className="edit-copy-chat-sidebar">
           <div className="dashboard-card" style={{ marginBottom: "20px" }}>
             <h3 className="card-title" style={{ marginBottom: "16px" }}>
-              <FaChartBar /> Total Statistics
+              <FaComment /> Copy Chat
             </h3>
-
-            <div style={{ marginBottom: "20px" }}>
-              <h4
-                style={{
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  marginBottom: "12px",
-                  color: "#666",
-                }}
-              >
-                Codings Count:
-              </h4>
-              {Object.entries(counts).length > 0 ? (
-                Object.entries(counts).map(([key, num]) => (
-                  <div key={key} style={{ marginBottom: "8px" }}>
-                    {renderKeyLabel(key, num)}
-                  </div>
-                ))
-              ) : (
-                <p style={{ color: "#999", fontSize: "14px" }}>
-                  No codings yet
-                </p>
-              )}
-            </div>
-
-            <div>
-              {Object.entries(wordCounts).length > 0 ? (
-                Object.entries(wordCounts).map(([key, num]) => (
-                  <div key={key} style={{ marginBottom: "8px" }}>
-                    {renderKeyLabel(key, num)}
-                  </div>
-                ))
-              ) : (
-                <p style={{ color: "#999", fontSize: "14px" }}>
-                  No word counts
-                </p>
-              )}
+            <div
+              style={{
+                height: "calc(100vh - 250px)",
+                minHeight: "400px",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <CopyChat copyId={copyId} />
             </div>
           </div>
 
-          {/* Selection Statistics */}
-          {(selectionCounts || selectionWordCounts) && (
-            <div className="dashboard-card" style={{ marginBottom: "20px" }}>
-              <h3 className="card-title" style={{ marginBottom: "16px" }}>
-                <FaEye /> Selection Statistics
-              </h3>
-
-              {selectionCounts && (
-                <div style={{ marginBottom: "20px" }}>
-                  <h4
-                    style={{
-                      fontSize: "14px",
-                      fontWeight: "600",
-                      marginBottom: "12px",
-                      color: "#666",
-                    }}
-                  >
-                    Codings in Selection:
-                  </h4>
-                  {Object.entries(selectionCounts).map(([key, num]) => (
-                    <div key={key} style={{ marginBottom: "8px" }}>
-                      {renderKeyLabel(key, num)}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {selectionWordCounts && (
-                <div>
-                  <h4
-                    style={{
-                      fontSize: "14px",
-                      fontWeight: "600",
-                      marginBottom: "12px",
-                      color: "#666",
-                    }}
-                  >
-                    Words in Selection:
-                  </h4>
-                  <div style={{ marginBottom: "8px" }}>
-                    {renderKeyLabel(
-                      "Words colored in any color",
-                      selectionWordCounts.totalColor || 0
-                    )}
-                  </div>
-                  {Object.entries(selectionWordCounts).map(([key, num]) => (
-                    <div key={key} style={{ marginBottom: "8px" }}>
-                      {renderKeyLabel(key, num)}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+          {/* Results Tables */}
+          <div className="dashboard-card" style={{ marginBottom: "20px" }}>
+            <h3 className="card-title" style={{ marginBottom: "16px" }}>
+              <FaChartBar /> Results
+            </h3>
+            <ResultsTables
+              fullTextTable={fullTextTable}
+              selectionTable={selectionTable}
+              additionalStats={additionalStats}
+              colors={colors}
+              styleSettings={styleSettings}
+            />
+          </div>
 
           {/* Comments Section */}
           <div className="dashboard-card">
@@ -833,201 +805,52 @@ export default function StatementEditor() {
 
       {/* Comment Modal */}
       {activeComment && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-          }}
-          onClick={() => setActiveComment(null)}
-        >
-          <div
-            className="dashboard-card"
-            style={{
-              maxWidth: "500px",
-              width: "90%",
-              maxHeight: "70vh",
-              overflow: "auto",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="card-header">
-              <h3 className="card-title">
+        <div className="comment-modal-overlay">
+          <div className="comment-modal">
+            <div className="comment-modal-header">
+              <h4 className="comment-modal-title">
                 <FaComment /> Comments
-              </h3>
+              </h4>
               <button
                 onClick={() => setActiveComment(null)}
-                className="dashboard-btn btn-secondary btn-sm"
+                className="comment-modal-close"
               >
-                <FaTimes /> Close
+                <FaTimes />
               </button>
             </div>
-
-            <ul className="dashboard-list">
-              {activeComment
-                .filter((c) => !c.replyTo)
-                .map((c) => {
-                  const replies = activeComment.filter(
-                    (r) => r.replyTo === c._id
-                  );
-                  return (
-                    <li key={c._id} className="list-item">
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "start",
-                          gap: "12px",
-                        }}
-                      >
-                        <div style={{ flex: 1 }}>
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "8px",
-                              marginBottom: "6px",
-                              fontSize: "0.85rem",
-                              color: "#666",
-                            }}
-                          >
-                            <FaUser style={{ fontSize: "0.75rem" }} />
-                            <strong>{c.userId?.username || "Unknown"}</strong>
-                            <span>•</span>
-                            <span>
-                              {new Date(c.createdAt).toLocaleDateString()}{" "}
-                              {new Date(c.createdAt).toLocaleTimeString()}
-                            </span>
-                          </div>
-                          <p style={{ margin: 0, marginBottom: "8px" }}>
-                            {c.text}
-                          </p>
-
-                          {/* Reply button */}
-                          <button
-                            onClick={() => setReplyingTo(c._id)}
-                            className="dashboard-btn btn-secondary btn-sm"
-                            style={{ fontSize: "0.75rem", padding: "4px 8px" }}
-                          >
-                            <FaComment style={{ marginRight: "4px" }} /> Reply
-                          </button>
-
-                          {/* Reply input */}
-                          {replyingTo === c._id && (
-                            <div style={{ marginTop: "12px" }}>
-                              <textarea
-                                value={replyText}
-                                onChange={(e) => setReplyText(e.target.value)}
-                                placeholder="Write a reply..."
-                                className="dashboard-input"
-                                style={{
-                                  width: "100%",
-                                  minHeight: "60px",
-                                  marginBottom: "8px",
-                                }}
-                              />
-                              <div style={{ display: "flex", gap: "8px" }}>
-                                <button
-                                  onClick={() => handleReplyToComment(c._id)}
-                                  className="dashboard-btn btn-primary btn-sm"
-                                >
-                                  Send Reply
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setReplyingTo(null);
-                                    setReplyText("");
-                                  }}
-                                  className="dashboard-btn btn-secondary btn-sm"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Display replies */}
-                          {replies.length > 0 && (
-                            <div
-                              style={{
-                                marginTop: "12px",
-                                marginLeft: "24px",
-                                paddingLeft: "12px",
-                                borderLeft: "3px solid #e0e0e0",
-                              }}
-                            >
-                              {replies.map((reply) => (
-                                <div
-                                  key={reply._id}
-                                  style={{ marginBottom: "12px" }}
-                                >
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: "8px",
-                                      marginBottom: "4px",
-                                      fontSize: "0.85rem",
-                                      color: "#666",
-                                    }}
-                                  >
-                                    <FaUser style={{ fontSize: "0.75rem" }} />
-                                    <strong>
-                                      {reply.userId?.username || "Unknown"}
-                                    </strong>
-                                    <span>•</span>
-                                    <span>
-                                      {new Date(
-                                        reply.createdAt
-                                      ).toLocaleDateString()}{" "}
-                                      {new Date(
-                                        reply.createdAt
-                                      ).toLocaleTimeString()}
-                                    </span>
-                                  </div>
-                                  <p style={{ margin: 0, fontSize: "0.95rem" }}>
-                                    {reply.text}
-                                  </p>
-                                  {currentUser?._id === reply.userId?._id && (
-                                    <button
-                                      onClick={() =>
-                                        handleRemoveComment(reply._id)
-                                      }
-                                      className="dashboard-btn btn-danger btn-sm"
-                                      style={{
-                                        fontSize: "0.75rem",
-                                        padding: "2px 6px",
-                                        marginTop: "4px",
-                                      }}
-                                    >
-                                      <FaTrash />
-                                    </button>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        {currentUser?._id === c.userId?._id && (
-                          <button
-                            onClick={() => handleRemoveComment(c._id)}
-                            className="dashboard-btn btn-danger btn-sm"
-                          >
-                            <FaTrash />
-                          </button>
-                        )}
-                      </div>
-                    </li>
-                  );
-                })}
-            </ul>
+            <div className="comment-modal-body">
+              {activeComment.map((c) => (
+                <div key={c._id} className="comment-item">
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      marginBottom: "6px",
+                      fontSize: "0.85rem",
+                      color: "#666",
+                    }}
+                  >
+                    <FaUser style={{ fontSize: "0.75rem" }} />
+                    <strong>{c.userId?.username || "Unknown"}</strong>
+                    <span>•</span>
+                    <span>
+                      {new Date(c.createdAt).toLocaleDateString()}{" "}
+                      {new Date(c.createdAt).toLocaleTimeString()}
+                    </span>
+                  </div>
+                  <div className="comment-text">{c.text}</div>
+                  {currentUser?._id === c.userId?._id && (
+                    <button
+                      onClick={() => handleRemoveComment(c._id)}
+                      className="comment-delete-btn"
+                    >
+                      <FaTrash />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}

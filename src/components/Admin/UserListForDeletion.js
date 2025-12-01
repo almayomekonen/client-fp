@@ -49,7 +49,6 @@ export default function UserListForDeletion({ users, onDelete, onUpdateRole }) {
     try {
       await onUpdateRole(userId, newRole);
       setRoleSelections((prev) => ({ ...prev, [userId]: newRole }));
-      alert("User role updated successfully");
     } catch (err) {
       console.error("Error updating role:", err);
       alert(`Error updating role: ${err.message}`);

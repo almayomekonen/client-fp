@@ -21,10 +21,10 @@ export const useTask = () => useContext(TaskContext);
 
 export function TaskProvider({ children }) {
   const { refreshCopies, refreshTasks, refreshTaskMessages } = useRefresh();
-  //ייבוא דאטה
+  // Import data
   const { copies, tasks, setTasks } = useData();
 
-  //יצירת משימה
+  // Create task
   const addTask = async (experimentId, investigatorId, coderId, percent) => {
     const result = await addTaskService(
       copies,
@@ -36,22 +36,22 @@ export function TaskProvider({ children }) {
     return result;
   };
 
-  //משימה לפי חוקר
+  // Task by investigator
   const tasksByInvestigatorId = (investigatorId) => {
     return tasksByInvestigatorIdService(tasks, { investigatorId });
   };
 
-  //משימה לפי מקודד
+  // Task by coder
   const tasksByCoderId = (coderId) => {
     return tasksByCoderIdService(tasks, { coderId });
   };
 
-  //אחוז ניסוי למשימה
+  // Experiment percent for task
   const experimentPercent = async (taskId) => {
     return experimentPercentService(copies, tasks, { taskId });
   };
 
-  //יצירת משימה עבור יצירת העתק בודד
+  // Create task for single copy
   const addTaskForCopy = async (
     experimentId,
     groupId,
@@ -94,7 +94,7 @@ export function TaskProvider({ children }) {
   const removeCopyFromTaskOnServer = async (taskId, copyId) => {
     await updateTaskOnServerService(taskId, { removeCopy: copyId });
 
-    // ✅ עדכון state מקומי – מסיר את ה-copyId מהמשימה
+    // ✅ Update local state – remove copyId from task
     setTasks((prev) =>
       prev.map((task) =>
         task._id === taskId

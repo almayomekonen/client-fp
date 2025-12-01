@@ -55,25 +55,25 @@ const Sidebar = ({ role, onLogout }) => {
     if (role === "admin") {
       return [
         { path: "/adminHome", icon: <FaHome />, label: "All Experiments" },
-        { path: "/task-management", icon: <FaTasks />, label: "All Tasks" },
-        { path: "/admin-panel", icon: <FaUsers />, label: "User Management" },
-        {
-          path: "/manage-colors",
-          icon: <FaPalette />,
-          label: "Color Management",
-        },
         {
           path: "/investigatorHome",
           icon: <FaMicroscope />,
           label: "My Experiments",
         },
         { path: "/coderHome", icon: <FaEdit />, label: "My Codings" },
+        { path: "/task-management", icon: <FaTasks />, label: "All Tasks" },
         {
           path: "/task-investigator",
           icon: <FaChartBar />,
           label: "Tasks I Created",
         },
         { path: "/task-coder", icon: <FaFileAlt />, label: "My Tasks" },
+        { path: "/admin-panel", icon: <FaUsers />, label: "User Management" },
+        {
+          path: "/manage-colors",
+          icon: <FaPalette />,
+          label: "Color Management",
+        },
       ];
     }
 
@@ -114,41 +114,11 @@ const Sidebar = ({ role, onLogout }) => {
         onClick={toggleSidebar}
         aria-label={isOpen ? "Close menu" : "Open menu"}
       >
-        {isOpen ? <FaChevronLeft /> : <FaChevronRight />}
+        {isOpen ? <FaChevronRight /> : <FaChevronLeft />}
       </button>
 
       {/* Sidebar */}
       <div className={`sidebar ${isOpen ? "open" : "closed"}`}>
-        <div className="sidebar-header">
-          {isOpen ? (
-            <>
-              <div className="sidebar-user-section">
-                <div className="sidebar-avatar">
-                  {role === "admin" && <FaCrown />}
-                  {role === "investigator" && <FaUserTie />}
-                  {role === "coder" && <FaPencilAlt />}
-                </div>
-                <div className="sidebar-user-info">
-                  <div className="sidebar-username">
-                    {currentUser?.username}
-                  </div>
-                  <div className="sidebar-role-badge">
-                    {role === "admin" && "Admin"}
-                    {role === "investigator" && "Researcher"}
-                    {role === "coder" && "Coder"}
-                  </div>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="sidebar-avatar-small">
-              {role === "admin" && <FaCrown />}
-              {role === "investigator" && <FaUserTie />}
-              {role === "coder" && <FaPencilAlt />}
-            </div>
-          )}
-        </div>
-
         <nav className="sidebar-nav">
           {menuItems.map((item, index) => (
             <div

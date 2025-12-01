@@ -29,12 +29,12 @@ export function ComparisonProvider({ children }) {
   };
 
   const getComparisonsForCopy = async (copyId) => {
-    // פונקציה חדשה שמביאה ישירות מהשרת
+    // New function that fetches directly from server
     return await getComparisonsForCopyFromServer(copyId);
   };
 
   const checkComparisonExists = async (copyId1, copyId2) => {
-    // פונקציה חדשה שמביאה ישירות מהשרת
+    // New function that fetches directly from server
     return await checkComparisonExistsService(copyId1, copyId2);
   };
 

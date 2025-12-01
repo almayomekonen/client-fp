@@ -18,6 +18,7 @@ export default function ManageColors() {
   const { getStyleSetting, updateStyleSetting } = useStyleSetting();
 
   const [pickedColor, setPickedColor] = useState("#ff0000");
+  const [colorName, setColorName] = useState("");
   const [colors, setColors] = useState([]);
   const [styleSettings, setStyleSettings] = useState({});
 
@@ -32,11 +33,12 @@ export default function ManageColors() {
       }
     };
     loadStyle();
-  }, []);
+  }, [getStyleSetting]);
 
   // Load colors from server on mount
   useEffect(() => {
     loadColors();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadColors = async () => {
@@ -50,10 +52,15 @@ export default function ManageColors() {
 
   // ➕ Add color
   const handleAddColor = async () => {
+    if (!colorName.trim()) {
+      alert("Please enter a color name");
+      return;
+    }
     try {
-      const newColor = await addColor(pickedColor, pickedColor);
+      const newColor = await addColor(colorName.trim(), pickedColor);
       setColors([...colors, newColor]); // Add to local list
-      alert(`✅ Color ${pickedColor} added successfully!`);
+      setColorName("");
+      setPickedColor("#ff0000");
     } catch (err) {
       alert("❌ Error adding color");
     }
@@ -69,7 +76,6 @@ export default function ManageColors() {
     try {
       await deleteColor(color._id);
       setColors(colors.filter((c) => c._id !== color._id));
-      alert(`🗑️ Color ${color.name} removed`);
     } catch (err) {
       alert("❌ Error deleting color");
     }
@@ -83,6 +89,17 @@ export default function ManageColors() {
       setStyleSettings(updated);
     } catch (err) {
       alert("❌ Error updating style settings");
+    }
+  };
+
+  // Update style name
+  const updateStyleName = async (field, value) => {
+    try {
+      const updated = { ...styleSettings, [field]: value };
+      await updateStyleSetting(updated);
+      setStyleSettings(updated);
+    } catch (err) {
+      alert("❌ Error updating style name");
     }
   };
 
@@ -116,7 +133,10 @@ export default function ManageColors() {
                   style={{ backgroundColor: color.code }}
                   title={color.name}
                 />
-                <span className="color-name">{color.code}</span>
+                <div className="color-info">
+                  <span className="color-name">{color.name}</span>
+                  <span className="color-code">{color.code}</span>
+                </div>
                 <button
                   onClick={() => handleRemoveColor(color)}
                   className="color-remove-btn"
@@ -141,54 +161,120 @@ export default function ManageColors() {
               onChange={(color) => setPickedColor(color.hex)}
             />
           </div>
-          <button onClick={handleAddColor} className="add-color-btn">
-            <FaPlus /> Add Color to List
-          </button>
+          <div className="color-input-section">
+            <label className="color-input-label">
+              <strong>Color Name:</strong>
+              <input
+                type="text"
+                className="color-name-input"
+                placeholder='e.g., "Important", "Key Term", "Main Idea"'
+                value={colorName}
+                onChange={(e) => setColorName(e.target.value)}
+              />
+            </label>
+            <button onClick={handleAddColor} className="add-color-btn">
+              <FaPlus /> Add Color to List
+            </button>
+          </div>
         </div>
       </div>
 
       {/* ✍️ Style Options */}
       <div className="style-settings-section">
-        <h3 className="colors-section-title">Style Options</h3>
+        <h3 className="colors-section-title">Semantic Formatting Options</h3>
+        <p className="style-section-subtitle">
+          Define custom names for formatting styles (these become semantic
+          markers, not just visual styling)
+        </p>
+
         <div className="style-options">
-          <label className="style-option">
-            <input
-              type="checkbox"
-              className="style-checkbox"
-              checked={styleSettings.boldEnabled || false}
-              onChange={() => toggleStyle("boldEnabled")}
-            />
-            <span className="style-label">
-              <FaBold className="style-label-icon" />
-              Enable Bold
-            </span>
-          </label>
+          {/* Bold */}
+          <div className="style-option-card">
+            <label className="style-option">
+              <input
+                type="checkbox"
+                className="style-checkbox"
+                checked={styleSettings.boldEnabled || false}
+                onChange={() => toggleStyle("boldEnabled")}
+              />
+              <span className="style-label">
+                <FaBold className="style-label-icon" />
+                Enable Bold
+              </span>
+            </label>
+            {styleSettings.boldEnabled && (
+              <div className="style-name-input-group">
+                <label className="style-name-label">Custom Name:</label>
+                <input
+                  type="text"
+                  className="style-name-input"
+                  placeholder='e.g., "Key Term", "Important Concept"'
+                  value={styleSettings.boldName || "Bold"}
+                  onChange={(e) => updateStyleName("boldName", e.target.value)}
+                />
+              </div>
+            )}
+          </div>
 
-          <label className="style-option">
-            <input
-              type="checkbox"
-              className="style-checkbox"
-              checked={styleSettings.italicEnabled || false}
-              onChange={() => toggleStyle("italicEnabled")}
-            />
-            <span className="style-label">
-              <FaItalic className="style-label-icon" />
-              Enable Italic
-            </span>
-          </label>
+          {/* Italic */}
+          <div className="style-option-card">
+            <label className="style-option">
+              <input
+                type="checkbox"
+                className="style-checkbox"
+                checked={styleSettings.italicEnabled || false}
+                onChange={() => toggleStyle("italicEnabled")}
+              />
+              <span className="style-label">
+                <FaItalic className="style-label-icon" />
+                Enable Italic
+              </span>
+            </label>
+            {styleSettings.italicEnabled && (
+              <div className="style-name-input-group">
+                <label className="style-name-label">Custom Name:</label>
+                <input
+                  type="text"
+                  className="style-name-input"
+                  placeholder='e.g., "Participant Thought", "Quote"'
+                  value={styleSettings.italicName || "Italic"}
+                  onChange={(e) =>
+                    updateStyleName("italicName", e.target.value)
+                  }
+                />
+              </div>
+            )}
+          </div>
 
-          <label className="style-option">
-            <input
-              type="checkbox"
-              className="style-checkbox"
-              checked={styleSettings.underlineEnabled || false}
-              onChange={() => toggleStyle("underlineEnabled")}
-            />
-            <span className="style-label">
-              <FaUnderline className="style-label-icon" />
-              Enable Underline
-            </span>
-          </label>
+          {/* Underline */}
+          <div className="style-option-card">
+            <label className="style-option">
+              <input
+                type="checkbox"
+                className="style-checkbox"
+                checked={styleSettings.underlineEnabled || false}
+                onChange={() => toggleStyle("underlineEnabled")}
+              />
+              <span className="style-label">
+                <FaUnderline className="style-label-icon" />
+                Enable Underline
+              </span>
+            </label>
+            {styleSettings.underlineEnabled && (
+              <div className="style-name-input-group">
+                <label className="style-name-label">Custom Name:</label>
+                <input
+                  type="text"
+                  className="style-name-input"
+                  placeholder='e.g., "Critical Action", "Key Event"'
+                  value={styleSettings.underlineName || "Underline"}
+                  onChange={(e) =>
+                    updateStyleName("underlineName", e.target.value)
+                  }
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

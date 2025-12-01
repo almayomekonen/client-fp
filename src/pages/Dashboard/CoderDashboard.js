@@ -12,13 +12,11 @@ import {
   FaFileAlt,
   FaClock,
   FaEdit,
-  FaComments,
   FaCheckCircle,
   FaRedo,
   FaCodeBranch,
   FaChartLine,
   FaUser,
-  FaEnvelope,
 } from "react-icons/fa";
 import "../../styles/Dashboard.css";
 
@@ -357,25 +355,17 @@ export default function CoderHomePage() {
                               <FaEdit /> Edit Coding
                             </button>
 
-                            <button
-                              onClick={() => navigate(`/copy-chat/${copy._id}`)}
-                              className="dashboard-btn btn-secondary btn-sm"
-                              style={{ position: "relative" }}
-                            >
-                              <FaComments /> Chat
-                              {unreadCount > 0 && (
-                                <span
-                                  className="dashboard-badge badge-danger"
-                                  style={{
-                                    marginLeft: "8px",
-                                    padding: "2px 8px",
-                                    fontSize: "11px",
-                                  }}
-                                >
-                                  <FaEnvelope /> {unreadCount}
-                                </span>
-                              )}
-                            </button>
+                            {unreadCount > 0 && (
+                              <span
+                                style={{
+                                  color: "#dc3545",
+                                  fontSize: "14px",
+                                  fontWeight: "600",
+                                }}
+                              >
+                                ({unreadCount} unread messages)
+                              </span>
+                            )}
                           </>
                         )}
 
@@ -399,25 +389,17 @@ export default function CoderHomePage() {
                               <FaRedo /> Reopen for Editing
                             </button>
 
-                            <button
-                              onClick={() => navigate(`/copy-chat/${copy._id}`)}
-                              className="dashboard-btn btn-secondary btn-sm"
-                              style={{ position: "relative" }}
-                            >
-                              <FaComments /> Chat
-                              {unreadCount > 0 && (
-                                <span
-                                  className="dashboard-badge badge-danger"
-                                  style={{
-                                    marginLeft: "8px",
-                                    padding: "2px 8px",
-                                    fontSize: "11px",
-                                  }}
-                                >
-                                  <FaEnvelope /> {unreadCount}
-                                </span>
-                              )}
-                            </button>
+                            {unreadCount > 0 && (
+                              <span
+                                style={{
+                                  color: "#dc3545",
+                                  fontSize: "14px",
+                                  fontWeight: "600",
+                                }}
+                              >
+                                ({unreadCount} unread messages)
+                              </span>
+                            )}
 
                             {comparisonsForThisCopy.length > 0 && (
                               <button

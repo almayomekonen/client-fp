@@ -122,12 +122,12 @@ class RoleChangeDetector {
         box-shadow: 0 4px 20px rgba(0,0,0,0.3);
       ">
         <div style="font-size: 48px; margin-bottom: 15px;">🔄</div>
-        <h2 style="margin: 0 0 15px 0; color: #333;">התפקיד שלך השתנה</h2>
+        <h2 style="margin: 0 0 15px 0; color: #333;">Your Role Has Changed</h2>
         <p style="color: #666; margin-bottom: 20px;">
-          מנהל המערכת שינה את התפקיד שלך ל-<strong>${this.getRoleInHebrew(
+          The system administrator has changed your role to <strong>${this.getRoleInHebrew(
             newRole
           )}</strong>.<br/>
-          אנא התחבר מחדש כדי להמשיך.
+          Please log in again to continue.
         </p>
         <div style="
           background: #f0f0f0;
@@ -135,7 +135,7 @@ class RoleChangeDetector {
           border-radius: 6px;
           font-size: 12px;
           color: #888;
-        ">מעביר אותך לדף התחברות...</div>
+        ">Redirecting you to login page...</div>
       </div>
     `;
 

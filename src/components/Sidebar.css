@@ -2,13 +2,13 @@
 .sidebar {
   position: fixed;
   top: 0;
-  right: 0;
+  left: 0;
   height: 100vh;
   background: linear-gradient(180deg, #1a1a1a 0%, #000000 100%);
   color: #ffffff;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1000;
-  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.5);
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -26,7 +26,7 @@
 .sidebar-toggle {
   position: fixed;
   top: 20px;
-  right: 20px;
+  left: 20px;
   width: 40px;
   height: 40px;
   background: #000000;
@@ -50,72 +50,17 @@
 }
 
 .sidebar-toggle.open {
-  right: 250px;
+  left: 250px;
 }
 
 .sidebar-toggle.closed {
-  right: 40px;
-}
-
-/* Sidebar Header */
-.sidebar-header {
-  padding: 30px 20px;
-  border-bottom: 2px solid #333333;
-}
-
-.sidebar-user-section {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.sidebar-avatar {
-  width: 50px;
-  height: 50px;
-  background: #ffffff;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.sidebar-avatar-small {
-  width: 40px;
-  height: 40px;
-  background: #ffffff;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  margin: 0 auto;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.sidebar-user-info {
-  flex: 1;
-  text-align: right;
-}
-
-.sidebar-username {
-  color: #ffffff;
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-
-.sidebar-role-badge {
-  color: #cccccc;
-  font-size: 13px;
-  font-weight: 500;
+  left: 40px;
 }
 
 /* Sidebar Navigation */
 .sidebar-nav {
   flex: 1;
-  padding: 20px 0;
+  padding: 30px 0;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -162,7 +107,7 @@
 
 .sidebar-link:hover {
   background: rgba(255, 255, 255, 0.1);
-  transform: translateX(-4px);
+  transform: translateX(4px);
 }
 
 .sidebar-link:hover::before {
@@ -189,7 +134,7 @@
 }
 
 .sidebar-label {
-  margin-right: 12px;
+  margin-left: 12px;
   font-size: 16px;
   white-space: nowrap;
   font-weight: 500;
@@ -245,7 +190,7 @@
   }
 
   .sidebar-toggle.open {
-    right: 220px;
+    left: 220px;
   }
 
   .sidebar-overlay {
@@ -270,7 +215,7 @@
   }
 
   .sidebar-toggle.open {
-    right: 190px;
+    left: 190px;
   }
 
   .sidebar-title {
@@ -289,7 +234,7 @@
 /* Animation for sidebar opening */
 @keyframes slideIn {
   from {
-    transform: translateX(100%);
+    transform: translateX(-100%);
   }
   to {
     transform: translateX(0);

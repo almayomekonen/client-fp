@@ -1,46 +1,45 @@
-
-import React, { createContext, useContext } from 'react';
-import { useRefresh } from './RefreshContext';
+import React, { createContext, useContext } from "react";
+import { useRefresh } from "./RefreshContext";
 import {
   register as registerService,
   approveRegistration as approveRegistrationService,
   rejectRegistration as rejectRegistrationService,
-} from '../api/RegistrationApi';
+} from "../api/RegistrationApi";
 
 const RegistrationContext = createContext();
 
 export function RegistrationProvider({ children }) {
-  const {refreshUsers, refreshRegistrationRequests} = useRefresh();
+  const { refreshUsers, refreshRegistrationRequests } = useRefresh();
 
-
-  //הרשמה
+  // Register
   const register = async (username, password, confirmPassword, role, email) => {
-  const result = await registerService(username, password, confirmPassword, role, email);
+    const result = await registerService(
+      username,
+      password,
+      confirmPassword,
+      role,
+      email
+    );
 
-  if (result.success) {
-    await refreshRegistrationRequests();
-  }
+    if (result.success) {
+      await refreshRegistrationRequests();
+    }
 
-  return result;
-};
+    return result;
+  };
 
-
-  //אישור הרשמה
+  // Approve registration
   const approveRegistration = async (userId) => {
-  await approveRegistrationService(userId);
-await refreshRegistrationRequests();
-await refreshUsers();
+    await approveRegistrationService(userId);
+    await refreshRegistrationRequests();
+    await refreshUsers();
+  };
 
-};
-
- //דחיית הרשמה
-const rejectRegistration = async (userId) => {
-  await rejectRegistrationService(userId);
-  await refreshRegistrationRequests();
-};
-
-
-
+  // Reject registration
+  const rejectRegistration = async (userId) => {
+    await rejectRegistrationService(userId);
+    await refreshRegistrationRequests();
+  };
 
   return (
     <RegistrationContext.Provider

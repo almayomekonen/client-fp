@@ -99,7 +99,7 @@ export function RefreshProvider({ children }) {
   const currentUserId = useRef(null);
 
   useEffect(() => {
-    // רק אם האותנטיקציה נבדקה והמשתמש מחובר
+    // Only if authentication is checked and user is logged in
     if (isAuthChecked && currentUser?._id) {
       // Only load if we haven't loaded for this user yet
       if (currentUserId.current !== currentUser._id) {

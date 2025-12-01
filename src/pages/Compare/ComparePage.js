@@ -31,6 +31,7 @@ import { useResult } from "../../context/ResultContext";
 import { useColor } from "../../context/ColorContext";
 import { useStyleSetting } from "../../context/StyleSettingContext";
 import { useSocket } from "../../context/SocketContext";
+import ResultsTables from "../../components/ResultsTables";
 import "../../styles/Dashboard.css";
 
 export default function ComparePage() {
@@ -51,8 +52,9 @@ export default function ComparePage() {
   const {
     calculateSelectionCounts,
     calculateWordCounts,
-    calculateWordCountsForSelection,
     renderKeyLabel,
+    buildResultsTable,
+    calculateAdditionalStats,
   } = useResult();
 
   const {
@@ -63,7 +65,7 @@ export default function ComparePage() {
   } = useComparison();
   const { statementById } = useStatement();
   const { currentUser, users } = useData();
-  const { getColors } = useColor(); // מוסיפים את הפונקציה הזו מה־ColorContext
+  const { getColors } = useColor(); // Add this function from ColorContext
   const { getStyleSetting } = useStyleSetting();
   const { socket } = useSocket();
 
@@ -73,25 +75,23 @@ export default function ComparePage() {
   const [countsA, setCountsA] = useState({});
   const [wordCountsA, setWordCountsA] = useState({});
   const [selectionCountsA, setSelectionCountsA] = useState(null);
-  const [selectionWordCountsA, setSelectionWordCountsA] = useState(null);
   const [copyA, setCopyA] = useState(null);
-  const [newCommentA, setNewCommentA] = useState("");
   const [localCommentsA, setLocalCommentsA] = useState([]);
   const [activeCommentA, setActiveCommentA] = useState(null);
   const [commentKeyA, setCommentKeyA] = useState(0);
-  const [showInputA, setShowInputA] = useState(false);
+  const [isAddingCommentA, setIsAddingCommentA] = useState(false);
+  const [newCommentA, setNewCommentA] = useState("");
 
   const [valueB, setValueB] = useState(null);
   const [countsB, setCountsB] = useState({});
   const [wordCountsB, setWordCountsB] = useState({});
   const [selectionCountsB, setSelectionCountsB] = useState(null);
-  const [selectionWordCountsB, setSelectionWordCountsB] = useState(null);
   const [copyB, setCopyB] = useState(null);
-  const [newCommentB, setNewCommentB] = useState("");
   const [localCommentsB, setLocalCommentsB] = useState([]);
   const [activeCommentB, setActiveCommentB] = useState(null);
   const [commentKeyB, setCommentKeyB] = useState(0);
-  const [showInputB, setShowInputB] = useState(false);
+  const [isAddingCommentB, setIsAddingCommentB] = useState(false);
+  const [newCommentB, setNewCommentB] = useState("");
 
   const [copies, setCopies] = useState([]);
   const [statement, setStatement] = useState(null);
@@ -101,6 +101,14 @@ export default function ComparePage() {
   const [colors, setColors] = useState([]);
   const [styleSettings, setStyleSettings] = useState({});
   const [isCompared, setIsCompared] = useState(false);
+
+  // New state for results tables
+  const [fullTextTableA, setFullTextTableA] = useState(null);
+  const [selectionTableA, setSelectionTableA] = useState(null);
+  const [additionalStatsA, setAdditionalStatsA] = useState(null);
+  const [fullTextTableB, setFullTextTableB] = useState(null);
+  const [selectionTableB, setSelectionTableB] = useState(null);
+  const [additionalStatsB, setAdditionalStatsB] = useState(null);
 
   const navigate = useNavigate();
 
@@ -133,7 +141,7 @@ export default function ComparePage() {
     }, 100);
   };
 
-  // בעת טעינת העמוד, בודקים אם ההשוואה קיימת
+  // When loading page, check if comparison exists
   useEffect(() => {
     const checkComparison = async () => {
       if (copyA && copyB) {
@@ -342,6 +350,86 @@ export default function ComparePage() {
     };
   }, [socket, copyA, copyB]);
 
+  // Update results tables for Copy A
+  useEffect(() => {
+    if (!valueA || !colors.length || !styleSettings) return;
+
+    const fullTable = buildResultsTable(
+      countsA,
+      wordCountsA,
+      colors,
+      styleSettings
+    );
+    setFullTextTableA(fullTable);
+
+    if (selectionCountsA) {
+      const wordCounts = calculateWordCounts(valueA);
+      const selTable = buildResultsTable(
+        selectionCountsA,
+        wordCounts,
+        colors,
+        styleSettings
+      );
+      setSelectionTableA(selTable);
+    } else {
+      setSelectionTableA(null);
+    }
+
+    const stats = calculateAdditionalStats(valueA, editorA);
+    setAdditionalStatsA(stats);
+  }, [
+    valueA,
+    countsA,
+    wordCountsA,
+    selectionCountsA,
+    colors,
+    styleSettings,
+    editorA,
+    buildResultsTable,
+    calculateAdditionalStats,
+    calculateWordCounts,
+  ]);
+
+  // Update results tables for Copy B
+  useEffect(() => {
+    if (!valueB || !colors.length || !styleSettings) return;
+
+    const fullTable = buildResultsTable(
+      countsB,
+      wordCountsB,
+      colors,
+      styleSettings
+    );
+    setFullTextTableB(fullTable);
+
+    if (selectionCountsB) {
+      const wordCounts = calculateWordCounts(valueB);
+      const selTable = buildResultsTable(
+        selectionCountsB,
+        wordCounts,
+        colors,
+        styleSettings
+      );
+      setSelectionTableB(selTable);
+    } else {
+      setSelectionTableB(null);
+    }
+
+    const stats = calculateAdditionalStats(valueB, editorB);
+    setAdditionalStatsB(stats);
+  }, [
+    valueB,
+    countsB,
+    wordCountsB,
+    selectionCountsB,
+    colors,
+    styleSettings,
+    editorB,
+    buildResultsTable,
+    calculateAdditionalStats,
+    calculateWordCounts,
+  ]);
+
   const getRenderLeaf =
     (setActiveComment) =>
     ({ leaf, attributes, children }) => {
@@ -501,7 +589,6 @@ export default function ComparePage() {
     const { highlights, colorCounts } = extractHighlightsFromValue(editorValue);
     await saveCopyWithHighlights(copy._id, highlights, colorCounts);
     setCounts(colorCounts);
-    alert("Saved successfully!");
 
     const updatedCopy = { ...copy, highlights, colorCounts };
     const nextCopyA = copy._id === copyA?._id ? updatedCopy : copyA;
@@ -778,11 +865,9 @@ export default function ComparePage() {
     if (alreadyCompared) {
       await deleteComparison(copyA._id, copyB._id);
       setIsCompared(false);
-      alert("Comparison canceled successfully");
     } else {
       await createComparison(copyA._id, copyB._id);
       setIsCompared(true);
-      alert("Comparison created successfully");
     }
   };
 
@@ -930,393 +1015,579 @@ export default function ComparePage() {
         </div>
       </div>
 
-      {/* Comparison Container - Side by Side */}
-      <div className="comparison-container">
-        {[
-          {
-            name: "A",
-            editor: editorA,
-            value: valueA,
-            setValue: setValueA,
-            copy: copyA,
-            counts: countsA,
-            setCounts: setCountsA,
-            selectionCounts: selectionCountsA,
-            setSelectionCounts: setSelectionCountsA,
-            activeComment: activeCommentA,
-            setActiveComment: setActiveCommentA,
-            commentKey: commentKeyA,
-            newComment: newCommentA,
-            setNewComment: setNewCommentA,
-            localComments: localCommentsA,
-            setLocalComments: setLocalCommentsA,
-            showInput: showInputA,
-            setShowInput: setShowInputA,
-            selectionWordCounts: selectionWordCountsA,
-            setSelectionWordCounts: setSelectionWordCountsA,
-          },
-          {
-            name: "B",
-            editor: editorB,
-            value: valueB,
-            setValue: setValueB,
-            copy: copyB,
-            counts: countsB,
-            setCounts: setCountsB,
-            selectionCounts: selectionCountsB,
-            setSelectionCounts: setSelectionCountsB,
-            activeComment: activeCommentB,
-            setActiveComment: setActiveCommentB,
-            commentKey: commentKeyB,
-            newComment: newCommentB,
-            setNewComment: setNewCommentB,
-            localComments: localCommentsB,
-            setLocalComments: setLocalCommentsB,
-            showInput: showInputB,
-            setShowInput: setShowInputB,
-            selectionWordCounts: selectionWordCountsB,
-            setSelectionWordCounts: setSelectionWordCountsB,
-          },
-        ].map(
-          ({
-            name,
-            editor,
-            value,
-            setValue,
-            copy,
-            counts,
-            setCounts,
-            selectionCounts,
-            setSelectionCounts,
-            activeComment,
-            setActiveComment,
-            commentKey,
-            newComment,
-            setNewComment,
-            localComments,
-            setLocalComments,
-            showInput,
-            setShowInput,
-            selectionWordCounts,
-            setSelectionWordCounts,
-          }) => (
-            <div key={name} className="coding-block dashboard-card">
+      {/* Main Layout Grid: Comparison Editors + Sidebar */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 350px",
+          gap: "20px",
+        }}
+      >
+        {/* Left: Side-by-Side Comparison */}
+        <div>
+          <div className="comparison-container" style={{ flexWrap: "nowrap" }}>
+            {/* Editor A */}
+            <div
+              className="coding-block dashboard-card"
+              style={{ flex: 1, minWidth: 0 }}
+            >
               <div className="card-header">
-                <h3 className="card-title">
-                  <FaUser /> Coding {name} -{" "}
-                  {users.find((user) => user._id === copy?.coderId)?.username ||
-                    "Unknown"}
+                <h3 className="card-title" style={{ fontSize: "16px" }}>
+                  <FaUser /> Coding A -{" "}
+                  {users.find((user) => user._id === copyA?.coderId)
+                    ?.username || "Unknown"}
                 </h3>
               </div>
-
-              {currentUser?._id === copy?.coderId && (
-                <div
-                  className="card-body"
-                  style={{ borderBottom: "1px solid #e5e7eb" }}
-                >
-                  {/* Highlighting Tools */}
-                  <div className="tool-section">
-                    <h4 className="tool-title">
-                      <FaPalette /> Highlighting Tools
-                    </h4>
-                    <div className="color-palette">
-                      {colors.map((color) => (
-                        <button
-                          key={color._id}
-                          onClick={() => markColor(editor, color.code)}
-                          className="color-btn"
-                          style={{ backgroundColor: color.code }}
-                          title={color.name}
-                        />
-                      ))}
-                    </div>
-                    <div className="tool-buttons">
-                      <button
-                        onClick={() => removeFormatting(editor)}
-                        className="tool-btn"
-                      >
-                        <FaEraser /> Remove All Markings
-                      </button>
-                      {styleSettings.underlineEnabled && (
-                        <button
-                          onClick={() => markUnderline(editor)}
-                          className="tool-btn"
-                        >
-                          <FaUnderline /> Underline
-                        </button>
-                      )}
-                      {styleSettings.boldEnabled && (
-                        <button
-                          onClick={() => markBold(editor)}
-                          className="tool-btn"
-                        >
-                          <FaBold /> Bold
-                        </button>
-                      )}
-                      {styleSettings.italicEnabled && (
-                        <button
-                          onClick={() => markItalic(editor)}
-                          className="tool-btn"
-                        >
-                          <FaItalic /> Italic
-                        </button>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => handleSave(editor, copy, value, setCounts)}
-                      className="dashboard-btn dashboard-btn-primary"
-                      style={{ width: "100%" }}
-                    >
-                      <FaSave /> Save Changes
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div className="card-body">
+              <div className="card-body" style={{ padding: "12px" }}>
                 <Slate
-                  key={`slate-${name}-${copy?._id}-${diffKey}-${commentKey}`}
-                  editor={editor}
-                  initialValue={value}
-                  value={value}
-                  onChange={setValue}
+                  key={`slate-A-${copyA?._id}-${diffKey}-${commentKeyA}`}
+                  editor={editorA}
+                  initialValue={valueA}
+                  value={valueA}
+                  onChange={setValueA}
                 >
                   <div
-                    ref={name === "A" ? scrollContainerA : scrollContainerB}
-                    onScroll={name === "A" ? handleScrollA : handleScrollB}
+                    ref={scrollContainerA}
+                    onScroll={handleScrollA}
                     style={{
-                      minHeight: "400px",
-                      maxHeight: "600px",
+                      minHeight: "500px",
+                      maxHeight: "700px",
                       overflowY: "auto",
+                      border: "2px solid #e0e0e0",
+                      borderRadius: "8px",
+                      padding: "16px",
+                      backgroundColor: "#fafafa",
                     }}
                   >
                     <Editable
-                      renderLeaf={getRenderLeaf(setActiveComment)}
-                      placeholder={`Coding ${name}`}
-                      readOnly={currentUser?._id !== copy?.coderId}
+                      renderLeaf={getRenderLeaf(setActiveCommentA)}
+                      placeholder="Coding A"
+                      readOnly={currentUser?._id !== copyA?.coderId}
                       dir="auto"
-                      className="slate-editor"
+                      style={{
+                        fontSize: "16px",
+                        lineHeight: "1.8",
+                      }}
                     />
                   </div>
                 </Slate>
               </div>
+            </div>
 
-              <div
-                className="card-body"
-                style={{ borderTop: "1px solid #e5e7eb" }}
+            {/* Editor B */}
+            <div
+              className="coding-block dashboard-card"
+              style={{ flex: 1, minWidth: 0 }}
+            >
+              <div className="card-header">
+                <h3 className="card-title" style={{ fontSize: "16px" }}>
+                  <FaUser /> Coding B -{" "}
+                  {users.find((user) => user._id === copyB?.coderId)
+                    ?.username || "Unknown"}
+                </h3>
+              </div>
+              <div className="card-body" style={{ padding: "12px" }}>
+                <Slate
+                  key={`slate-B-${copyB?._id}-${diffKey}-${commentKeyB}`}
+                  editor={editorB}
+                  initialValue={valueB}
+                  value={valueB}
+                  onChange={setValueB}
+                >
+                  <div
+                    ref={scrollContainerB}
+                    onScroll={handleScrollB}
+                    style={{
+                      minHeight: "500px",
+                      maxHeight: "700px",
+                      overflowY: "auto",
+                      border: "2px solid #e0e0e0",
+                      borderRadius: "8px",
+                      padding: "16px",
+                      backgroundColor: "#fafafa",
+                    }}
+                  >
+                    <Editable
+                      renderLeaf={getRenderLeaf(setActiveCommentB)}
+                      placeholder="Coding B"
+                      readOnly={currentUser?._id !== copyB?.coderId}
+                      dir="auto"
+                      style={{
+                        fontSize: "16px",
+                        lineHeight: "1.8",
+                      }}
+                    />
+                  </div>
+                </Slate>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Toolbar & Stats Sidebar */}
+        <div
+          style={{
+            position: "sticky",
+            top: "20px",
+            alignSelf: "start",
+            maxHeight: "calc(100vh - 100px)",
+            overflowY: "auto",
+          }}
+        >
+          {/* Editing Tools (only for user's copy) */}
+          {(currentUser?._id === copyA?.coderId ||
+            currentUser?._id === copyB?.coderId) && (
+            <div className="dashboard-card" style={{ marginBottom: "20px" }}>
+              <h3
+                className="card-title"
+                style={{ fontSize: "16px", marginBottom: "12px" }}
               >
-                {/* Analysis Tools */}
-                <div className="tool-section">
-                  <h4 className="tool-title">
-                    <FaChartBar /> Analysis Tools
-                  </h4>
-                  <div className="tool-buttons">
-                    <button
-                      onClick={() =>
-                        calculateSelectionCounts(editor, setSelectionCounts)
-                      }
-                      className="tool-btn"
-                    >
-                      <FaChartBar /> Show Codings in Selected Text
-                    </button>
-                    <button
-                      onClick={() =>
-                        setSelectionWordCounts(
-                          calculateWordCountsForSelection(editor, value)
-                        )
-                      }
-                      className="tool-btn"
-                    >
-                      <FaChartBar /> Show Words in Selected Text
-                    </button>
-                  </div>
-                </div>
+                <FaPalette />{" "}
+                {currentUser?._id === copyA?.coderId
+                  ? "Edit Coding A"
+                  : "Edit Coding B"}
+              </h3>
 
-                {/* Statistics */}
-                <div className="stats-grid">
-                  <div className="stat-card">
-                    <h4 className="stat-title">Total Codings Count</h4>
-                    <div className="stat-list">
-                      {Object.entries(counts).map(([key, num]) => (
-                        <div key={key} className="stat-item">
-                          {renderKeyLabel(key, num)}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="stat-card">
-                    <h4 className="stat-title">Total Word Count</h4>
-                    <div className="stat-list">
-                      {Object.entries(
-                        name === "A" ? wordCountsA : wordCountsB
-                      ).map(([key, num]) => (
-                        <div key={key} className="stat-item">
-                          {renderKeyLabel(key, num)}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {selectionCounts && (
-                    <div className="stat-card">
-                      <h4 className="stat-title">Selection Codings Count</h4>
-                      <div className="stat-list">
-                        {Object.entries(selectionCounts).map(([key, num]) => (
-                          <div key={key} className="stat-item">
-                            {renderKeyLabel(key, num)}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {selectionWordCounts && (
-                    <div className="stat-card">
-                      <h4 className="stat-title">Selection Word Count</h4>
-                      <div className="stat-list">
-                        {Object.entries(selectionWordCounts).map(
-                          ([key, num]) => (
-                            <div key={key} className="stat-item">
-                              {renderKeyLabel(key, num)}
-                            </div>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Comments Section */}
-                <div className="tool-section">
-                  <h4 className="tool-title">
-                    <FaComment /> Comments
-                  </h4>
-                  {!showInput && (
-                    <button
-                      onClick={() => setShowInput(true)}
-                      className="dashboard-btn dashboard-btn-secondary"
-                      style={{ width: "100%" }}
-                    >
-                      <FaPlus /> Add Comment
-                    </button>
-                  )}
-                  {showInput && (
-                    <div className="comment-input-section">
-                      <textarea
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                        placeholder="Write your comment here..."
-                        className="comment-textarea"
-                      />
-                      <div className="comment-actions">
-                        <button
-                          onClick={() => {
-                            handleAddComment(
-                              editor,
-                              value,
-                              setNewComment,
-                              localComments,
-                              setLocalComments,
-                              setValue,
-                              copy._id,
-                              statement,
-                              name === "A" ? setCommentKeyA : setCommentKeyB,
-                              newComment
-                            );
-                            setShowInput(false);
-                          }}
-                          className="dashboard-btn dashboard-btn-primary"
-                        >
-                          <FaPlus /> Save Comment
-                        </button>
-                        <button
-                          onClick={() => setShowInput(false)}
-                          className="dashboard-btn dashboard-btn-secondary"
-                        >
-                          <FaTimes /> Cancel
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+              {/* Color Palette */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: "6px",
+                  marginBottom: "12px",
+                  flexWrap: "wrap",
+                }}
+              >
+                {colors.map((color) => (
+                  <button
+                    key={color._id}
+                    onClick={() =>
+                      markColor(
+                        currentUser?._id === copyA?.coderId ? editorA : editorB,
+                        color.code
+                      )
+                    }
+                    style={{
+                      backgroundColor: color.code,
+                      border: "2px solid #000",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      padding: "4px 10px",
+                      fontWeight: "600",
+                      fontSize: "12px",
+                      color: (() => {
+                        const hex = color.code.replace("#", "");
+                        const r = parseInt(hex.substr(0, 2), 16);
+                        const g = parseInt(hex.substr(2, 2), 16);
+                        const b = parseInt(hex.substr(4, 2), 16);
+                        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                        return brightness > 155 ? "#000000" : "#FFFFFF";
+                      })(),
+                    }}
+                    title={color.name}
+                  >
+                    {color.name}
+                  </button>
+                ))}
               </div>
 
-              {activeComment && (
-                <div className="comment-modal-overlay">
-                  <div className="comment-modal">
-                    <div className="comment-modal-header">
-                      <h4 className="comment-modal-title">
-                        <FaComment /> Comments
-                      </h4>
-                      <button
-                        onClick={() => setActiveComment(null)}
-                        className="comment-modal-close"
-                      >
-                        <FaTimes />
-                      </button>
-                    </div>
-                    <div className="comment-modal-body">
-                      {activeComment.map((c) => (
-                        <div key={c._id} className="comment-item">
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "8px",
-                              marginBottom: "6px",
-                              fontSize: "0.85rem",
-                              color: "#666",
-                            }}
-                          >
-                            <FaUser style={{ fontSize: "0.75rem" }} />
-                            <strong>{c.userId?.username || "Unknown"}</strong>
-                            <span>•</span>
-                            <span>
-                              {new Date(c.createdAt).toLocaleDateString()}{" "}
-                              {new Date(c.createdAt).toLocaleTimeString()}
-                            </span>
-                          </div>
-                          <div className="comment-text">{c.text}</div>
-                          {currentUser?._id === c.userId?._id && (
-                            <button
-                              onClick={() => {
-                                if (window.confirm("Delete this comment?")) {
-                                  handleRemoveComment(
-                                    c._id,
-                                    localComments,
-                                    setLocalComments,
-                                    setValue,
-                                    statement,
-                                    value,
-                                    name === "A"
-                                      ? setCommentKeyA
-                                      : setCommentKeyB,
-                                    editor,
-                                    setActiveComment
-                                  );
-                                  const updated = localComments.filter(
-                                    (cm) => cm._id !== c._id
-                                  );
-                                  if (updated.length === 0)
-                                    setActiveComment(null);
-                                }
-                              }}
-                              className="comment-delete-btn"
-                            >
-                              <FaTrash />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+              {/* Action Buttons */}
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+              >
+                <button
+                  onClick={() =>
+                    removeFormatting(
+                      currentUser?._id === copyA?.coderId ? editorA : editorB
+                    )
+                  }
+                  className="dashboard-btn btn-secondary btn-sm"
+                  style={{ width: "100%", justifyContent: "center" }}
+                >
+                  <FaEraser /> Remove All
+                </button>
+                {styleSettings.underlineEnabled && (
+                  <button
+                    onClick={() =>
+                      markUnderline(
+                        currentUser?._id === copyA?.coderId ? editorA : editorB
+                      )
+                    }
+                    className="dashboard-btn btn-secondary btn-sm"
+                    style={{
+                      width: "100%",
+                      justifyContent: "center",
+                      textDecoration: "underline",
+                    }}
+                  >
+                    <FaUnderline /> {styleSettings.underlineName || "Underline"}
+                  </button>
+                )}
+                {styleSettings.boldEnabled && (
+                  <button
+                    onClick={() =>
+                      markBold(
+                        currentUser?._id === copyA?.coderId ? editorA : editorB
+                      )
+                    }
+                    className="dashboard-btn btn-secondary btn-sm"
+                    style={{
+                      width: "100%",
+                      justifyContent: "center",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    <FaBold /> {styleSettings.boldName || "Bold"}
+                  </button>
+                )}
+                {styleSettings.italicEnabled && (
+                  <button
+                    onClick={() =>
+                      markItalic(
+                        currentUser?._id === copyA?.coderId ? editorA : editorB
+                      )
+                    }
+                    className="dashboard-btn btn-secondary btn-sm"
+                    style={{
+                      width: "100%",
+                      justifyContent: "center",
+                      fontStyle: "italic",
+                    }}
+                  >
+                    <FaItalic /> {styleSettings.italicName || "Italic"}
+                  </button>
+                )}
+                <button
+                  onClick={() =>
+                    handleSave(
+                      currentUser?._id === copyA?.coderId ? editorA : editorB,
+                      currentUser?._id === copyA?.coderId ? copyA : copyB,
+                      currentUser?._id === copyA?.coderId ? valueA : valueB,
+                      currentUser?._id === copyA?.coderId
+                        ? setCountsA
+                        : setCountsB
+                    )
+                  }
+                  className="dashboard-btn btn-primary btn-sm"
+                  style={{ width: "100%", justifyContent: "center" }}
+                >
+                  <FaSave /> Save Changes
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Results for A */}
+          <div className="dashboard-card" style={{ marginBottom: "20px" }}>
+            <h3
+              className="card-title"
+              style={{ fontSize: "14px", marginBottom: "12px" }}
+            >
+              <FaChartBar /> Results A
+            </h3>
+            <button
+              onClick={() =>
+                calculateSelectionCounts(editorA, setSelectionCountsA)
+              }
+              className="dashboard-btn btn-secondary btn-sm"
+              style={{ width: "100%", marginBottom: "12px", fontSize: "12px" }}
+            >
+              <FaChartBar /> Analyze Selection
+            </button>
+            <div style={{ fontSize: "11px" }}>
+              <ResultsTables
+                fullTextTable={fullTextTableA}
+                selectionTable={selectionTableA}
+                additionalStats={additionalStatsA}
+                colors={colors}
+                styleSettings={styleSettings}
+              />
+            </div>
+          </div>
+
+          {/* Results for B */}
+          <div className="dashboard-card" style={{ marginBottom: "20px" }}>
+            <h3
+              className="card-title"
+              style={{ fontSize: "14px", marginBottom: "12px" }}
+            >
+              <FaChartBar /> Results B
+            </h3>
+            <button
+              onClick={() =>
+                calculateSelectionCounts(editorB, setSelectionCountsB)
+              }
+              className="dashboard-btn btn-secondary btn-sm"
+              style={{ width: "100%", marginBottom: "12px", fontSize: "12px" }}
+            >
+              <FaChartBar /> Analyze Selection
+            </button>
+            <div style={{ fontSize: "11px" }}>
+              <ResultsTables
+                fullTextTable={fullTextTableB}
+                selectionTable={selectionTableB}
+                additionalStats={additionalStatsB}
+                colors={colors}
+                styleSettings={styleSettings}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Comment Modals */}
+      {activeCommentA && (
+        <div className="comment-modal-overlay">
+          <div className="comment-modal">
+            <div className="comment-modal-header">
+              <h4 className="comment-modal-title">
+                <FaComment /> Comments A
+              </h4>
+              <button
+                onClick={() => setActiveCommentA(null)}
+                className="comment-modal-close"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            <div className="comment-modal-body">
+              {/* Add Comment Section */}
+              {!isAddingCommentA && (
+                <button
+                  onClick={() => setIsAddingCommentA(true)}
+                  className="dashboard-btn btn-primary btn-sm"
+                  style={{ width: "100%", marginBottom: "16px" }}
+                >
+                  <FaPlus /> Add Comment
+                </button>
+              )}
+              {isAddingCommentA && (
+                <div style={{ marginBottom: "16px" }}>
+                  <textarea
+                    value={newCommentA}
+                    onChange={(e) => setNewCommentA(e.target.value)}
+                    placeholder="Write a comment..."
+                    className="dashboard-input"
+                    style={{
+                      width: "100%",
+                      minHeight: "80px",
+                      marginBottom: "8px",
+                    }}
+                  />
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      onClick={() => {
+                        handleAddComment(
+                          editorA,
+                          valueA,
+                          setNewCommentA,
+                          localCommentsA,
+                          setLocalCommentsA,
+                          setValueA,
+                          copyA._id,
+                          statement,
+                          setCommentKeyA,
+                          newCommentA
+                        );
+                        setIsAddingCommentA(false);
+                      }}
+                      className="dashboard-btn btn-primary btn-sm"
+                    >
+                      <FaSave /> Save
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsAddingCommentA(false);
+                        setNewCommentA("");
+                      }}
+                      className="dashboard-btn btn-secondary btn-sm"
+                    >
+                      <FaTimes /> Cancel
+                    </button>
                   </div>
                 </div>
               )}
+
+              {/* Existing Comments */}
+              {activeCommentA.map((c) => (
+                <div key={c._id} className="comment-item">
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      marginBottom: "6px",
+                      fontSize: "0.85rem",
+                      color: "#666",
+                    }}
+                  >
+                    <FaUser style={{ fontSize: "0.75rem" }} />
+                    <strong>{c.userId?.username || "Unknown"}</strong>
+                    <span>•</span>
+                    <span>
+                      {new Date(c.createdAt).toLocaleDateString()}{" "}
+                      {new Date(c.createdAt).toLocaleTimeString()}
+                    </span>
+                  </div>
+                  <div className="comment-text">{c.text}</div>
+                  {currentUser?._id === c.userId?._id && (
+                    <button
+                      onClick={() => {
+                        if (window.confirm("Delete this comment?")) {
+                          handleRemoveComment(
+                            c._id,
+                            localCommentsA,
+                            setLocalCommentsA,
+                            setValueA,
+                            statement,
+                            valueA,
+                            setCommentKeyA,
+                            editorA,
+                            setActiveCommentA
+                          );
+                          const updated = localCommentsA.filter(
+                            (cm) => cm._id !== c._id
+                          );
+                          if (updated.length === 0) setActiveCommentA(null);
+                        }
+                      }}
+                      className="comment-delete-btn"
+                    >
+                      <FaTrash />
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
-          )
-        )}
-      </div>
+          </div>
+        </div>
+      )}
+
+      {activeCommentB && (
+        <div className="comment-modal-overlay">
+          <div className="comment-modal">
+            <div className="comment-modal-header">
+              <h4 className="comment-modal-title">
+                <FaComment /> Comments B
+              </h4>
+              <button
+                onClick={() => setActiveCommentB(null)}
+                className="comment-modal-close"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            <div className="comment-modal-body">
+              {/* Add Comment Section */}
+              {!isAddingCommentB && (
+                <button
+                  onClick={() => setIsAddingCommentB(true)}
+                  className="dashboard-btn btn-primary btn-sm"
+                  style={{ width: "100%", marginBottom: "16px" }}
+                >
+                  <FaPlus /> Add Comment
+                </button>
+              )}
+              {isAddingCommentB && (
+                <div style={{ marginBottom: "16px" }}>
+                  <textarea
+                    value={newCommentB}
+                    onChange={(e) => setNewCommentB(e.target.value)}
+                    placeholder="Write a comment..."
+                    className="dashboard-input"
+                    style={{
+                      width: "100%",
+                      minHeight: "80px",
+                      marginBottom: "8px",
+                    }}
+                  />
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      onClick={() => {
+                        handleAddComment(
+                          editorB,
+                          valueB,
+                          setNewCommentB,
+                          localCommentsB,
+                          setLocalCommentsB,
+                          setValueB,
+                          copyB._id,
+                          statement,
+                          setCommentKeyB,
+                          newCommentB
+                        );
+                        setIsAddingCommentB(false);
+                      }}
+                      className="dashboard-btn btn-primary btn-sm"
+                    >
+                      <FaSave /> Save
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsAddingCommentB(false);
+                        setNewCommentB("");
+                      }}
+                      className="dashboard-btn btn-secondary btn-sm"
+                    >
+                      <FaTimes /> Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Existing Comments */}
+              {activeCommentB.map((c) => (
+                <div key={c._id} className="comment-item">
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      marginBottom: "6px",
+                      fontSize: "0.85rem",
+                      color: "#666",
+                    }}
+                  >
+                    <FaUser style={{ fontSize: "0.75rem" }} />
+                    <strong>{c.userId?.username || "Unknown"}</strong>
+                    <span>•</span>
+                    <span>
+                      {new Date(c.createdAt).toLocaleDateString()}{" "}
+                      {new Date(c.createdAt).toLocaleTimeString()}
+                    </span>
+                  </div>
+                  <div className="comment-text">{c.text}</div>
+                  {currentUser?._id === c.userId?._id && (
+                    <button
+                      onClick={() => {
+                        if (window.confirm("Delete this comment?")) {
+                          handleRemoveComment(
+                            c._id,
+                            localCommentsB,
+                            setLocalCommentsB,
+                            setValueB,
+                            statement,
+                            valueB,
+                            setCommentKeyB,
+                            editorB,
+                            setActiveCommentB
+                          );
+                          const updated = localCommentsB.filter(
+                            (cm) => cm._id !== c._id
+                          );
+                          if (updated.length === 0) setActiveCommentB(null);
+                        }
+                      }}
+                      className="comment-delete-btn"
+                    >
+                      <FaTrash />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

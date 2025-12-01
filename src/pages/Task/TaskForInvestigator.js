@@ -21,7 +21,6 @@ import { useTask } from "../../context/TaskContext";
 import { useStatement } from "../../context/StatementContext";
 import { useExperiment } from "../../context/ExperimentContext";
 import { useTaskMessage } from "../../context/TaskMessageContext";
-import "../../styles/Dashboard.css";
 import "./TaskManagement.css";
 
 export default function TaskForInvestigator() {
@@ -144,15 +143,9 @@ export default function TaskForInvestigator() {
 
   if (!isAuthChecked) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
-        <div>Loading...</div>
+      <div className="task-loading">
+        <div className="task-loading-spinner"></div>
+        <div className="task-loading-text">Loading...</div>
       </div>
     );
   }
@@ -169,168 +162,106 @@ export default function TaskForInvestigator() {
   const renderCopies = (taskId) => {
     const taskCopies = copiesByTaskId(taskId);
     return (
-      <div
-        style={{
-          marginTop: "16px",
-          paddingTop: "16px",
-          borderTop: "1px solid #e0e0e0",
-        }}
-      >
-        <h4
-          style={{
-            fontSize: "0.95rem",
-            fontWeight: 600,
-            marginBottom: "12px",
-            color: "#555",
-          }}
-        >
-          <FaFileAlt style={{ marginRight: "8px" }} />
-          Copies in this Task:
-        </h4>
-        <ul className="dashboard-list" style={{ marginLeft: 0 }}>
-          {taskCopies.map((copy) => (
-            <li
-              key={copy._id}
-              className="list-item"
-              style={{ fontSize: "0.9rem" }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <span>
-                  <strong>
-                    {statementsCache[copy.statementId]?.name || "Loading..."}
-                  </strong>
-                </span>
-                <span
-                  style={{
-                    padding: "4px 12px",
-                    borderRadius: "12px",
-                    fontSize: "0.8rem",
-                    fontWeight: 600,
-                    backgroundColor:
-                      copy.status === "completed"
-                        ? "#4caf50"
-                        : copy.status === "in_progress"
-                        ? "#ff9800"
-                        : "#9e9e9e",
-                    color: "white",
-                  }}
-                >
-                  {copy.status === "completed" ? (
-                    <>
-                      <FaCheckCircle /> Completed
-                    </>
-                  ) : copy.status === "in_progress" ? (
-                    <>
-                      <FaClock /> In Progress
-                    </>
-                  ) : (
-                    "Not Started"
-                  )}
+      <ul className="task-copies-list">
+        {taskCopies.map((copy) => {
+          const statement = statementsCache[copy.statementId];
+          const isCompleted = copy.status === "completed";
+
+          return (
+            <li key={copy._id} className="task-copy-item">
+              <div className="task-copy-info">
+                <FaFileAlt className="task-copy-icon" />
+                <span className="task-copy-name">
+                  {statement?.name || "Loading..."}
                 </span>
               </div>
+              <span
+                className={`task-copy-status ${
+                  isCompleted ? "status-completed" : "status-in-progress"
+                }`}
+              >
+                {isCompleted ? (
+                  <>
+                    <FaCheckCircle /> Completed
+                  </>
+                ) : (
+                  <>
+                    <FaClock /> In Progress
+                  </>
+                )}
+              </span>
             </li>
-          ))}
-        </ul>
-      </div>
+          );
+        })}
+      </ul>
     );
   };
 
   return (
-    <div className="dashboard-container">
-      <div className="dashboard-header">
-        <h1 className="dashboard-title">
-          <FaTasks /> Tasks I Created
+    <div className="task-management-container">
+      {/* Header */}
+      <div className="task-header">
+        <h1 className="task-title">
+          <FaTasks />
+          Tasks I Created
         </h1>
-        <p className="dashboard-subtitle">
+        <p className="task-subtitle">
           Manage and track all tasks you've assigned to coders
         </p>
       </div>
 
-      {researcherTasks.length === 0 ? (
-        <div
-          className="dashboard-card"
-          style={{ textAlign: "center", padding: "60px 20px" }}
-        >
-          <FaTasks
-            style={{ fontSize: "64px", color: "#ddd", marginBottom: "20px" }}
-          />
-          <h3 style={{ color: "#666", fontSize: "1.2rem", fontWeight: 500 }}>
-            No Tasks Created Yet
-          </h3>
-          <p style={{ color: "#999", marginTop: "8px" }}>
-            You haven't created any tasks yet. Start by creating your first
-            task!
+      {/* Empty State */}
+      {researcherTasks.length === 0 && (
+        <div className="task-empty-state">
+          <div className="task-empty-icon">📋</div>
+          <p className="task-empty-text">No Tasks Created Yet</p>
+          <p className="task-empty-subtext">
+            You haven't created any tasks yet. Start by creating your first task!
           </p>
         </div>
-      ) : (
-        <ul className="dashboard-list">
-          {researcherTasks.map((task) => {
-            const isExpanded = selectedTaskId === task._id;
-            const unreadCount = getUnreadCount(task._id, currentUser._id);
-            const progress = taskProgress(task._id);
+      )}
 
-            return (
-              <li key={task._id} className="list-item task-card">
-                <div
-                  className="task-header"
-                  onClick={() =>
-                    setSelectedTaskId(isExpanded ? null : task._id)
-                  }
-                  style={{ cursor: "pointer" }}
-                >
-                  <div className="task-main-info">
-                    <div className="task-expand-icon">
-                      {isExpanded ? (
-                        <FaChevronDown
-                          style={{ fontSize: "0.9rem", color: "#2196F3" }}
-                        />
-                      ) : (
-                        <FaChevronRight
-                          style={{ fontSize: "0.9rem", color: "#999" }}
-                        />
-                      )}
-                    </div>
-                    <div className="task-details">
-                      <div className="task-row">
-                        <FaMicroscope style={{ color: "#2196F3" }} />
-                        <span className="task-label">Experiment:</span>
-                        <span className="task-value">
-                          {experimentNames[task.experimentId] || "Loading..."}
-                        </span>
-                      </div>
-                      <div className="task-row">
-                        <FaUser style={{ color: "#ff9800" }} />
-                        <span className="task-label">Coder:</span>
-                        <span className="task-value">
-                          {getCoderName(task.coderId)}
-                        </span>
-                      </div>
-                      <div className="task-stats">
-                        <div className="stat-badge">
-                          <FaChartLine />
-                          <span>
-                            {experimentPercentMap[task._id] ?? 0}% of experiment
-                          </span>
-                        </div>
-                        <div className="stat-badge">
-                          <FaCheckCircle />
-                          <span>{progress}% completed</span>
-                        </div>
-                        {unreadCount > 0 && (
-                          <div className="stat-badge unread">
-                            <FaEnvelope />
-                            <span>{unreadCount} unread</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+      {/* Tasks List */}
+      <div className="task-list">
+        {researcherTasks.map((task) => {
+          const isExpanded = selectedTaskId === task._id;
+          const progress = taskProgress(task._id);
+          const expPercent = experimentPercentMap[task._id] ?? 0;
+          const unreadCount = getUnreadCount(task._id, currentUser._id);
+
+          return (
+            <div key={task._id} className="task-card">
+              {/* Task Header */}
+              <div
+                className="task-card-header"
+                onClick={() => setSelectedTaskId(isExpanded ? null : task._id)}
+              >
+                <div className="task-info">
+                  <div className="task-experiment">
+                    {isExpanded ? <FaChevronDown /> : <FaChevronRight />}
+                    <FaMicroscope />
+                    {experimentNames[task.experimentId] || "Loading..."}
                   </div>
+                  <div className="task-meta">
+                    <span className="task-meta-item">
+                      <FaUser />
+                      Coder: {getCoderName(task.coderId)}
+                    </span>
+                    <span className="task-meta-item">
+                      <FaChartLine />
+                      Experiment: {expPercent}%
+                    </span>
+                    {unreadCount > 0 && (
+                      <span className="task-meta-item">
+                        <FaEnvelope />
+                        <span className="task-badge badge-unread">
+                          {unreadCount} unread
+                        </span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="task-actions">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -342,45 +273,61 @@ export default function TaskForInvestigator() {
                         handleDeleteTask(task._id);
                       }
                     }}
-                    className="delete-btn"
-                    title="Delete Task"
+                    className="task-btn task-btn-delete"
                   >
                     <FaTrash /> Delete
                   </button>
                 </div>
+              </div>
 
-                {isExpanded && (
-                  <div className="task-expanded-content">
-                    {renderCopies(task._id)}
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "12px",
-                        marginTop: "20px",
-                        paddingTop: "16px",
-                        borderTop: "1px solid #e0e0e0",
-                      }}
-                    >
-                      <button
-                        onClick={() => navigate(`/task-chat/${task._id}`)}
-                        className="action-btn primary"
-                      >
-                        <FaComments /> Open Chat
-                      </button>
-                      <button
-                        onClick={() => navigate(`/task-summary/${task._id}`)}
-                        className="action-btn secondary"
-                      >
-                        <FaChartLine /> View Summary
-                      </button>
-                    </div>
+              {/* Progress Bar */}
+              <div className="task-progress">
+                <div className="progress-label">
+                  Task Progress: {progress}%
+                </div>
+                <div className="progress-bar-container">
+                  <div
+                    className="progress-bar-fill"
+                    style={{ width: `${progress}%` }}
+                  >
+                    {progress > 0 && `${progress}%`}
                   </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                </div>
+              </div>
+
+              {/* Expanded Details */}
+              {isExpanded && (
+                <div className="task-details">
+                  {/* Copies List */}
+                  {renderCopies(task._id)}
+
+                  {/* Actions */}
+                  <div className="task-details-actions">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/task-chat/${task._id}`);
+                      }}
+                      className="task-btn task-btn-chat"
+                    >
+                      <FaComments /> Go to Chat
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/task-summary/${task._id}`);
+                      }}
+                      className="task-btn task-btn-summary"
+                    >
+                      <FaChartLine /> Task Summary
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
