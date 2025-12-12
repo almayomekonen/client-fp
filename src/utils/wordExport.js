@@ -224,16 +224,20 @@ const createCodedTextSection = (slateValue) => {
               if (child.italic) runProps.italics = true;
               if (child.underline) runProps.underline = { type: "single" };
 
-              // Apply highlight as background color
+              // Apply highlight as background color - MUST have the color!
               if (highlight) {
                 const highlightColor = highlight.replace("#", "").toUpperCase();
+                // Apply background highlight
                 runProps.shading = {
                   fill: highlightColor,
-                  type: "solid",
-                  color: "000000",
+                  type: "clear",
                 };
+                // Set text color for contrast
                 const brightness = isLightColor(highlightColor);
                 runProps.color = brightness ? "000000" : "FFFFFF";
+              } else {
+                // Default text color when no highlight
+                runProps.color = "000000";
               }
 
               textRuns.push(new TextRun(runProps));

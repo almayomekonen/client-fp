@@ -29,9 +29,7 @@ export default function ResultsTables({
         </h4>
         <div
           style={{
-            overflowX: "auto",
-            maxWidth: "100%",
-            WebkitOverflowScrolling: "touch",
+            width: "100%",
             borderRadius: "8px",
             boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
           }}
@@ -39,20 +37,21 @@ export default function ResultsTables({
           <table
             style={{
               width: "100%",
-              minWidth: "500px",
               borderCollapse: "collapse",
-              fontSize: "13px",
+              fontSize: "14px",
               border: "1px solid #e0e0e0",
+              tableLayout: "auto",
             }}
           >
             <thead>
               <tr style={{ backgroundColor: "#f5f5f5" }}>
                 <th
                   style={{
-                    padding: "10px",
+                    padding: "12px",
                     textAlign: "left",
                     borderBottom: "2px solid #ccc",
                     fontWeight: "600",
+                    width: "30%",
                   }}
                 >
                   Metric
@@ -61,11 +60,10 @@ export default function ResultsTables({
                   <th
                     key={col.key}
                     style={{
-                      padding: "10px",
+                      padding: "12px",
                       textAlign: "center",
                       borderBottom: "2px solid #ccc",
                       fontWeight: "600",
-                      minWidth: "80px",
                     }}
                   >
                     <div
@@ -99,7 +97,7 @@ export default function ResultsTables({
               <tr style={{ backgroundColor: "#ffffff" }}>
                 <td
                   style={{
-                    padding: "10px",
+                    padding: "12px",
                     borderBottom: "1px solid #e0e0e0",
                     fontWeight: "500",
                   }}
@@ -110,11 +108,12 @@ export default function ResultsTables({
                   <td
                     key={col.key}
                     style={{
-                      padding: "10px",
+                      padding: "12px",
                       textAlign: "center",
                       borderBottom: "1px solid #e0e0e0",
                       fontWeight: "700",
                       color: "#1F4E78",
+                      fontSize: "15px",
                     }}
                   >
                     {codingsRow[col.key] || 0}
@@ -125,7 +124,7 @@ export default function ResultsTables({
               <tr style={{ backgroundColor: "#fafafa" }}>
                 <td
                   style={{
-                    padding: "10px",
+                    padding: "12px",
                     borderBottom: "1px solid #e0e0e0",
                     fontWeight: "500",
                   }}
@@ -136,11 +135,12 @@ export default function ResultsTables({
                   <td
                     key={col.key}
                     style={{
-                      padding: "10px",
+                      padding: "12px",
                       textAlign: "center",
                       borderBottom: "1px solid #e0e0e0",
                       fontWeight: "700",
                       color: "#1F4E78",
+                      fontSize: "15px",
                     }}
                   >
                     {wordsRow[col.key] || 0}
@@ -155,13 +155,13 @@ export default function ResultsTables({
   };
 
   return (
-    <div style={{ maxWidth: "100%", overflowX: "hidden" }}>
+    <div style={{ width: "100%" }}>
       {/* Additional Statistics - displayed before tables */}
       {additionalStats && (
         <div
           style={{
-            marginBottom: "24px",
-            padding: "16px",
+            marginBottom: "20px",
+            padding: "15px",
             backgroundColor: "#f9f9f9",
             borderRadius: "8px",
             border: "1px solid #e0e0e0",
@@ -169,7 +169,7 @@ export default function ResultsTables({
         >
           <h4
             style={{
-              fontSize: "14px",
+              fontSize: "15px",
               fontWeight: "600",
               marginBottom: "12px",
               color: "#444",
@@ -177,7 +177,7 @@ export default function ResultsTables({
           >
             Additional Statistics
           </h4>
-          <div style={{ display: "grid", gap: "8px", fontSize: "13px" }}>
+          <div style={{ display: "grid", gap: "10px", fontSize: "14px" }}>
             <div
               style={{
                 display: "flex",

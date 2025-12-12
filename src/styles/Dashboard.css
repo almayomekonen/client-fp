@@ -1,26 +1,20 @@
 /* Container */
 .dashboard-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  margin-left: 300px; /* Account for fixed sidebar (280px + 20px margin) */
-  width: calc(100% - 300px);
+  max-width: 100%;
+  margin: 0;
   overflow-x: hidden;
-  padding: 20px 15px;
+  padding: 20px;
 }
 
 @media (max-width: 768px) {
   .dashboard-container {
     padding: 15px 10px;
-    margin-left: 240px; /* Adjust for narrower sidebar */
-    width: calc(100% - 240px);
   }
 }
 
 @media (max-width: 480px) {
   .dashboard-container {
     padding: 10px 8px;
-    margin-left: 220px; /* Adjust for even narrower sidebar */
-    width: calc(100% - 220px);
   }
 }
 
@@ -28,23 +22,23 @@
 .dashboard-header {
   background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
   color: #ffffff;
-  padding: 30px;
-  border-radius: 12px;
-  margin-bottom: 30px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 .dashboard-title {
-  font-size: 32px;
+  font-size: 24px;
   font-weight: 700;
-  margin: 0 0 8px 0;
+  margin: 0 0 5px 0;
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 10px;
 }
 
 .dashboard-subtitle {
-  font-size: 16px;
+  font-size: 14px;
   color: #cccccc;
   margin: 0;
 }
@@ -52,12 +46,12 @@
 /* Cards */
 .dashboard-card {
   background: #ffffff;
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 20px;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 15px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
-  border: 2px solid transparent;
+  border: 1px solid #e0e0e0;
   max-width: 100%;
 }
 

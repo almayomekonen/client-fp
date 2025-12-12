@@ -55,7 +55,6 @@ export default function StatementEditor() {
     calculateSelectionCounts,
     calculateWordCounts,
     calculateWordCountsForSelection,
-    renderKeyLabel,
     buildResultsTable,
     calculateAdditionalStats,
   } = useResult();
@@ -513,33 +512,65 @@ export default function StatementEditor() {
     );
 
   return (
-    <div className="dashboard-container">
-      {/* Header */}
-      <div className="dashboard-header">
-        <h1 className="dashboard-title">
-          <FaEdit />
-          Coding Editor
+    <div
+      style={{
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        padding: "10px",
+        overflow: "hidden",
+      }}
+    >
+      {/* Header - Compact */}
+      <div style={{ marginBottom: "10px", flexShrink: 0 }}>
+        <h1
+          style={{ fontSize: "22px", fontWeight: "600", marginBottom: "5px" }}
+        >
+          <FaEdit /> Coding Editor
         </h1>
-        <p className="dashboard-subtitle">
+        <p style={{ fontSize: "13px", color: "#666" }}>
           <FaHighlighter style={{ marginRight: "8px" }} />
           Highlight and annotate text for analysis
         </p>
       </div>
 
-      {/* Main Content Grid - Changed to 2 columns: text + chat */}
+      {/* Main Content Grid - Takes remaining space */}
       <div
-        className="edit-copy-layout"
         style={{
           display: "grid",
-          gridTemplateColumns: "2fr 1fr",
-          gap: "20px",
+          gridTemplateColumns: "1fr 420px",
+          gap: "10px",
+          flex: 1,
+          minHeight: 0,
         }}
       >
-        {/* Left Column - Editor (Wider) */}
-        <div className="edit-copy-main-column">
-          {/* Toolbar Card */}
-          <div className="dashboard-card" style={{ marginBottom: "20px" }}>
-            <h3 className="card-title" style={{ marginBottom: "16px" }}>
+        {/* Left Column - Full Height */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
+            overflow: "auto",
+          }}
+        >
+          {/* Toolbar Card - Compact */}
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "8px",
+              padding: "10px",
+              marginBottom: "8px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              flexShrink: 0,
+            }}
+          >
+            <h3
+              style={{
+                fontSize: "14px",
+                fontWeight: "600",
+                marginBottom: "8px",
+              }}
+            >
               <FaPalette /> Highlighting Tools
             </h3>
 
@@ -548,7 +579,7 @@ export default function StatementEditor() {
               style={{
                 display: "flex",
                 gap: "8px",
-                marginBottom: "16px",
+                marginBottom: "12px",
                 flexWrap: "wrap",
               }}
             >
@@ -621,9 +652,28 @@ export default function StatementEditor() {
             </div>
           </div>
 
-          {/* Editor Card - Bigger text area */}
-          <div className="dashboard-card" style={{ marginBottom: "20px" }}>
-            <h3 className="card-title" style={{ marginBottom: "16px" }}>
+          {/* Editor Card - Takes space */}
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "8px",
+              padding: "10px",
+              marginBottom: "8px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              flex: 1,
+              minHeight: 0,
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <h3
+              style={{
+                fontSize: "14px",
+                fontWeight: "600",
+                marginBottom: "8px",
+                flexShrink: 0,
+              }}
+            >
               <FaEdit /> Text Editor
             </h3>
             <Slate
@@ -635,12 +685,11 @@ export default function StatementEditor() {
             >
               <div
                 style={{
-                  minHeight: "500px",
-                  maxHeight: "700px",
+                  flex: 1,
                   overflowY: "auto",
-                  border: "2px solid #e0e0e0",
-                  borderRadius: "8px",
-                  padding: "24px",
+                  border: "1px solid #ddd",
+                  borderRadius: "4px",
+                  padding: "15px",
                   backgroundColor: "#fafafa",
                 }}
               >
@@ -659,60 +708,77 @@ export default function StatementEditor() {
             {/* Action Buttons - Moved outside the card frame */}
           </div>
 
-          {/* Analyze Selection Button */}
-          <button
-            onClick={() => {
-              calculateSelectionCounts(editor, setSelectionCounts);
-              const wordCounts = calculateWordCountsForSelection(editor, value);
-              setSelectionWordCounts(wordCounts);
-            }}
-            className="dashboard-btn btn-secondary"
-            style={{ width: "100%", marginBottom: "20px" }}
-          >
-            <FaEye /> Analyze Selection
-          </button>
-
-          {/* Action Buttons Row */}
+          {/* Action Buttons - Compact single row */}
           <div
             style={{
               display: "flex",
-              gap: "12px",
-              flexWrap: "wrap",
-              marginBottom: "20px",
+              gap: "6px",
+              marginTop: "8px",
+              flexShrink: 0,
             }}
           >
             <button
+              onClick={() => {
+                calculateSelectionCounts(editor, setSelectionCounts);
+                const wordCounts = calculateWordCountsForSelection(
+                  editor,
+                  value
+                );
+                setSelectionWordCounts(wordCounts);
+              }}
+              className="dashboard-btn btn-secondary"
+              style={{ flex: 1, padding: "6px 10px", fontSize: "13px" }}
+            >
+              <FaEye /> Analyze
+            </button>
+            <button
               onClick={handleSave}
               className="dashboard-btn btn-primary"
-              style={{ flex: "1 1 auto", minWidth: "150px" }}
+              style={{ flex: 1, padding: "6px 10px", fontSize: "13px" }}
             >
-              <FaSave /> Save Changes
+              <FaSave /> Save
             </button>
             <button
               onClick={handleCloseCoding}
               className="dashboard-btn btn-success"
-              style={{ flex: "1 1 auto", minWidth: "150px" }}
+              style={{ flex: 1, padding: "6px 10px", fontSize: "13px" }}
             >
-              <FaCheckCircle /> Complete Coding
+              <FaCheckCircle /> Complete
             </button>
             <button
               onClick={handleExportToWord}
-              className="dashboard-btn btn-secondary"
+              className="dashboard-btn"
               style={{
-                flex: "1 1 auto",
-                minWidth: "150px",
+                flex: 1,
+                padding: "6px 10px",
+                fontSize: "13px",
                 backgroundColor: "#2196F3",
-                fontSize: "15px",
+                color: "#fff",
               }}
             >
-              <FaFileWord style={{ marginRight: "6px" }} /> Export to Word
+              <FaFileWord /> Export
             </button>
           </div>
 
-          {/* Results Tables - Large and below text */}
-          <div className="dashboard-card" style={{ marginBottom: "20px" }}>
-            <h3 className="card-title" style={{ marginBottom: "16px" }}>
-              <FaChartBar /> Coding Results
+          {/* Results Tables - Compact */}
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "8px",
+              padding: "10px",
+              marginTop: "8px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              flexShrink: 0,
+            }}
+          >
+            <h3
+              style={{
+                fontSize: "14px",
+                fontWeight: "600",
+                marginBottom: "8px",
+              }}
+            >
+              <FaChartBar /> Results
             </h3>
             <ResultsTables
               fullTextTable={fullTextTable}
@@ -724,27 +790,66 @@ export default function StatementEditor() {
           </div>
         </div>
 
-        {/* Right Column - Chat and Comments Sidebar (Narrower) */}
-        <div className="edit-copy-chat-sidebar">
-          {/* Chat */}
-          <div className="dashboard-card" style={{ marginBottom: "20px" }}>
-            <h3 className="card-title" style={{ marginBottom: "16px" }}>
-              <FaComment /> Copy Chat
+        {/* Right Column - Sidebar Full Height */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
+            width: "420px",
+          }}
+        >
+          {/* Chat - Takes space */}
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "8px",
+              padding: "10px",
+              marginBottom: "8px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              flex: 1,
+              minHeight: 0,
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <h3
+              style={{
+                fontSize: "14px",
+                fontWeight: "600",
+                marginBottom: "8px",
+                flexShrink: 0,
+              }}
+            >
+              <FaComment /> Chat
             </h3>
             <div
               style={{
-                height: "400px",
-                display: "flex",
-                flexDirection: "column",
+                flex: 1,
+                overflowY: "auto",
               }}
             >
               <CopyChat copyId={copyId} />
             </div>
           </div>
 
-          {/* Comments Section - Always visible */}
-          <div className="dashboard-card">
-            <h3 className="card-title" style={{ marginBottom: "16px" }}>
+          {/* Comments Section - Compact */}
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "8px",
+              padding: "10px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              flexShrink: 0,
+            }}
+          >
+            <h3
+              style={{
+                fontSize: "14px",
+                fontWeight: "600",
+                marginBottom: "8px",
+              }}
+            >
               <FaComment /> Comments
             </h3>
 
