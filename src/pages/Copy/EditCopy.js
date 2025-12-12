@@ -526,16 +526,16 @@ export default function StatementEditor() {
         </p>
       </div>
 
-      {/* Main Content Grid */}
+      {/* Main Content Grid - Changed to 2 columns: text + chat */}
       <div
         className="edit-copy-layout"
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 400px",
+          gridTemplateColumns: "2fr 1fr",
           gap: "20px",
         }}
       >
-        {/* Left Column - Editor (75%) */}
+        {/* Left Column - Editor (Wider) */}
         <div className="edit-copy-main-column">
           {/* Toolbar Card */}
           <div className="dashboard-card" style={{ marginBottom: "20px" }}>
@@ -621,30 +621,8 @@ export default function StatementEditor() {
             </div>
           </div>
 
-          {/* Analysis Tools */}
+          {/* Editor Card - Bigger text area */}
           <div className="dashboard-card" style={{ marginBottom: "20px" }}>
-            <h3 className="card-title" style={{ marginBottom: "16px" }}>
-              <FaChartBar /> Analysis Tools
-            </h3>
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-              <button
-                onClick={() => {
-                  calculateSelectionCounts(editor, setSelectionCounts);
-                  const wordCounts = calculateWordCountsForSelection(
-                    editor,
-                    value
-                  );
-                  setSelectionWordCounts(wordCounts);
-                }}
-                className="dashboard-btn btn-secondary btn-sm"
-              >
-                <FaEye /> Analyze Selection
-              </button>
-            </div>
-          </div>
-
-          {/* Editor Card */}
-          <div className="dashboard-card">
             <h3 className="card-title" style={{ marginBottom: "16px" }}>
               <FaEdit /> Text Editor
             </h3>
@@ -657,12 +635,12 @@ export default function StatementEditor() {
             >
               <div
                 style={{
-                  minHeight: "400px",
-                  maxHeight: "600px",
+                  minHeight: "500px",
+                  maxHeight: "700px",
                   overflowY: "auto",
                   border: "2px solid #e0e0e0",
                   borderRadius: "8px",
-                  padding: "20px",
+                  padding: "24px",
                   backgroundColor: "#fafafa",
                 }}
               >
@@ -671,78 +649,70 @@ export default function StatementEditor() {
                   placeholder="Select text to highlight..."
                   dir="auto"
                   style={{
-                    fontSize: "16px",
-                    lineHeight: "1.8",
+                    fontSize: "18px",
+                    lineHeight: "2",
                   }}
                 />
               </div>
             </Slate>
 
-            {/* Action Buttons */}
-            <div
-              style={{
-                marginTop: "20px",
-                display: "flex",
-                gap: "12px",
-                flexWrap: "wrap",
-                padding: "16px",
-                backgroundColor: "#f5f5f5",
-                borderRadius: "8px",
-                border: "1px solid #e0e0e0",
-              }}
-            >
-              <button
-                onClick={handleSave}
-                className="dashboard-btn btn-primary"
-                style={{ flex: "1 1 auto", minWidth: "150px" }}
-              >
-                <FaSave /> Save Changes
-              </button>
-              <button
-                onClick={handleCloseCoding}
-                className="dashboard-btn btn-success"
-                style={{ flex: "1 1 auto", minWidth: "150px" }}
-              >
-                <FaCheckCircle /> Complete Coding
-              </button>
-              <button
-                onClick={handleExportToWord}
-                className="dashboard-btn btn-secondary"
-                style={{
-                  flex: "1 1 auto",
-                  minWidth: "150px",
-                  backgroundColor: "#2196F3",
-                  fontSize: "15px",
-                }}
-              >
-                <FaFileWord style={{ marginRight: "6px" }} /> Export to Word
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column - Chat Sidebar (25%) */}
-        <div className="edit-copy-chat-sidebar">
-          <div className="dashboard-card" style={{ marginBottom: "20px" }}>
-            <h3 className="card-title" style={{ marginBottom: "16px" }}>
-              <FaComment /> Copy Chat
-            </h3>
-            <div
-              style={{
-                height: "calc(100vh - 250px)",
-                minHeight: "400px",
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              <CopyChat copyId={copyId} />
-            </div>
+            {/* Action Buttons - Moved outside the card frame */}
           </div>
 
-          {/* Results Tables */}
+          {/* Analyze Selection Button */}
+          <button
+            onClick={() => {
+              calculateSelectionCounts(editor, setSelectionCounts);
+              const wordCounts = calculateWordCountsForSelection(editor, value);
+              setSelectionWordCounts(wordCounts);
+            }}
+            className="dashboard-btn btn-secondary"
+            style={{ width: "100%", marginBottom: "20px" }}
+          >
+            <FaEye /> Analyze Selection
+          </button>
+
+          {/* Action Buttons Row */}
+          <div
+            style={{
+              display: "flex",
+              gap: "12px",
+              flexWrap: "wrap",
+              marginBottom: "20px",
+            }}
+          >
+            <button
+              onClick={handleSave}
+              className="dashboard-btn btn-primary"
+              style={{ flex: "1 1 auto", minWidth: "150px" }}
+            >
+              <FaSave /> Save Changes
+            </button>
+            <button
+              onClick={handleCloseCoding}
+              className="dashboard-btn btn-success"
+              style={{ flex: "1 1 auto", minWidth: "150px" }}
+            >
+              <FaCheckCircle /> Complete Coding
+            </button>
+            <button
+              onClick={handleExportToWord}
+              className="dashboard-btn btn-secondary"
+              style={{
+                flex: "1 1 auto",
+                minWidth: "150px",
+                backgroundColor: "#2196F3",
+                fontSize: "15px",
+              }}
+            >
+              <FaFileWord style={{ marginRight: "6px" }} /> Export to Word
+            </button>
+          </div>
+
+          {/* Results Tables - Large and below text */}
           <div className="dashboard-card" style={{ marginBottom: "20px" }}>
             <h3 className="card-title" style={{ marginBottom: "16px" }}>
-              <FaChartBar /> Results
+              <FaChartBar /> Coding Results
             </h3>
             <ResultsTables
               fullTextTable={fullTextTable}
@@ -752,8 +722,27 @@ export default function StatementEditor() {
               styleSettings={styleSettings}
             />
           </div>
+        </div>
 
-          {/* Comments Section */}
+        {/* Right Column - Chat and Comments Sidebar (Narrower) */}
+        <div className="edit-copy-chat-sidebar">
+          {/* Chat */}
+          <div className="dashboard-card" style={{ marginBottom: "20px" }}>
+            <h3 className="card-title" style={{ marginBottom: "16px" }}>
+              <FaComment /> Copy Chat
+            </h3>
+            <div
+              style={{
+                height: "400px",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <CopyChat copyId={copyId} />
+            </div>
+          </div>
+
+          {/* Comments Section - Always visible */}
           <div className="dashboard-card">
             <h3 className="card-title" style={{ marginBottom: "16px" }}>
               <FaComment /> Comments

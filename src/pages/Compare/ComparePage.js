@@ -1331,6 +1331,144 @@ export default function ComparePage() {
               />
             </div>
           </div>
+
+          {/* Comments Section for Copy A */}
+          {copyA && (
+            <div className="dashboard-card" style={{ marginBottom: "20px" }}>
+              <h3
+                className="card-title"
+                style={{ fontSize: "14px", marginBottom: "12px" }}
+              >
+                <FaComment /> Comments A
+              </h3>
+              {!isAddingCommentA && (
+                <button
+                  onClick={() => setIsAddingCommentA(true)}
+                  className="dashboard-btn btn-primary btn-sm"
+                  style={{ width: "100%", fontSize: "12px" }}
+                >
+                  <FaPlus /> Add Comment to A
+                </button>
+              )}
+              {isAddingCommentA && (
+                <div>
+                  <textarea
+                    value={newCommentA}
+                    onChange={(e) => setNewCommentA(e.target.value)}
+                    placeholder="Select text in A and add comment..."
+                    className="form-textarea"
+                    style={{
+                      marginBottom: "8px",
+                      minHeight: "80px",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <div style={{ display: "flex", gap: "6px" }}>
+                    <button
+                      onClick={() => {
+                        handleAddComment(
+                          editorA,
+                          valueA,
+                          setNewCommentA,
+                          localCommentsA,
+                          setLocalCommentsA,
+                          setValueA,
+                          copyA._id,
+                          statement,
+                          setCommentKeyA,
+                          newCommentA
+                        );
+                        setIsAddingCommentA(false);
+                      }}
+                      className="dashboard-btn btn-success btn-sm"
+                      style={{ flex: 1, fontSize: "11px" }}
+                    >
+                      <FaSave /> Save
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsAddingCommentA(false);
+                        setNewCommentA("");
+                      }}
+                      className="dashboard-btn btn-secondary btn-sm"
+                      style={{ flex: 1, fontSize: "11px" }}
+                    >
+                      <FaTimes /> Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Comments Section for Copy B */}
+          {copyB && (
+            <div className="dashboard-card" style={{ marginBottom: "20px" }}>
+              <h3
+                className="card-title"
+                style={{ fontSize: "14px", marginBottom: "12px" }}
+              >
+                <FaComment /> Comments B
+              </h3>
+              {!isAddingCommentB && (
+                <button
+                  onClick={() => setIsAddingCommentB(true)}
+                  className="dashboard-btn btn-primary btn-sm"
+                  style={{ width: "100%", fontSize: "12px" }}
+                >
+                  <FaPlus /> Add Comment to B
+                </button>
+              )}
+              {isAddingCommentB && (
+                <div>
+                  <textarea
+                    value={newCommentB}
+                    onChange={(e) => setNewCommentB(e.target.value)}
+                    placeholder="Select text in B and add comment..."
+                    className="form-textarea"
+                    style={{
+                      marginBottom: "8px",
+                      minHeight: "80px",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <div style={{ display: "flex", gap: "6px" }}>
+                    <button
+                      onClick={() => {
+                        handleAddComment(
+                          editorB,
+                          valueB,
+                          setNewCommentB,
+                          localCommentsB,
+                          setLocalCommentsB,
+                          setValueB,
+                          copyB._id,
+                          statement,
+                          setCommentKeyB,
+                          newCommentB
+                        );
+                        setIsAddingCommentB(false);
+                      }}
+                      className="dashboard-btn btn-success btn-sm"
+                      style={{ flex: 1, fontSize: "11px" }}
+                    >
+                      <FaSave /> Save
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsAddingCommentB(false);
+                        setNewCommentB("");
+                      }}
+                      className="dashboard-btn btn-secondary btn-sm"
+                      style={{ flex: 1, fontSize: "11px" }}
+                    >
+                      <FaTimes /> Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

@@ -21,15 +21,11 @@ import {
 import "./Sidebar.css";
 
 const Sidebar = ({ role, onLogout }) => {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen] = useState(true); // Always open, removed toggle
   const location = useLocation();
   const navigate = useNavigate();
   const { currentUser } = useData();
   const { refreshAll } = useRefresh();
-
-  const toggleSidebar = () => {
-    setIsOpen(!isOpen);
-  };
 
   const handleLogout = () => {
     if (onLogout) {
@@ -106,19 +102,33 @@ const Sidebar = ({ role, onLogout }) => {
 
   const menuItems = getMenuItems();
 
+  // Get role display name and icon
+  const getRoleInfo = () => {
+    if (role === "admin") {
+      return { name: "Admin", icon: <FaCrown /> };
+    } else if (role === "investigator") {
+      return { name: "Researcher", icon: <FaUserTie /> };
+    } else if (role === "coder") {
+      return { name: "Coder", icon: <FaPencilAlt /> };
+    }
+    return { name: "User", icon: <FaUserTie /> };
+  };
+
+  const roleInfo = getRoleInfo();
+
   return (
     <>
-      {/* Toggle Button */}
-      <button
-        className={`sidebar-toggle ${isOpen ? "open" : "closed"}`}
-        onClick={toggleSidebar}
-        aria-label={isOpen ? "Close menu" : "Open menu"}
-      >
-        {isOpen ? <FaChevronRight /> : <FaChevronLeft />}
-      </button>
-
-      {/* Sidebar */}
+      {/* Sidebar - Always Open */}
       <div className={`sidebar ${isOpen ? "open" : "closed"}`}>
+        {/* User Info Header */}
+        <div className="sidebar-user-info">
+          <div className="sidebar-user-icon">{roleInfo.icon}</div>
+          <div className="sidebar-user-details">
+            <div className="sidebar-user-name">{currentUser?.username || "User"}</div>
+            <div className="sidebar-user-role">{roleInfo.name}</div>
+          </div>
+        </div>
+
         <nav className="sidebar-nav">
           {menuItems.map((item, index) => (
             <div
@@ -156,9 +166,6 @@ const Sidebar = ({ role, onLogout }) => {
           </button>
         </div>
       </div>
-
-      {/* Overlay for mobile */}
-      {isOpen && <div className="sidebar-overlay" onClick={toggleSidebar} />}
     </>
   );
 };

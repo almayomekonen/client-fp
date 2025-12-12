@@ -57,7 +57,7 @@ export default function ManageColors() {
       return;
     }
     try {
-      const newColor = await addColor(colorName.trim(), pickedColor);
+      const newColor = await addColor(pickedColor, colorName.trim());
       setColors([...colors, newColor]); // Add to local list
       setColorName("");
       setPickedColor("#ff0000");

@@ -179,36 +179,12 @@ const createSectionHeading = (title) => {
 };
 
 /**
- * Create coded text section using inline table cells for Pages compatibility
+ * Create coded text section with proper paragraph structure
  */
 const createCodedTextSection = (slateValue) => {
   const sections = [createSectionHeading("Coded Text")];
 
-  // Collect all text segments with their colors
-  const segments = [];
-
-  const traverse = (nodes) => {
-    for (const node of nodes) {
-      if (node.text !== undefined && node.text) {
-        const highlight =
-          node.highlight || node.backgroundColor || node.bgColor;
-        segments.push({
-          text: node.text,
-          color: highlight ? highlight.replace("#", "").toUpperCase() : null,
-          bold: node.bold,
-          italic: node.italic,
-          underline: node.underline,
-        });
-      }
-      if (node.children) {
-        traverse(node.children);
-      }
-    }
-  };
-
-  traverse(slateValue);
-
-  if (segments.length === 0) {
+  if (!slateValue || slateValue.length === 0) {
     sections.push(
       new Paragraph({
         children: [
@@ -226,65 +202,68 @@ const createCodedTextSection = (slateValue) => {
     return sections;
   }
 
-  // Create a single-row table with all text segments as cells
-  const cells = segments.map((segment) => {
-    const runProps = {
-      text: segment.text,
-      size: 24,
-      font: "Calibri",
-    };
+  // Convert Slate structure to Word paragraphs
+  const traverse = (nodes) => {
+    for (const node of nodes) {
+      if (node.type === "paragraph" && node.children) {
+        const textRuns = [];
+        
+        // Process all text nodes in this paragraph
+        const processChildren = (children) => {
+          for (const child of children) {
+            if (child.text !== undefined) {
+              const runProps = {
+                text: child.text || " ",
+                size: 24,
+                font: "Calibri",
+              };
 
-    if (segment.bold) runProps.bold = true;
-    if (segment.italic) runProps.italics = true;
-    if (segment.underline) runProps.underline = { type: "single" };
+              const highlight = child.highlight || child.backgroundColor || child.bgColor;
 
-    // Text color based on background brightness
-    if (segment.color) {
-      const isLight = isLightColor(segment.color);
-      runProps.color = isLight ? "000000" : "FFFFFF";
+              if (child.bold) runProps.bold = true;
+              if (child.italic) runProps.italics = true;
+              if (child.underline) runProps.underline = { type: "single" };
+
+              // Apply highlight as background color
+              if (highlight) {
+                const highlightColor = highlight.replace("#", "").toUpperCase();
+                runProps.shading = {
+                  fill: highlightColor,
+                  type: "solid",
+                  color: "000000",
+                };
+                const brightness = isLightColor(highlightColor);
+                runProps.color = brightness ? "000000" : "FFFFFF";
+              }
+
+              textRuns.push(new TextRun(runProps));
+            }
+            if (child.children) {
+              processChildren(child.children);
+            }
+          }
+        };
+
+        processChildren(node.children);
+
+        // Create paragraph with all text runs
+        if (textRuns.length > 0) {
+          sections.push(
+            new Paragraph({
+              children: textRuns,
+              spacing: { before: 120, after: 120 },
+              alignment: AlignmentType.START,
+            })
+          );
+        }
+      } else if (node.children) {
+        traverse(node.children);
+      }
     }
+  };
 
-    return new TableCell({
-      children: [
-        new Paragraph({
-          children: [new TextRun(runProps)],
-        }),
-      ],
-      shading: segment.color ? { fill: segment.color } : { fill: "FFFFFF" },
-      margins: {
-        top: 80,
-        bottom: 80,
-        left: 80,
-        right: 80,
-      },
-      verticalAlign: VerticalAlign.CENTER,
-      borders: {
-        top: { style: BorderStyle.NONE, size: 0 },
-        bottom: { style: BorderStyle.NONE, size: 0 },
-        left: { style: BorderStyle.NONE, size: 0 },
-        right: { style: BorderStyle.NONE, size: 0 },
-      },
-    });
-  });
+  traverse(slateValue);
 
-  const table = new Table({
-    rows: [new TableRow({ children: cells })],
-    width: {
-      size: 100,
-      type: WidthType.PERCENTAGE,
-    },
-    borders: {
-      top: { style: BorderStyle.NONE, size: 0 },
-      bottom: { style: BorderStyle.NONE, size: 0 },
-      left: { style: BorderStyle.NONE, size: 0 },
-      right: { style: BorderStyle.NONE, size: 0 },
-      insideHorizontal: { style: BorderStyle.NONE, size: 0 },
-      insideVertical: { style: BorderStyle.NONE, size: 0 },
-    },
-    layout: "autofit",
-  });
-
-  sections.push(table);
   sections.push(new Paragraph({ text: "", spacing: { after: 400 } }));
 
   return sections;

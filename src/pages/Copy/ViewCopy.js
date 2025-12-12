@@ -41,7 +41,6 @@ export default function ViewStatementWithComments() {
     calculateSelectionCounts,
     calculateWordCounts,
     calculateWordCountsForSelection,
-    renderKeyLabel,
     buildResultsTable,
     calculateAdditionalStats,
   } = useResult();
@@ -408,61 +407,19 @@ export default function ViewStatementWithComments() {
         </p>
       </div>
 
-      {/* Main Content Grid */}
+      {/* Main Content Grid - Changed to 2 columns: text + chat */}
       <div
         className="view-copy-layout"
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 400px",
+          gridTemplateColumns: "2fr 1fr",
           gap: "20px",
         }}
       >
-        {/* Left Column - Viewer (75%) */}
+        {/* Left Column - Viewer (Wider) */}
         <div className="view-copy-main-column">
-          {/* Analysis Tools */}
+          {/* Viewer Card - Bigger text area */}
           <div className="dashboard-card" style={{ marginBottom: "20px" }}>
-            <h3 className="card-title" style={{ marginBottom: "16px" }}>
-              <FaChartBar /> Analysis Tools
-            </h3>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                gap: "12px",
-              }}
-            >
-              <button
-                onClick={() => {
-                  calculateSelectionCounts(editor, setSelectionCounts);
-                  const wordCounts = calculateWordCountsForSelection(
-                    editor,
-                    value
-                  );
-                  setSelectionWordCounts(wordCounts);
-                }}
-                className="dashboard-btn btn-secondary"
-                style={{ width: "100%", justifyContent: "center" }}
-              >
-                <FaEye style={{ marginRight: "6px" }} /> Analyze Selection
-              </button>
-              <button
-                onClick={handleExportToWord}
-                className="dashboard-btn btn-primary"
-                style={{
-                  width: "100%",
-                  justifyContent: "center",
-                  backgroundColor: "#2196F3",
-                  fontSize: "15px",
-                  fontWeight: "600",
-                }}
-              >
-                <FaFileWord style={{ marginRight: "6px" }} /> Export to Word
-              </button>
-            </div>
-          </div>
-
-          {/* Viewer Card */}
-          <div className="dashboard-card">
             <h3 className="card-title" style={{ marginBottom: "16px" }}>
               <FaFileAlt /> Statement Content
             </h3>
@@ -480,7 +437,7 @@ export default function ViewStatementWithComments() {
                   overflowY: "auto",
                   border: "2px solid #e0e0e0",
                   borderRadius: "8px",
-                  padding: "20px",
+                  padding: "24px",
                   backgroundColor: "#fafafa",
                 }}
               >
@@ -490,37 +447,45 @@ export default function ViewStatementWithComments() {
                   dir="auto"
                   placeholder="No text available"
                   style={{
-                    fontSize: "16px",
-                    lineHeight: "1.8",
+                    fontSize: "18px",
+                    lineHeight: "2",
                   }}
                 />
               </div>
             </Slate>
           </div>
-        </div>
 
-        {/* Right Column - Chat Sidebar (25%) */}
-        <div className="view-copy-chat-sidebar">
+          {/* Analysis Tools - Moved outside card */}
+          <button
+            onClick={() => {
+              calculateSelectionCounts(editor, setSelectionCounts);
+              const wordCounts = calculateWordCountsForSelection(editor, value);
+              setSelectionWordCounts(wordCounts);
+            }}
+            className="dashboard-btn btn-secondary"
+            style={{ width: "100%", marginBottom: "20px" }}
+          >
+            <FaEye style={{ marginRight: "6px" }} /> Analyze Selection
+          </button>
+
+          <button
+            onClick={handleExportToWord}
+            className="dashboard-btn btn-primary"
+            style={{
+              width: "100%",
+              marginBottom: "20px",
+              backgroundColor: "#2196F3",
+              fontSize: "15px",
+              fontWeight: "600",
+            }}
+          >
+            <FaFileWord style={{ marginRight: "6px" }} /> Export to Word
+          </button>
+
+          {/* Results Tables - Large and below text */}
           <div className="dashboard-card" style={{ marginBottom: "20px" }}>
             <h3 className="card-title" style={{ marginBottom: "16px" }}>
-              <FaComment /> Copy Chat
-            </h3>
-            <div
-              style={{
-                height: "calc(100vh - 250px)",
-                minHeight: "400px",
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              <CopyChat copyId={copyId} />
-            </div>
-          </div>
-
-          {/* Results Tables */}
-          <div className="dashboard-card" style={{ marginBottom: "20px" }}>
-            <h3 className="card-title" style={{ marginBottom: "16px" }}>
-              <FaChartBar /> Results
+              <FaChartBar /> Coding Results
             </h3>
             <ResultsTables
               fullTextTable={fullTextTable}
@@ -530,8 +495,27 @@ export default function ViewStatementWithComments() {
               styleSettings={styleSettings}
             />
           </div>
+        </div>
 
-          {/* Comments Section */}
+        {/* Right Column - Chat and Comments Sidebar (Narrower) */}
+        <div className="view-copy-chat-sidebar">
+          {/* Chat */}
+          <div className="dashboard-card" style={{ marginBottom: "20px" }}>
+            <h3 className="card-title" style={{ marginBottom: "16px" }}>
+              <FaComment /> Copy Chat
+            </h3>
+            <div
+              style={{
+                height: "400px",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <CopyChat copyId={copyId} />
+            </div>
+          </div>
+
+          {/* Comments Section - Always visible */}
           <div className="dashboard-card">
             <h3 className="card-title" style={{ marginBottom: "16px" }}>
               <FaComment /> Comments
