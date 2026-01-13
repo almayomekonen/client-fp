@@ -202,9 +202,9 @@
 }
 
 .style-options {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
 }
 
 .style-option {
@@ -339,6 +339,10 @@
 
   .color-picker-container {
     width: 100%;
+  }
+
+  .style-options {
+    grid-template-columns: 1fr;
   }
 }
 

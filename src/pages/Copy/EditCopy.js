@@ -550,7 +550,7 @@ export default function StatementEditor() {
             display: "flex",
             flexDirection: "column",
             minHeight: 0,
-            overflow: "auto",
+            overflow: "hidden",
           }}
         >
           {/* Toolbar Card - Compact */}
@@ -769,6 +769,8 @@ export default function StatementEditor() {
               marginTop: "8px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
               flexShrink: 0,
+              height: "250px",
+              overflowY: "auto",
             }}
           >
             <h3

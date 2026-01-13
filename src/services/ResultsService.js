@@ -283,13 +283,17 @@ export const buildResultsTable = (
   const columns = [];
 
   // Add all colors
+  const addedKeys = new Set();
   colors.forEach((color) => {
+    if (!color.code || addedKeys.has(color.code)) return;
+
     columns.push({
       type: "color",
       key: color.code,
       name: color.name,
       code: color.code,
     });
+    addedKeys.add(color.code);
   });
 
   // Add formatting options if enabled
