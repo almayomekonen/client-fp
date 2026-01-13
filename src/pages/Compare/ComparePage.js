@@ -102,6 +102,21 @@ export default function ComparePage() {
   const [styleSettings, setStyleSettings] = useState({});
   const [isCompared, setIsCompared] = useState(false);
 
+  // ✅ New State for Editing Target
+  const [editTarget, setEditTarget] = useState("A");
+
+  // ✅ Automatically set edit target based on user
+  useEffect(() => {
+    if (
+      currentUser?._id === copyB?.coderId &&
+      currentUser?._id !== copyA?.coderId
+    ) {
+      setEditTarget("B");
+    } else {
+      setEditTarget("A");
+    }
+  }, [currentUser, copyA, copyB]);
+
   // New state for results tables
   const [fullTextTableA, setFullTextTableA] = useState(null);
   const [selectionTableA, setSelectionTableA] = useState(null);
@@ -344,11 +359,57 @@ export default function ComparePage() {
     socket.on("commentCreated", handleCommentCreated);
     socket.on("commentDeleted", handleCommentDeleted);
 
+    const handleCopyDeleted = (data) => {
+      const deletedId = data.copyId;
+
+      // Check if it affects current comparison
+      if (
+        (copyA && copyA._id === deletedId) ||
+        (copyB && copyB._id === deletedId)
+      ) {
+        alert("One of the copies being compared has been deleted.");
+        navigate("/coderHome");
+        return;
+      }
+
+      // Update the options list
+      setCopies((prevCopies) => prevCopies.filter((c) => c._id !== deletedId));
+    };
+
+    socket.on("copyDeleted", handleCopyDeleted);
+
+    const handleCopyUpdated = (data) => {
+      const updatedCopy = data.copy;
+
+      // If active copy status changed from completed
+      if (
+        (updatedCopy._id === copyA?._id || updatedCopy._id === copyB?._id) &&
+        updatedCopy.status !== "completed"
+      ) {
+        alert("A copy being compared has been reopened for editing.");
+        navigate("/coderHome");
+        return;
+      }
+
+      // Update copies list (will automatically update dropdown via filter)
+      setCopies((prev) =>
+        prev.map((c) => (c._id === updatedCopy._id ? updatedCopy : c))
+      );
+
+      // Update active copies if they are still completed
+      if (updatedCopy._id === copyA?._id) setCopyA(updatedCopy);
+      if (updatedCopy._id === copyB?._id) setCopyB(updatedCopy);
+    };
+
+    socket.on("copyUpdated", handleCopyUpdated);
+
     return () => {
       socket.off("commentCreated", handleCommentCreated);
       socket.off("commentDeleted", handleCommentDeleted);
+      socket.off("copyDeleted", handleCopyDeleted);
+      socket.off("copyUpdated", handleCopyUpdated);
     };
-  }, [socket, copyA, copyB]);
+  }, [socket, copyA, copyB, navigate]);
 
   // Update results tables for Copy A
   useEffect(() => {
@@ -441,10 +502,17 @@ export default function ComparePage() {
         outline: leaf.isDiff ? "2px solid red" : undefined,
       };
 
+      const colorName = colors.find((c) => c.code === leaf.highlight)?.name;
+      const styleNames = [];
+      if (leaf.bold) styleNames.push(styleSettings.boldName || "Bold");
+      if (leaf.italic) styleNames.push(styleSettings.italicName || "Italic");
+      if (leaf.underline) styleNames.push(styleSettings.underlineName || "Underline");
+      const tooltip = [colorName, ...styleNames].filter(Boolean).join(", ");
+
       const hasComments = leaf.comments?.length > 0;
 
       return (
-        <span {...attributes} style={style}>
+        <span {...attributes} style={style} title={tooltip}>
           {leaf.text !== "" ? children : "\u200B"}
 
           {hasComments && (
@@ -1031,11 +1099,20 @@ export default function ComparePage() {
               className="coding-block dashboard-card"
               style={{ flex: 1, minWidth: 0 }}
             >
+              {/* ✅ Navigation for Copy A Title */}
               <div className="card-header">
                 <h3 className="card-title" style={{ fontSize: "16px" }}>
                   <FaUser /> Coding A -{" "}
-                  {users.find((user) => user._id === copyA?.coderId)
-                    ?.username || "Unknown"}
+                  <span
+                    onClick={() =>
+                      copyA && navigate(`/view-statement/${copyA._id}`)
+                    }
+                    style={{ cursor: "pointer", textDecoration: "underline" }}
+                    title="View Full Page"
+                  >
+                    {users.find((user) => user._id === copyA?.coderId)
+                      ?.username || "Unknown"}
+                  </span>
                 </h3>
               </div>
               <div className="card-body" style={{ padding: "12px" }}>
@@ -1079,11 +1156,20 @@ export default function ComparePage() {
               className="coding-block dashboard-card"
               style={{ flex: 1, minWidth: 0 }}
             >
+              {/* ✅ Navigation for Copy B Title */}
               <div className="card-header">
                 <h3 className="card-title" style={{ fontSize: "16px" }}>
                   <FaUser /> Coding B -{" "}
-                  {users.find((user) => user._id === copyB?.coderId)
-                    ?.username || "Unknown"}
+                  <span
+                    onClick={() =>
+                      copyB && navigate(`/view-statement/${copyB._id}`)
+                    }
+                    style={{ cursor: "pointer", textDecoration: "underline" }}
+                    title="View Full Page"
+                  >
+                    {users.find((user) => user._id === copyB?.coderId)
+                      ?.username || "Unknown"}
+                  </span>
                 </h3>
               </div>
               <div className="card-body" style={{ padding: "12px" }}>
@@ -1134,19 +1220,43 @@ export default function ComparePage() {
             overflowY: "auto",
           }}
         >
-          {/* Editing Tools (only for user's copy) */}
+          {/* ✅ Editing Tools with Target Toggle */}
           {(currentUser?._id === copyA?.coderId ||
-            currentUser?._id === copyB?.coderId) && (
+            currentUser?._id === copyB?.coderId ||
+            ["investigator", "admin"].includes(currentUser?.role)) && (
             <div className="dashboard-card" style={{ marginBottom: "20px" }}>
               <h3
                 className="card-title"
                 style={{ fontSize: "16px", marginBottom: "12px" }}
               >
-                <FaPalette />{" "}
-                {currentUser?._id === copyA?.coderId
-                  ? "Edit Coding A"
-                  : "Edit Coding B"}
+                <FaPalette /> Edit Coding {editTarget}
               </h3>
+
+              {/* Target Toggle for Admin/Investigator */}
+              {["investigator", "admin"].includes(currentUser?.role) && (
+                <div
+                  style={{ display: "flex", gap: "5px", marginBottom: "10px" }}
+                >
+                  <button
+                    className={`dashboard-btn btn-sm ${
+                      editTarget === "A" ? "btn-primary" : "btn-secondary"
+                    }`}
+                    onClick={() => setEditTarget("A")}
+                    style={{ flex: 1 }}
+                  >
+                    Copy A
+                  </button>
+                  <button
+                    className={`dashboard-btn btn-sm ${
+                      editTarget === "B" ? "btn-primary" : "btn-secondary"
+                    }`}
+                    onClick={() => setEditTarget("B")}
+                    style={{ flex: 1 }}
+                  >
+                    Copy B
+                  </button>
+                </div>
+              )}
 
               {/* Color Palette */}
               <div
@@ -1162,7 +1272,7 @@ export default function ComparePage() {
                     key={color._id}
                     onClick={() =>
                       markColor(
-                        currentUser?._id === copyA?.coderId ? editorA : editorB,
+                        editTarget === "A" ? editorA : editorB,
                         color.code
                       )
                     }
@@ -1196,9 +1306,7 @@ export default function ComparePage() {
               >
                 <button
                   onClick={() =>
-                    removeFormatting(
-                      currentUser?._id === copyA?.coderId ? editorA : editorB
-                    )
+                    removeFormatting(editTarget === "A" ? editorA : editorB)
                   }
                   className="dashboard-btn btn-secondary btn-sm"
                   style={{ width: "100%", justifyContent: "center" }}
@@ -1208,9 +1316,7 @@ export default function ComparePage() {
                 {styleSettings.underlineEnabled && (
                   <button
                     onClick={() =>
-                      markUnderline(
-                        currentUser?._id === copyA?.coderId ? editorA : editorB
-                      )
+                      markUnderline(editTarget === "A" ? editorA : editorB)
                     }
                     className="dashboard-btn btn-secondary btn-sm"
                     style={{
@@ -1225,9 +1331,7 @@ export default function ComparePage() {
                 {styleSettings.boldEnabled && (
                   <button
                     onClick={() =>
-                      markBold(
-                        currentUser?._id === copyA?.coderId ? editorA : editorB
-                      )
+                      markBold(editTarget === "A" ? editorA : editorB)
                     }
                     className="dashboard-btn btn-secondary btn-sm"
                     style={{
@@ -1242,9 +1346,7 @@ export default function ComparePage() {
                 {styleSettings.italicEnabled && (
                   <button
                     onClick={() =>
-                      markItalic(
-                        currentUser?._id === copyA?.coderId ? editorA : editorB
-                      )
+                      markItalic(editTarget === "A" ? editorA : editorB)
                     }
                     className="dashboard-btn btn-secondary btn-sm"
                     style={{
@@ -1259,12 +1361,10 @@ export default function ComparePage() {
                 <button
                   onClick={() =>
                     handleSave(
-                      currentUser?._id === copyA?.coderId ? editorA : editorB,
-                      currentUser?._id === copyA?.coderId ? copyA : copyB,
-                      currentUser?._id === copyA?.coderId ? valueA : valueB,
-                      currentUser?._id === copyA?.coderId
-                        ? setCountsA
-                        : setCountsB
+                      editTarget === "A" ? editorA : editorB,
+                      editTarget === "A" ? copyA : copyB,
+                      editTarget === "A" ? valueA : valueB,
+                      editTarget === "A" ? setCountsA : setCountsB
                     )
                   }
                   className="dashboard-btn btn-primary btn-sm"

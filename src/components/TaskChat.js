@@ -149,15 +149,13 @@ export default function TaskChat({ taskId }) {
                   <div className="message-bubble">
                     {msg?.text}
                     <div className="message-actions">
-                      {!isOwnMessage && (
-                        <button
-                          onClick={() => handleReply(msg._id)}
-                          className="message-action-btn"
-                          title="Reply"
-                        >
-                          <FaReply />
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleReply(msg._id)}
+                        className="message-action-btn"
+                        title="Reply"
+                      >
+                        <FaReply />
+                      </button>
                       {isOwnMessage && (
                         <button
                           onClick={() => handleDeleteMessage(msg._id)}

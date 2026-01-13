@@ -213,7 +213,7 @@ export default function CoderHomePage() {
       <div className="dashboard-header">
         <h1 className="dashboard-title">
           <FaUserCircle />
-          Welcome, {currentUser?.username}
+          Codings of {currentUser?.username}
         </h1>
         <p className="dashboard-subtitle">
           <FaMicroscope style={{ marginRight: "8px" }} />
@@ -250,9 +250,6 @@ export default function CoderHomePage() {
                 >
                   <span className="dashboard-badge badge-info">
                     <FaUser /> {investigatorName}
-                  </span>
-                  <span className="dashboard-badge badge-primary">
-                    <FaChartLine /> {completion}%
                   </span>
                 </div>
               </div>
@@ -390,15 +387,18 @@ export default function CoderHomePage() {
                             </button>
 
                             {unreadCount > 0 && (
-                              <span
+                              <div
                                 style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "6px",
                                   color: "#dc3545",
-                                  fontSize: "14px",
                                   fontWeight: "600",
+                                  fontSize: "14px",
                                 }}
                               >
-                                ({unreadCount} unread messages)
-                              </span>
+                                <span>💬 {unreadCount} unread messages</span>
+                              </div>
                             )}
 
                             {comparisonsForThisCopy.length > 0 && (

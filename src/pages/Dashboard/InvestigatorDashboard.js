@@ -9,7 +9,6 @@ import { useData } from "../../context/DataContext";
 import { useCopyMessage } from "../../context/CopyMessageContext";
 import {
   FaMicroscope,
-  FaChevronRight,
   FaFolderOpen,
   FaFileAlt,
   FaBalanceScale,
@@ -19,6 +18,10 @@ import {
   FaTimes,
   FaSave,
   FaUsers,
+  FaChevronLeft,
+  FaChevronRight,
+  FaArrowLeft,
+  FaComment,
 } from "react-icons/fa";
 import "../../styles/Dashboard.css";
 import "./InvestigatorDashboard.css";
@@ -38,102 +41,98 @@ export default function InvestigatorHomePage() {
   const { getUnreadCount } = useCopyMessage();
 
   const [relevantExperiments, setRelevantExperiments] = useState([]);
+
+  // Navigation State
+  const [currentView, setCurrentView] = useState("experiments"); // experiments, groups, statements, copies
+  const [selectedExperiment, setSelectedExperiment] = useState(null);
+  const [selectedGroup, setSelectedGroup] = useState(null);
+  const [selectedStatement, setSelectedStatement] = useState(null);
+
+  // Data State for current view
   const [groups, setGroups] = useState([]);
   const [statements, setStatements] = useState([]);
 
-  const [expandedExperimentId, setExpandedExperimentId] = useState(null);
-  const [expandedGroupId, setExpandedGroupId] = useState(null);
-  const [expandedStatementId, setExpandedStatementId] = useState(null);
-  const [selectedUserIdForCopy, setSelectedUserIdForCopy] = useState("");
-  const [selectedUserIdForTask, setSelectedUserIdForTask] = useState("");
+  // Task Creation Modal State
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [taskCoderId, setTaskCoderId] = useState("");
+  const [taskPercent, setTaskPercent] = useState(100);
 
+  // Forms State
   const [showExpForm, setShowExpForm] = useState(false);
   const [expName, setExpName] = useState("");
   const [expDesc, setExpDesc] = useState("");
 
-  const [showGroupForm, setShowGroupForm] = useState(null);
+  const [showGroupForm, setShowGroupForm] = useState(false);
   const [groupName, setGroupName] = useState("");
   const [groupDesc, setGroupDesc] = useState("");
 
-  const [showStatementForm, setShowStatementForm] = useState(null);
+  const [showStatementForm, setShowStatementForm] = useState(false);
   const [statementName, setStatementName] = useState("");
   const [statementText, setStatementText] = useState("");
 
+  const [showCopyForm, setShowCopyForm] = useState(false);
+  const [copyCoderId, setCopyCoderId] = useState("");
+
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (isAuthChecked && !currentUser) {
-      navigate("/", { replace: true });
-    }
-  }, [currentUser, isAuthChecked, navigate]);
-
+  // Load Experiments
   useEffect(() => {
     const fetchExperiments = async () => {
-      if (!isAuthChecked || !currentUser?._id) {
-        return;
-      }
-
+      if (!isAuthChecked || !currentUser?._id) return;
       try {
         const exps = await experimentsByInvestigatorId(currentUser._id);
         setRelevantExperiments(exps);
       } catch (err) {
         console.error("❌ Error loading experiments:", err);
-        alert(
-          `❌ Error loading experiments: ${err.message || "Unknown error"}`
-        );
       }
     };
     fetchExperiments();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthChecked, currentUser]);
+  }, [isAuthChecked, currentUser, experimentsByInvestigatorId]);
 
-  const toggleExperiment = async (id) => {
-    if (expandedExperimentId === id) {
-      setExpandedExperimentId(null);
-      setGroups([]);
-      return;
+  // Load Groups when Experiment Selected
+  useEffect(() => {
+    if (selectedExperiment) {
+      const fetchGroups = async () => {
+        try {
+          const loadedGroups = await groupsByExperimentId(
+            selectedExperiment._id
+          );
+          setGroups(loadedGroups);
+        } catch {
+          alert("❌ Error loading groups");
+        }
+      };
+      fetchGroups();
     }
+  }, [selectedExperiment, groupsByExperimentId]);
 
-    setExpandedExperimentId(id);
-    try {
-      const loadedGroups = await groupsByExperimentId(id);
-      setGroups(loadedGroups);
-    } catch {
-      alert("❌ Error loading groups");
+  // Load Statements when Group Selected
+  useEffect(() => {
+    if (selectedGroup) {
+      const fetchStatements = async () => {
+        try {
+          const loadedStatements = await statementsByGroupId(selectedGroup._id);
+          setStatements(loadedStatements);
+        } catch {
+          alert("❌ Error loading statements");
+        }
+      };
+      fetchStatements();
     }
-  };
+  }, [selectedGroup, statementsByGroupId]);
 
-  const toggleGroup = async (groupId) => {
-    if (expandedGroupId === groupId) {
-      setExpandedGroupId(null);
-      setStatements([]);
-      return;
-    }
-
-    setExpandedGroupId(groupId);
-    try {
-      const loadedStatements = await statementsByGroupId(groupId);
-      setStatements(loadedStatements);
-    } catch {
-      alert("❌ Error loading statements");
-    }
-  };
-
-  const toggleStatement = (id) => {
-    setExpandedStatementId(expandedStatementId === id ? null : id);
-  };
-
-  // If still checking authentication, show loading
   if (!isAuthChecked) {
     return (
       <div className="loading-container">
-        <div>Loading</div>
         <div className="loading-spinner"></div>
+        <div>Loading...</div>
       </div>
     );
   }
 
   if (!currentUser) return null;
+
+  // --- Handlers ---
 
   const handleCreateExperiment = async (e) => {
     e.preventDefault();
@@ -156,19 +155,7 @@ export default function InvestigatorHomePage() {
     setShowExpForm(false);
   };
 
-  const handleDeleteExperiment = async (experimentId) => {
-    if (window.confirm("Are you sure you want to delete this experiment?")) {
-      const success = await deleteExperiment(experimentId);
-      if (success) {
-        setRelevantExperiments((prev) =>
-          prev.filter((exp) => exp._id !== experimentId)
-        );
-        if (expandedExperimentId === experimentId) setGroups([]);
-      }
-    }
-  };
-
-  const handleCreateGroup = async (e, experimentId) => {
+  const handleCreateGroup = async (e) => {
     e.preventDefault();
     if (!groupName.trim()) return alert("Please enter a group name");
 
@@ -182,21 +169,18 @@ export default function InvestigatorHomePage() {
       );
     }
 
-    const newGroup = await addGroup(experimentId, groupName, groupDesc);
+    const newGroup = await addGroup(
+      selectedExperiment._id,
+      groupName,
+      groupDesc
+    );
     if (newGroup) setGroups((prev) => [...prev, newGroup]);
     setGroupName("");
     setGroupDesc("");
-    setShowGroupForm(null);
+    setShowGroupForm(false);
   };
 
-  const handleDeleteGroup = async (groupId) => {
-    if (window.confirm("Delete this group?")) {
-      const success = await deleteGroup(groupId);
-      if (success) setGroups((prev) => prev.filter((g) => g._id !== groupId));
-    }
-  };
-
-  const handleCreateStatement = async (e, experimentId, groupId) => {
+  const handleCreateStatement = async (e) => {
     e.preventDefault();
     if (!statementName.trim() || !statementText.trim())
       return alert("Please fill in all fields");
@@ -214,28 +198,83 @@ export default function InvestigatorHomePage() {
     const newStatement = await addStatement(
       statementName,
       statementText,
-      groupId,
-      experimentId
+      selectedGroup._id,
+      selectedExperiment._id
     );
 
     setStatements((prev) => [...prev, newStatement]);
+
+    // Auto-create copy for researcher? (Matches old logic)
     const r = await addCopy(
       newStatement._id,
-      groupId,
-      experimentId,
+      selectedGroup._id,
+      selectedExperiment._id,
       currentUser._id
     );
     const newCopyId = r.newCopy._id;
-    const experiment = await experimentById(experimentId);
+    const experiment = await experimentById(selectedExperiment._id);
     if (experiment?.defaultTaskId)
       await addCopyToTask(experiment.defaultTaskId, newCopyId);
 
     setStatementName("");
     setStatementText("");
-    setShowStatementForm(null);
+    setShowStatementForm(false);
   };
 
-  const handleDeleteStatement = async (statementId) => {
+  const handleCreateCopy = async (e) => {
+    e.preventDefault();
+    if (!copyCoderId) return alert("Select coder first");
+
+    await addTaskForCopy(
+      selectedExperiment._id,
+      selectedGroup._id,
+      selectedStatement._id,
+      currentUser._id,
+      copyCoderId
+    );
+    setCopyCoderId("");
+    setShowCopyForm(false);
+  };
+
+  const handleCreateTask = async () => {
+    if (!taskCoderId) return alert("Select coder first");
+    if (taskPercent < 0 || taskPercent > 100)
+      return alert("Invalid percentage");
+
+    await addTask(
+      selectedExperiment._id,
+      currentUser._id,
+      taskCoderId,
+      taskPercent
+    );
+    setTaskCoderId("");
+    setTaskPercent(100);
+    setShowTaskModal(false);
+    alert("Task created successfully!");
+  };
+
+  const handleDeleteExperiment = async (e, experimentId) => {
+    e.stopPropagation();
+    if (window.confirm("Are you sure you want to delete this experiment?")) {
+      const success = await deleteExperiment(experimentId);
+      if (success) {
+        setRelevantExperiments((prev) =>
+          prev.filter((exp) => exp._id !== experimentId)
+        );
+      }
+    }
+  };
+
+  const handleDeleteGroup = async (e, groupId) => {
+    e.stopPropagation();
+    if (window.confirm("Delete this group?")) {
+      const success = await deleteGroup(groupId);
+      if (success) setGroups((prev) => prev.filter((g) => g._id !== groupId));
+    }
+  };
+
+  const handleDeleteStatement = async (e, statementId) => {
+    e.stopPropagation();
     if (window.confirm("Delete this statement?")) {
       await deleteStatement(statementId);
       setStatements((prev) => prev.filter((s) => s._id !== statementId));
@@ -246,398 +285,516 @@ export default function InvestigatorHomePage() {
     if (window.confirm("Delete this copy?")) await deleteCopy(copyId);
   };
 
-  const handleCreateCopy = async (experimentId, groupId, statementId) => {
-    if (!selectedUserIdForCopy) return alert("Select coder first");
-    await addTaskForCopy(
-      experimentId,
-      groupId,
-      statementId,
-      currentUser._id,
-      selectedUserIdForCopy
-    );
-    setSelectedUserIdForCopy("");
-  };
+  // --- Render Helpers ---
 
-  const handleCreateTask = async (experimentId) => {
-    if (!selectedUserIdForTask) return alert("Select coder first");
-    const percentStr = window.prompt(
-      "What percentage of experiment statements to assign to this coder? (0-100)"
-    );
-    if (!percentStr) return;
-    const percent = parseFloat(percentStr);
-    if (isNaN(percent) || percent < 0 || percent > 100)
-      return alert(
-        "Invalid percentage. Please enter a number between 0 and 100"
-      );
-    await addTask(
-      experimentId,
-      currentUser._id,
-      selectedUserIdForTask,
-      percent
-    );
-    setSelectedUserIdForTask("");
-  };
+  // Breadcrumbs
+  const renderBreadcrumbs = () => (
+    <div className="breadcrumbs">
+      <span
+        className="breadcrumb-link"
+        onClick={() => {
+          setSelectedExperiment(null);
+          setSelectedGroup(null);
+          setSelectedStatement(null);
+          setCurrentView("experiments");
+        }}
+      >
+        Experiments
+      </span>
+      {selectedExperiment && (
+        <>
+          <FaChevronRight className="breadcrumb-icon" />
+          <span
+            className="breadcrumb-link"
+            onClick={() => {
+              setSelectedGroup(null);
+              setSelectedStatement(null);
+              setCurrentView("groups");
+            }}
+          >
+            {selectedExperiment.name}
+          </span>
+        </>
+      )}
+      {selectedGroup && (
+        <>
+          <FaChevronRight className="breadcrumb-icon" />
+          <span
+            className="breadcrumb-link"
+            onClick={() => {
+              setSelectedStatement(null);
+              setCurrentView("statements");
+            }}
+          >
+            {selectedGroup.name}
+          </span>
+        </>
+      )}
+      {selectedStatement && (
+        <>
+          <FaChevronRight className="breadcrumb-icon" />
+          <span className="breadcrumb-current">{selectedStatement.name}</span>
+        </>
+      )}
+    </div>
+  );
 
-  // --- JSX ---
   return (
     <div className="dashboard-container">
+      {/* Header */}
       <div className="dashboard-header">
         <h1 className="dashboard-title">
-          <FaMicroscope /> My Experiments
+          <FaMicroscope /> Experiments of {currentUser.username}
         </h1>
-        <p className="dashboard-subtitle">
-          Manage and view all experiments I created
-        </p>
+        <p className="dashboard-subtitle">Manage your research hierarchy</p>
       </div>
 
-      {!showExpForm ? (
-        <button
-          onClick={() => setShowExpForm(true)}
-          className="investigator-add-btn"
-        >
-          <FaPlus /> Add New Experiment
-        </button>
-      ) : (
-        <form onSubmit={handleCreateExperiment} className="investigator-form">
-          <div className="investigator-form-group">
-            <label className="form-label">Experiment Name</label>
-            <input
-              value={expName}
-              onChange={(e) => setExpName(e.target.value)}
-              className="investigator-form-input"
-              placeholder="Enter experiment name"
-            />
-          </div>
-          <div className="investigator-form-group">
-            <label className="form-label">Experiment Description</label>
-            <textarea
-              value={expDesc}
-              onChange={(e) => setExpDesc(e.target.value)}
-              className="investigator-form-textarea"
-              placeholder="Enter experiment description"
-            />
-          </div>
-          <div className="investigator-form-actions">
-            <button type="submit" className="investigator-add-btn">
-              <FaSave /> Save
-            </button>
+      {/* Navigation Bar */}
+      <div className="investigator-nav-bar">
+        {currentView !== "experiments" && (
+          <button
+            onClick={() => {
+              if (currentView === "groups") {
+                setSelectedExperiment(null);
+                setCurrentView("experiments");
+              } else if (currentView === "statements") {
+                setSelectedGroup(null);
+                setCurrentView("groups");
+              } else if (currentView === "copies") {
+                setSelectedStatement(null);
+                setCurrentView("statements");
+              }
+            }}
+            className="back-btn"
+          >
+            <FaArrowLeft /> Back
+          </button>
+        )}
+        {renderBreadcrumbs()}
+
+        {/* Contextual Add Buttons */}
+        <div className="nav-actions">
+          {currentView === "experiments" && !showExpForm && (
             <button
-              type="button"
-              onClick={() => setShowExpForm(false)}
-              className="btn-secondary"
+              onClick={() => setShowExpForm(true)}
+              className="investigator-add-btn"
             >
-              <FaTimes /> Cancel
+              <FaPlus /> Add Experiment
             </button>
-          </div>
-        </form>
-      )}
+          )}
+          {currentView === "groups" && !showGroupForm && (
+            <button
+              onClick={() => setShowGroupForm(true)}
+              className="investigator-add-btn"
+            >
+              <FaFolderOpen /> Add Group
+            </button>
+          )}
+          {currentView === "statements" && !showStatementForm && (
+            <button
+              onClick={() => setShowStatementForm(true)}
+              className="investigator-add-btn"
+            >
+              <FaFileAlt /> Add Statement
+            </button>
+          )}
+          {currentView === "copies" && !showCopyForm && (
+            <button
+              onClick={() => setShowCopyForm(true)}
+              className="investigator-add-btn"
+            >
+              <FaPlus /> Add Copy
+            </button>
+          )}
+        </div>
+      </div>
 
-      <ul className="investigator-experiments-list">
-        {relevantExperiments.map((exp) => (
-          <li key={exp._id} className="investigator-experiment-item">
-            <div className="investigator-experiment-header">
-              <div
-                onClick={() => toggleExperiment(exp._id)}
-                className="investigator-experiment-title"
-              >
-                <FaFileAlt /> {exp.name}
-              </div>
-              <div
-                style={{ display: "flex", gap: "8px", alignItems: "center" }}
-              >
-                <button
-                  onClick={() => handleDeleteExperiment(exp._id)}
-                  className="investigator-delete-btn"
+      {/* Main Content Area */}
+      <div className="investigator-content">
+        {/* VIEW 1: EXPERIMENTS */}
+        {currentView === "experiments" && (
+          <>
+            {showExpForm && (
+              <div className="form-card">
+                <h3>Create New Experiment</h3>
+                <form
+                  onSubmit={handleCreateExperiment}
+                  className="investigator-form"
                 >
-                  <FaTrash /> Delete Experiment
-                </button>
+                  <input
+                    value={expName}
+                    onChange={(e) => setExpName(e.target.value)}
+                    className="investigator-form-input"
+                    placeholder="Experiment Name"
+                    autoFocus
+                  />
+                  <textarea
+                    value={expDesc}
+                    onChange={(e) => setExpDesc(e.target.value)}
+                    className="investigator-form-textarea"
+                    placeholder="Description"
+                  />
+                  <div className="form-actions">
+                    <button type="submit" className="btn-primary">
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowExpForm(false)}
+                      className="btn-secondary"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
               </div>
-            </div>
+            )}
 
-            {expandedExperimentId === exp._id && (
-              <div className="mt-4">
-                {/* Task creation UI - once per experiment */}
+            <div className="grid-layout">
+              {relevantExperiments.map((exp) => (
                 <div
-                  className="mt-4"
-                  style={{
-                    marginBottom: "20px",
-                    padding: "15px",
-                    backgroundColor: "#f0f8ff",
-                    borderRadius: "8px",
-                    border: "1px solid #b0d4f1",
+                  key={exp._id}
+                  className="folder-card experiment-card"
+                  onClick={() => {
+                    setSelectedExperiment(exp);
+                    setCurrentView("groups");
                   }}
                 >
-                  <h4 style={{ marginBottom: "10px", color: "#333" }}>
-                    Create Task for Experiment
-                  </h4>
+                  <div className="card-top">
+                    <FaMicroscope className="card-icon" />
+                    <div className="card-actions">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedExperiment(exp);
+                          setShowTaskModal(true);
+                        }}
+                        className="icon-btn"
+                        title="Create Task"
+                      >
+                        <FaUsers />
+                      </button>
+                      <button
+                        onClick={(e) => handleDeleteExperiment(e, exp._id)}
+                        className="icon-btn delete"
+                        title="Delete"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  </div>
+                  <h3 className="card-title">{exp.name}</h3>
+                  <p className="card-desc">
+                    {exp.description || "No description"}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* VIEW 2: GROUPS */}
+        {currentView === "groups" && (
+          <>
+            {showGroupForm && (
+              <div className="form-card">
+                <h3>Create New Group in {selectedExperiment.name}</h3>
+                <form
+                  onSubmit={handleCreateGroup}
+                  className="investigator-form"
+                >
+                  <input
+                    value={groupName}
+                    onChange={(e) => setGroupName(e.target.value)}
+                    className="investigator-form-input"
+                    placeholder="Group Name"
+                    autoFocus
+                  />
+                  <textarea
+                    value={groupDesc}
+                    onChange={(e) => setGroupDesc(e.target.value)}
+                    className="investigator-form-textarea"
+                    placeholder="Description"
+                  />
+                  <div className="form-actions">
+                    <button type="submit" className="btn-primary">
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowGroupForm(false)}
+                      className="btn-secondary"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            <div className="grid-layout">
+              {groups.map((group) => (
+                <div
+                  key={group._id}
+                  className="folder-card group-card"
+                  onClick={() => {
+                    setSelectedGroup(group);
+                    setCurrentView("statements");
+                  }}
+                >
+                  <div className="card-top">
+                    <FaFolderOpen className="card-icon" />
+                    <button
+                      onClick={(e) => handleDeleteGroup(e, group._id)}
+                      className="icon-btn delete"
+                    >
+                      <FaTrash />
+                    </button>
+                  </div>
+                  <h3 className="card-title">{group.name}</h3>
+                  <p className="card-desc">
+                    {group.description || "No description"}
+                  </p>
+                </div>
+              ))}
+              {groups.length === 0 && !showGroupForm && (
+                <div className="empty-message">
+                  No groups found. Create one to get started.
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* VIEW 3: STATEMENTS */}
+        {currentView === "statements" && (
+          <>
+            {showStatementForm && (
+              <div className="form-card">
+                <h3>Add Declaration to {selectedGroup.name}</h3>
+                <form
+                  onSubmit={handleCreateStatement}
+                  className="investigator-form"
+                >
+                  <input
+                    value={statementName}
+                    onChange={(e) => setStatementName(e.target.value)}
+                    className="investigator-form-input"
+                    placeholder="Declaration Name"
+                    autoFocus
+                  />
+                  <textarea
+                    value={statementText}
+                    onChange={(e) => setStatementText(e.target.value)}
+                    className="investigator-form-textarea"
+                    placeholder="Declaration Content"
+                  />
+                  <div className="form-actions">
+                    <button type="submit" className="btn-primary">
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowStatementForm(false)}
+                      className="btn-secondary"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            <div className="list-layout">
+              {statements.map((stmt) => (
+                <div
+                  key={stmt._id}
+                  className="list-item-card"
+                  onClick={() => {
+                    setSelectedStatement(stmt);
+                    setCurrentView("copies");
+                  }}
+                >
+                  <div className="list-item-content">
+                    <FaBalanceScale className="list-icon" />
+                    <span className="list-title">{stmt.name}</span>
+                  </div>
+                  <div className="list-actions">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/statement-summary/${stmt._id}`);
+                      }}
+                      className="text-btn"
+                    >
+                      <FaChartLine /> Summary
+                    </button>
+                    <button
+                      onClick={(e) => handleDeleteStatement(e, stmt._id)}
+                      className="icon-btn delete"
+                    >
+                      <FaTrash />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {statements.length === 0 && !showStatementForm && (
+                <div className="empty-message">
+                  No declarations found. Add one to continue.
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* VIEW 4: COPIES */}
+        {currentView === "copies" && (
+          <>
+            {showCopyForm && (
+              <div className="form-card">
+                <h3>Assign Coder to {selectedStatement.name}</h3>
+                <form onSubmit={handleCreateCopy} className="investigator-form">
                   <select
-                    value={selectedUserIdForTask}
-                    onChange={(e) => setSelectedUserIdForTask(e.target.value)}
+                    value={copyCoderId}
+                    onChange={(e) => setCopyCoderId(e.target.value)}
                     className="investigator-select"
-                    style={{ marginBottom: "10px" }}
                   >
-                    <option value="">Select coder for task</option>
-                    {users.map((user) => (
-                      <option key={user._id} value={user._id}>
-                        {user.username}
+                    <option value="">Select Coder</option>
+                    {users.map((u) => (
+                      <option key={u._id} value={u._id}>
+                        {u.username}
                       </option>
                     ))}
                   </select>
-                  <button
-                    onClick={() => handleCreateTask(exp._id)}
-                    className="btn-primary"
-                  >
-                    <FaUsers /> Create Task for Experiment
-                  </button>
-                </div>
-                {showGroupForm !== exp._id ? (
-                  <button
-                    onClick={() => setShowGroupForm(exp._id)}
-                    className="investigator-add-btn"
-                  >
-                    <FaFolderOpen /> Add Group
-                  </button>
-                ) : (
-                  <form
-                    onSubmit={(e) => handleCreateGroup(e, exp._id)}
-                    className="investigator-form"
-                  >
-                    <input
-                      value={groupName}
-                      onChange={(e) => setGroupName(e.target.value)}
-                      className="investigator-form-input"
-                      placeholder="Group Name"
-                    />
-                    <textarea
-                      value={groupDesc}
-                      onChange={(e) => setGroupDesc(e.target.value)}
-                      className="investigator-form-textarea"
-                      placeholder="Description"
-                    />
-                    <div className="investigator-form-actions">
-                      <button type="submit" className="investigator-add-btn">
-                        <FaSave /> Save
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowGroupForm(null)}
-                        className="btn-secondary"
-                      >
-                        <FaTimes /> Cancel
-                      </button>
-                    </div>
-                  </form>
-                )}
-
-                {groups.map((group) => (
-                  <div key={group._id} className="investigator-group-item">
-                    <div className="investigator-group-header">
-                      <div
-                        onClick={() => toggleGroup(group._id)}
-                        className="investigator-experiment-title"
-                      >
-                        <FaChevronRight /> {group.name}
-                      </div>
-                      <button
-                        onClick={() => handleDeleteGroup(group._id)}
-                        className="investigator-delete-btn"
-                      >
-                        <FaTrash /> Delete Group
-                      </button>
-                    </div>
-
-                    {expandedGroupId === group._id && (
-                      <div className="mt-4">
-                        {showStatementForm !== group._id ? (
-                          <button
-                            onClick={() => setShowStatementForm(group._id)}
-                            className="investigator-add-btn"
-                          >
-                            <FaFileAlt /> Add Statement
-                          </button>
-                        ) : (
-                          <form
-                            onSubmit={(e) =>
-                              handleCreateStatement(e, exp._id, group._id)
-                            }
-                            className="investigator-form"
-                          >
-                            <input
-                              value={statementName}
-                              onChange={(e) => setStatementName(e.target.value)}
-                              className="investigator-form-input"
-                              placeholder="Statement Name"
-                            />
-                            <textarea
-                              value={statementText}
-                              onChange={(e) => setStatementText(e.target.value)}
-                              className="investigator-form-textarea"
-                              placeholder="Statement Content"
-                            />
-                            <div className="investigator-form-actions">
-                              <button
-                                type="submit"
-                                className="investigator-add-btn"
-                              >
-                                <FaSave /> Save
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setShowStatementForm(null)}
-                                className="btn-secondary"
-                              >
-                                <FaTimes /> Cancel
-                              </button>
-                            </div>
-                          </form>
-                        )}
-
-                        {statements.map((statement) => (
-                          <div
-                            key={statement._id}
-                            className="investigator-statement-item"
-                          >
-                            <div className="investigator-group-header">
-                              <div
-                                onClick={() => toggleStatement(statement._id)}
-                                className="investigator-experiment-title"
-                              >
-                                <FaBalanceScale /> {statement.name}
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                {copiesByStatementId(statement._id).filter(
-                                  (copy) => copy.status === "completed"
-                                ).length >= 2 && (
-                                  <button
-                                    onClick={() =>
-                                      navigate(`/compare/${statement._id}`)
-                                    }
-                                    className="text-blue-500 hover:text-blue-700 underline"
-                                  >
-                                    <FaChartLine /> Compare Codings
-                                  </button>
-                                )}
-                                <button
-                                  onClick={() =>
-                                    navigate(
-                                      `/statement-summary/${statement._id}`
-                                    )
-                                  }
-                                  className="text-green-500 hover:text-green-700 underline"
-                                >
-                                  <FaFileAlt /> Statement Summary
-                                </button>
-                                <button
-                                  onClick={() =>
-                                    handleDeleteStatement(statement._id)
-                                  }
-                                  className="investigator-delete-btn text-sm"
-                                >
-                                  <FaTrash /> Delete
-                                </button>
-                              </div>
-                            </div>
-
-                            {expandedStatementId === statement._id && (
-                              <div className="mt-4">
-                                <select
-                                  value={selectedUserIdForCopy}
-                                  onChange={(e) =>
-                                    setSelectedUserIdForCopy(e.target.value)
-                                  }
-                                  className="investigator-select"
-                                >
-                                  <option value="">Select Coder</option>
-                                  {users.map((user) => (
-                                    <option key={user._id} value={user._id}>
-                                      {user.username}
-                                    </option>
-                                  ))}
-                                </select>
-                                <button
-                                  onClick={() =>
-                                    handleCreateCopy(
-                                      exp._id,
-                                      group._id,
-                                      statement._id
-                                    )
-                                  }
-                                  className="investigator-add-btn"
-                                >
-                                  <FaPlus /> Add Copy
-                                </button>
-
-                                {copiesByStatementId(statement._id).map(
-                                  (copy) => (
-                                    <div
-                                      key={copy._id}
-                                      className="investigator-copy-item"
-                                    >
-                                      <div
-                                        onClick={() => {
-                                          if (copy.status === "completed")
-                                            navigate(
-                                              `/view-statement/${copy._id}`
-                                            );
-                                          else
-                                            alert(
-                                              "Cannot view statement before coding is completed"
-                                            );
-                                        }}
-                                        className={`cursor-pointer ${
-                                          copy.status === "completed"
-                                            ? "text-gray-800 hover:text-purple-600"
-                                            : "text-gray-400 cursor-not-allowed"
-                                        }`}
-                                      >
-                                        {users.find(
-                                          (user) => user._id === copy.coderId
-                                        )?.username || "Unknown"}
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        {getUnreadCount(
-                                          copy._id,
-                                          currentUser._id
-                                        ) > 0 && (
-                                          <span
-                                            style={{
-                                              color: "#dc3545",
-                                              fontSize: "14px",
-                                              fontWeight: "600",
-                                            }}
-                                          >
-                                            ({getUnreadCount(
-                                              copy._id,
-                                              currentUser._id
-                                            )}{" "}
-                                            unread messages)
-                                          </span>
-                                        )}
-                                        <button
-                                          onClick={() =>
-                                            handleDeleteCopy(copy._id)
-                                          }
-                                          className="investigator-delete-btn text-sm"
-                                        >
-                                          <FaTrash /> Delete
-                                        </button>
-                                      </div>
-                                    </div>
-                                  )
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                  <div className="form-actions">
+                    <button type="submit" className="btn-primary">
+                      Assign
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowCopyForm(false)}
+                      className="btn-secondary"
+                    >
+                      Cancel
+                    </button>
                   </div>
-                ))}
+                </form>
               </div>
             )}
-          </li>
-        ))}
-      </ul>
+
+            <div className="copies-grid">
+              {copiesByStatementId(selectedStatement._id).map((copy) => {
+                const unread = getUnreadCount(copy._id, currentUser._id);
+                const coderName =
+                  users.find((u) => u._id === copy.coderId)?.username ||
+                  "Unknown";
+
+                return (
+                  <div key={copy._id} className="copy-card">
+                    <div className="copy-info">
+                      <span className="copy-coder">
+                        <FaUsers /> {coderName}
+                      </span>
+                      <span
+                        className={`copy-status status-${copy.status.replace(
+                          " ",
+                          "-"
+                        )}`}
+                      >
+                        {copy.status}
+                      </span>
+                    </div>
+
+                    <div className="copy-actions">
+                      <button
+                        onClick={() => {
+                          if (copy.status === "completed") {
+                            navigate(`/view-statement/${copy._id}`);
+                          } else {
+                            alert(
+                              "Cannot view statement before coding is completed"
+                            );
+                          }
+                        }}
+                        className={`action-btn view-btn ${
+                          copy.status !== "completed" ? "disabled" : ""
+                        }`}
+                      >
+                        View Coding
+                      </button>
+
+                      {unread > 0 && (
+                        <span className="unread-badge">
+                          <FaComment /> {unread} unread
+                        </span>
+                      )}
+
+                      <button
+                        onClick={() => handleDeleteCopy(copy._id)}
+                        className="action-btn delete-btn"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+              {copiesByStatementId(selectedStatement._id).length === 0 &&
+                !showCopyForm && (
+                  <div className="empty-message">No coders assigned yet.</div>
+                )}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Task Creation Modal */}
+      {showTaskModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>Create Task for {selectedExperiment?.name}</h3>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Select Coder:</label>
+                <select
+                  value={taskCoderId}
+                  onChange={(e) => setTaskCoderId(e.target.value)}
+                  className="investigator-select"
+                >
+                  <option value="">-- Choose Coder --</option>
+                  {users.map((u) => (
+                    <option key={u._id} value={u._id}>
+                      {u.username}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Percentage of Statements ({taskPercent}%):</label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={taskPercent}
+                  onChange={(e) => setTaskPercent(e.target.value)}
+                  className="slider"
+                />
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button onClick={handleCreateTask} className="btn-primary">
+                Create Task
+              </button>
+              <button
+                onClick={() => setShowTaskModal(false)}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

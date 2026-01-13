@@ -51,7 +51,6 @@ export default function CoderComparePage() {
   const {
     calculateSelectionCounts,
     calculateWordCounts,
-    renderKeyLabel,
     buildResultsTable,
     calculateAdditionalStats,
   } = useResult();
@@ -298,11 +297,67 @@ export default function CoderComparePage() {
     socket.on("commentCreated", handleCommentCreated);
     socket.on("commentDeleted", handleCommentDeleted);
 
+    const handleCopyDeleted = (data) => {
+      const deletedId = data.copyId;
+
+      // If the main copy (copyA) is deleted, we must leave
+      if (copyA && copyA._id === deletedId) {
+        alert("Your copy has been deleted.");
+        navigate("/coderHome");
+        return;
+      }
+
+      // If the compared copy (copyB) is deleted
+      if (copyB && copyB._id === deletedId) {
+        alert("The copy you are comparing with has been deleted.");
+        navigate("/coderHome");
+        return;
+      }
+
+      // If it's in the available list, remove it
+      setAvailableCopies((prev) => prev.filter((c) => c._id !== deletedId));
+    };
+
+    socket.on("copyDeleted", handleCopyDeleted);
+
+    const handleCopyUpdated = (data) => {
+      const updatedCopy = data.copy;
+
+      // If active copy status changed from completed
+      if (
+        (updatedCopy._id === copyA?._id || updatedCopy._id === copyB?._id) &&
+        updatedCopy.status !== "completed"
+      ) {
+        alert("A copy being compared has been reopened for editing.");
+        navigate("/coderHome");
+        return;
+      }
+
+      // Update available copies
+      // If status is not completed, remove from available
+      // If status IS completed, update/add it?
+      // Logic: If in list, update it. If not completed, remove it.
+      setAvailableCopies((prev) => {
+        if (updatedCopy.status !== "completed") {
+          return prev.filter((c) => c._id !== updatedCopy._id);
+        }
+        return prev.map((c) => (c._id === updatedCopy._id ? updatedCopy : c));
+      });
+
+      // Update active copies if they are still completed
+      if (updatedCopy._id === copyA?._id) setCopyA(updatedCopy);
+      if (updatedCopy._id === copyB?._id) setCopyB(updatedCopy);
+    };
+
+    socket.on("copyUpdated", handleCopyUpdated);
+
     return () => {
       socket.off("commentCreated", handleCommentCreated);
       socket.off("commentDeleted", handleCommentDeleted);
+      socket.off("copyDeleted", handleCopyDeleted);
+      socket.off("copyUpdated", handleCopyUpdated);
     };
-  }, [socket, copyA, copyB]);
+  }, [socket, copyA, copyB, navigate]);
 
   // Update results tables for Copy A
   useEffect(() => {
@@ -395,10 +450,17 @@ export default function CoderComparePage() {
         outline: leaf.isDiff ? "2px solid red" : undefined,
       };
 
+      const colorName = colors.find((c) => c.code === leaf.highlight)?.name;
+      const styleNames = [];
+      if (leaf.bold) styleNames.push(styleSettings.boldName || "Bold");
+      if (leaf.italic) styleNames.push(styleSettings.italicName || "Italic");
+      if (leaf.underline) styleNames.push(styleSettings.underlineName || "Underline");
+      const tooltip = [colorName, ...styleNames].filter(Boolean).join(", ");
+
       const hasComments = leaf.comments?.length > 0;
 
       return (
-        <span {...attributes} style={style}>
+        <span {...attributes} style={style} title={tooltip}>
           {leaf.text !== "" ? children : "\u200B"}
 
           {hasComments && (

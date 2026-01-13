@@ -1,5 +1,12 @@
 //DataContext.js
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useRef,
+} from "react";
+import { useNavigate } from "react-router-dom";
 import { checkAuth } from "../api/UserApi";
 import { roleChangeDetector } from "../services/RoleChangeDetector";
 import { useSocket } from "./SocketContext";
@@ -8,6 +15,7 @@ const DataContext = createContext();
 export const useData = () => useContext(DataContext);
 
 export function DataProvider({ children }) {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [registrationRequests, setRegistrationRequests] = useState([]);
@@ -17,6 +25,12 @@ export function DataProvider({ children }) {
   const [copyMessages, setCopyMessages] = useState([]);
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   const { socket } = useSocket();
+
+  // Keep ref to currentUser for socket listeners to avoid stale closures
+  const currentUserRef = useRef(currentUser);
+  useEffect(() => {
+    currentUserRef.current = currentUser;
+  }, [currentUser]);
 
   // ✅ Start role change detection when user logs in
   useEffect(() => {
@@ -170,25 +184,37 @@ export function DataProvider({ children }) {
       console.log("🔴🔴🔴 [REAL-TIME] Registration Request CREATED:", request);
       setRegistrationRequests((prev) => {
         const newRequests = [...prev, request];
-        console.log(`✅ Registration request added! Total: ${prev.length} → ${newRequests.length}`);
+        console.log(
+          `✅ Registration request added! Total: ${prev.length} → ${newRequests.length}`
+        );
         return newRequests;
       });
     };
 
     const handleRegistrationRequestApproved = ({ requestId }) => {
-      console.log("🔴🔴🔴 [REAL-TIME] Registration Request APPROVED:", requestId);
+      console.log(
+        "🔴🔴🔴 [REAL-TIME] Registration Request APPROVED:",
+        requestId
+      );
       setRegistrationRequests((prev) => {
         const filtered = prev.filter((r) => r._id !== requestId);
-        console.log(`✅ Registration request removed! Total: ${prev.length} → ${filtered.length}`);
+        console.log(
+          `✅ Registration request removed! Total: ${prev.length} → ${filtered.length}`
+        );
         return filtered;
       });
     };
 
     const handleRegistrationRequestRejected = ({ requestId }) => {
-      console.log("🔴🔴🔴 [REAL-TIME] Registration Request REJECTED:", requestId);
+      console.log(
+        "🔴🔴🔴 [REAL-TIME] Registration Request REJECTED:",
+        requestId
+      );
       setRegistrationRequests((prev) => {
         const filtered = prev.filter((r) => r._id !== requestId);
-        console.log(`✅ Registration request removed! Total: ${prev.length} → ${filtered.length}`);
+        console.log(
+          `✅ Registration request removed! Total: ${prev.length} → ${filtered.length}`
+        );
         return filtered;
       });
     };
@@ -198,9 +224,27 @@ export function DataProvider({ children }) {
       console.log("🔴🔴🔴 [REAL-TIME] User CREATED:", user);
       setUsers((prev) => {
         const newUsers = [...prev, user];
-        console.log(`✅ User added! Total users: ${prev.length} → ${newUsers.length}`);
+        console.log(
+          `✅ User added! Total users: ${prev.length} → ${newUsers.length}`
+        );
         return newUsers;
       });
+    };
+
+    const handleUserDeleted = ({ userId }) => {
+      console.log("🔴🔴🔴 [REAL-TIME] User DELETED:", userId);
+
+      // Update users list
+      setUsers((prev) => prev.filter((u) => u._id !== userId));
+
+      // Check if current user is the one deleted
+      if (currentUserRef.current && currentUserRef.current._id === userId) {
+        console.warn("⚠️ Current logged-in user was deleted. Logging out...");
+        alert("Your account has been deleted by an administrator.");
+        setCurrentUser(null);
+        localStorage.removeItem("currentUser");
+        navigate("/");
+      }
     };
 
     // Register listeners
@@ -220,6 +264,7 @@ export function DataProvider({ children }) {
     socket.on("registrationRequestApproved", handleRegistrationRequestApproved);
     socket.on("registrationRequestRejected", handleRegistrationRequestRejected);
     socket.on("userCreated", handleUserCreated);
+    socket.on("userDeleted", handleUserDeleted);
 
     // Cleanup
     return () => {
@@ -235,10 +280,20 @@ export function DataProvider({ children }) {
       socket.off("taskMessageCreated", handleTaskMessageCreated);
       socket.off("taskMessageUpdated", handleTaskMessageUpdated);
       socket.off("taskMessageDeleted", handleTaskMessageDeleted);
-      socket.off("registrationRequestCreated", handleRegistrationRequestCreated);
-      socket.off("registrationRequestApproved", handleRegistrationRequestApproved);
-      socket.off("registrationRequestRejected", handleRegistrationRequestRejected);
+      socket.off(
+        "registrationRequestCreated",
+        handleRegistrationRequestCreated
+      );
+      socket.off(
+        "registrationRequestApproved",
+        handleRegistrationRequestApproved
+      );
+      socket.off(
+        "registrationRequestRejected",
+        handleRegistrationRequestRejected
+      );
       socket.off("userCreated", handleUserCreated);
+      socket.off("userDeleted", handleUserDeleted);
     };
   }, [socket]);
 

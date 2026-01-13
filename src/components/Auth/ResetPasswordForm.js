@@ -8,9 +8,18 @@ export default function ResetPasswordForm({ onSubmit }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (newPassword !== confirmNewPassword) {
-      alert("Passwords do not match");
+      alert("Error: Passwords do not match");
       return;
     }
+
+    const regex = /^(?=.*[a-z])(?=.*[A-Z]).{8,}$/;
+    if (!regex.test(newPassword)) {
+      alert(
+        "Error: Password must be at least 8 characters long and contain both uppercase and lowercase English letters."
+      );
+      return;
+    }
+
     onSubmit(newPassword);
   };
 

@@ -48,10 +48,24 @@ export default function ResetPasswordPage() {
     }
 
     const result = await verifyCode(email, codeFromUser);
-    setMessage(result.message);
     if (result.success) {
+      setMessage("");
       setStep("verified");
+    } else {
+      if (
+        result.message &&
+        result.message.toLowerCase().includes("not found")
+      ) {
+        setMessage("Code expired or invalid. Please resend code.");
+      } else {
+        setMessage(result.message);
+      }
     }
+  };
+
+  const handleResendCode = async () => {
+    const result = await sendVerificationCode(email);
+    setMessage(result.message);
   };
 
   const handlePasswordReset = async (newPassword) => {
@@ -61,10 +75,12 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    const result = await resetPassword(user._id, newPassword); // Send userId
-    setMessage(result.message);
+    const result = await resetPassword(user._id, newPassword);
     if (result.success) {
+      setMessage("Password changed successfully! Redirecting to login...");
       setTimeout(() => navigate("/"), 2000);
+    } else {
+      setMessage(result.message);
     }
   };
 
@@ -113,6 +129,19 @@ export default function ResetPasswordPage() {
             <button onClick={handleVerifyCode} className="auth-btn">
               Verify Code
             </button>
+            <div style={{ marginTop: "10px", textAlign: "center" }}>
+              <span
+                onClick={handleResendCode}
+                style={{
+                  color: "#666",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  textDecoration: "underline",
+                }}
+              >
+                Code expired? Click to resend
+              </span>
+            </div>
           </div>
         )}
 

@@ -1,20 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
-import {
-  Document,
-  Packer,
-  Paragraph,
-  Table,
-  TableCell,
-  TableRow,
-  WidthType,
-  TextRun,
-  AlignmentType,
-  BorderStyle,
-  convertInchesToTwip,
-} from "docx";
-import { saveAs } from "file-saver";
 import { useCopy } from "../../context/CopyContext";
 import { useStatement } from "../../context/StatementContext";
 import { useEdit } from "../../context/EditContext";
@@ -138,8 +124,8 @@ export default function StatementSummary() {
 
   // Helper function to get export metadata
   const getExportMetadata = () => {
-    const experimentName = experiment.name || "Unknown";
-    const statementName = statement.name || "Unknown";
+    const experimentName = experiment?.name || "Unknown";
+    const statementName = statement?.name || "Unknown";
     const exportDate = new Date()
       .toLocaleDateString("en-US", {
         year: "numeric",
@@ -166,7 +152,7 @@ export default function StatementSummary() {
       // Header row
       const codingsHeader = [
         "Coder",
-        "Group Name",
+        "Experiment Condition",
         ...allColors.map((c) => c.name),
         ...commonStyles.map((s) => s.label),
       ];
@@ -190,7 +176,7 @@ export default function StatementSummary() {
       // Header row
       const wordsHeader = [
         "Coder",
-        "Group Name",
+        "Experiment Condition",
         ...allColors.map((c) => c.name),
         ...commonStyles.map((s) => s.label),
       ];
@@ -240,286 +226,6 @@ export default function StatementSummary() {
     }
   };
 
-  // Export to Word function - Table 1 only with full text
-  const handleExportToWord = async () => {
-    try {
-      if (!statement || !experiment || copies.length === 0) {
-        alert("Cannot export: Missing data");
-        return;
-      }
-
-      const { experimentName, statementName, exportDate } = getExportMetadata();
-
-      // Build document sections
-      const sections = [];
-
-      // Document header
-      sections.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: `${experimentName} - ${statementName}`,
-              bold: true,
-              size: 48,
-              color: "1F4E78",
-            }),
-          ],
-          alignment: AlignmentType.CENTER,
-          spacing: { before: 400, after: 200 },
-        }),
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: `Generated: ${new Date().toLocaleString()}`,
-              italics: true,
-              size: 20,
-              color: "7F7F7F",
-            }),
-          ],
-          alignment: AlignmentType.RIGHT,
-          spacing: { after: 600 },
-        })
-      );
-
-      // For each copy, show the full text with formatting
-      for (const copy of copies) {
-        const coder = userById(copy.coderId);
-
-        // Coder header
-        sections.push(
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `Coder: ${coder?.username || "Unknown"}`,
-                bold: true,
-                size: 36,
-                color: "1F4E78",
-              }),
-            ],
-            spacing: { before: 480, after: 240 },
-            border: {
-              bottom: {
-                color: "D0CECE",
-                space: 4,
-                style: BorderStyle.SINGLE,
-                size: 12,
-              },
-            },
-          })
-        );
-
-        if (group) {
-          sections.push(
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: `Group: ${group.name}`,
-                  italics: true,
-                  size: 24,
-                  color: "666666",
-                }),
-              ],
-              spacing: { after: 200 },
-            })
-          );
-        }
-
-        // Apply highlights to get decorated text
-        const baseText = statement.text || [
-          { type: "paragraph", children: [{ text: "" }] },
-        ];
-        const decoratedText = applyHighlightsToText(
-          baseText,
-          copy.highlights || [],
-          [],
-          []
-        );
-
-        // Calculate word counts for this copy
-        const wordCounts = calculateWordCounts(decoratedText);
-        const totalWords = wordCounts.total || 0;
-        const totalHighlighted = wordCounts.totalColor || 0;
-
-        // Extract formatted text runs
-        const textRuns = [];
-        const traverse = (nodes) => {
-          for (const node of nodes) {
-            if (node.text !== undefined) {
-              const runProps = {
-                text: node.text || " ",
-                size: 24,
-                font: "Calibri",
-              };
-
-              const highlightHex =
-                node.highlight || node.backgroundColor || node.bgColor;
-
-              if (node.bold) runProps.bold = true;
-              if (node.italic) runProps.italics = true;
-              if (node.underline) runProps.underline = { type: "single" };
-
-              if (highlightHex) {
-                const color = highlightHex.replace("#", "").toUpperCase();
-                runProps.shading = {
-                  fill: color,
-                  type: "solid",
-                  color: "000000",
-                };
-                const brightness = isLightColor(color);
-                runProps.color = brightness ? "000000" : "FFFFFF";
-              }
-
-              textRuns.push(new TextRun(runProps));
-            }
-            if (node.children) traverse(node.children);
-          }
-        };
-
-        traverse(decoratedText);
-
-        // Add formatted text as single paragraph
-        sections.push(
-          new Paragraph({
-            children: textRuns.length > 0 ? textRuns : [new TextRun(" ")],
-            spacing: { before: 200, after: 400 },
-          })
-        );
-
-        // Add statistics below the text
-        sections.push(
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: "Statistics",
-                bold: true,
-                size: 28,
-                color: "1F4E78",
-              }),
-            ],
-            spacing: { before: 300, after: 200 },
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `Total Word Count: `,
-                bold: true,
-                size: 24,
-              }),
-              new TextRun({
-                text: `${totalWords}`,
-                size: 24,
-                color: "2196F3",
-              }),
-            ],
-            spacing: { after: 100 },
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `Total Highlighted Words: `,
-                bold: true,
-                size: 24,
-              }),
-              new TextRun({
-                text: `${totalHighlighted}`,
-                size: 24,
-                color: "FF9800",
-              }),
-            ],
-            spacing: { after: 400 },
-          })
-        );
-
-        // Add color legend
-        const hasColors = Object.keys(wordCounts).some((key) =>
-          key.startsWith("#")
-        );
-        if (hasColors) {
-          sections.push(
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: "Color Breakdown",
-                  bold: true,
-                  size: 24,
-                  color: "666666",
-                }),
-              ],
-              spacing: { before: 200, after: 100 },
-            })
-          );
-
-          allColors.forEach((color) => {
-            const count = wordCounts[color.code] || 0;
-            if (count > 0) {
-              sections.push(
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: `  ${color.name}: ${count} words`,
-                      size: 22,
-                    }),
-                  ],
-                  spacing: { after: 80 },
-                })
-              );
-            }
-          });
-        }
-
-        // Add page break between copies (except last one)
-        if (copy !== copies[copies.length - 1]) {
-          sections.push(
-            new Paragraph({
-              text: "",
-              pageBreakBefore: true,
-              spacing: { before: 480 },
-            })
-          );
-        }
-      }
-
-      // Helper function to check if color is light
-      const isLightColor = (hexColor) => {
-        const hex = hexColor.replace("#", "");
-        const r = parseInt(hex.substr(0, 2), 16);
-        const g = parseInt(hex.substr(2, 2), 16);
-        const b = parseInt(hex.substr(4, 2), 16);
-        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-        return brightness > 155;
-      };
-
-      // Create document
-      const doc = new Document({
-        sections: [
-          {
-            properties: {
-              page: {
-                margin: {
-                  top: convertInchesToTwip(1),
-                  right: convertInchesToTwip(1),
-                  bottom: convertInchesToTwip(1),
-                  left: convertInchesToTwip(1),
-                },
-              },
-            },
-            children: sections,
-          },
-        ],
-      });
-
-      // Generate filename
-      const filename = `${experimentName} - ${statementName} - ${exportDate}.docx`;
-
-      // Save file
-      const blob = await Packer.toBlob(doc);
-      saveAs(blob, filename);
-    } catch (error) {
-      console.error("❌ Word export error:", error);
-      alert(`Export failed: ${error.message}`);
-    }
-  };
-
   const renderTable = (type) => (
     <div style={{ overflowX: "auto", marginBottom: 30 }}>
       <table
@@ -534,7 +240,7 @@ export default function StatementSummary() {
           <tr>
             <th style={{ border: "1px solid #ccc", padding: "8px" }}>Coder</th>
             <th style={{ border: "1px solid #ccc", padding: "8px" }}>
-              Group Name
+              Experiment Condition
             </th>
             {allColors.map((c) => (
               <th
@@ -543,6 +249,15 @@ export default function StatementSummary() {
                   border: "1px solid #ccc",
                   padding: "8px",
                   backgroundColor: c.code,
+                  color: (() => {
+                    // Calculate contrast color for text
+                    const hex = c.code.replace("#", "");
+                    const r = parseInt(hex.substr(0, 2), 16);
+                    const g = parseInt(hex.substr(2, 2), 16);
+                    const b = parseInt(hex.substr(4, 2), 16);
+                    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                    return brightness > 155 ? "#000000" : "#FFFFFF";
+                  })(),
                 }}
               >
                 {c.name}
@@ -551,7 +266,13 @@ export default function StatementSummary() {
             {commonStyles.map((s) => (
               <th
                 key={`${type}-${s.key}`}
-                style={{ border: "1px solid #ccc", padding: "8px" }}
+                style={{
+                  border: "1px solid #ccc",
+                  padding: "8px",
+                  fontWeight: s.key === "bold" ? "bold" : "normal",
+                  fontStyle: s.key === "italic" ? "italic" : "normal",
+                  textDecoration: s.key === "underline" ? "underline" : "none",
+                }}
               >
                 {s.label}
               </th>
@@ -630,7 +351,7 @@ export default function StatementSummary() {
   );
 
   return (
-    <div style={{ padding: 20, direction: "rtl" }}>
+    <div style={{ padding: 20 }}>
       <div
         style={{
           display: "flex",
@@ -656,22 +377,6 @@ export default function StatementSummary() {
             disabled={!statement || !experiment || copies.length === 0}
           >
             📊 Export to Excel
-          </button>
-          <button
-            onClick={handleExportToWord}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#2196F3",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "bold",
-            }}
-            disabled={!statement || !experiment || copies.length === 0}
-          >
-            📄 Export to Word
           </button>
         </div>
       </div>

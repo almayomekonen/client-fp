@@ -239,7 +239,7 @@ export default function TaskForCoder() {
                     </span>
                     <span className="task-meta-item">
                       <FaChartLine />
-                      Experiment: {expPercent}%
+                      Experiment Completion: {expPercent}%
                     </span>
                     {unreadCount > 0 && (
                       <span className="task-meta-item">
@@ -251,13 +251,37 @@ export default function TaskForCoder() {
                     )}
                   </div>
                 </div>
+
+                <div
+                  className="task-header-actions"
+                  style={{ display: "flex", gap: "10px", alignItems: "center" }}
+                >
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/task-chat/${task._id}`);
+                    }}
+                    className="task-btn task-btn-chat"
+                    style={{ fontSize: "12px", padding: "8px 16px" }}
+                  >
+                    <FaComments /> Chat
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/task-summary/${task._id}`);
+                    }}
+                    className="task-btn task-btn-summary"
+                    style={{ fontSize: "12px", padding: "8px 16px" }}
+                  >
+                    <FaChartLine /> Summary
+                  </button>
+                </div>
               </div>
 
               {/* Progress Bar */}
               <div className="task-progress">
-                <div className="progress-label">
-                  Task Progress: {progress}%
-                </div>
+                <div className="progress-label">Task Progress: {progress}%</div>
                 <div className="progress-bar-container">
                   <div
                     className="progress-bar-fill"
@@ -273,28 +297,6 @@ export default function TaskForCoder() {
                 <div className="task-details">
                   {/* Copies List */}
                   {renderCopies(task._id)}
-
-                  {/* Actions */}
-                  <div className="task-details-actions">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/task-chat/${task._id}`);
-                      }}
-                      className="task-btn task-btn-chat"
-                    >
-                      <FaComments /> Go to Chat
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/task-summary/${task._id}`);
-                      }}
-                      className="task-btn task-btn-summary"
-                    >
-                      <FaChartLine /> Task Summary
-                    </button>
-                  </div>
                 </div>
               )}
             </div>

@@ -191,11 +191,21 @@ export default function StatementEditor() {
     socket.on("commentCreated", handleCommentCreated);
     socket.on("commentDeleted", handleCommentDeleted);
 
+    const handleCopyDeleted = (data) => {
+      if (data.copyId === copyId) {
+        alert("This copy has been deleted.");
+        navigate("/");
+      }
+    };
+
+    socket.on("copyDeleted", handleCopyDeleted);
+
     return () => {
       socket.off("commentCreated", handleCommentCreated);
       socket.off("commentDeleted", handleCommentDeleted);
+      socket.off("copyDeleted", handleCopyDeleted);
     };
-  }, [socket, copyId]);
+  }, [socket, copyId, navigate]);
 
   // Update results tables when data changes
   useEffect(() => {
@@ -280,37 +290,49 @@ export default function StatementEditor() {
     return globalOffset;
   };
 
-  const renderLeaf = useCallback(({ leaf, attributes, children }) => {
-    const style = {
-      backgroundColor: leaf.highlight || undefined,
-      textDecoration: leaf.underline ? "underline" : undefined,
-      fontWeight: leaf.bold ? "bold" : undefined,
-      fontStyle: leaf.italic ? "italic" : undefined,
-      outline: leaf.isDiff ? "2px solid red" : undefined,
-    };
-    const hasComments = leaf.comments?.length > 0;
-    return (
-      <span {...attributes} style={style}>
-        {leaf.text !== "" ? children : "\u200B"}
-        {hasComments && (
-          <span
-            onClick={() => setActiveComment(leaf.comments)}
-            style={{
-              cursor: "pointer",
-              color: "blue",
-              fontWeight: "bold",
-              marginInlineStart: "5px",
-              display: "inline-block",
-              verticalAlign: "middle",
-              zIndex: 10,
-            }}
-          >
-            📝
-          </span>
-        )}
-      </span>
-    );
-  }, []);
+  const renderLeaf = useCallback(
+    ({ leaf, attributes, children }) => {
+      const style = {
+        backgroundColor: leaf.highlight || undefined,
+        textDecoration: leaf.underline ? "underline" : undefined,
+        fontWeight: leaf.bold ? "bold" : undefined,
+        fontStyle: leaf.italic ? "italic" : undefined,
+        outline: leaf.isDiff ? "2px solid red" : undefined,
+      };
+
+      const colorName = colors.find((c) => c.code === leaf.highlight)?.name;
+      const styleNames = [];
+      if (leaf.bold) styleNames.push(styleSettings.boldName || "Bold");
+      if (leaf.italic) styleNames.push(styleSettings.italicName || "Italic");
+      if (leaf.underline)
+        styleNames.push(styleSettings.underlineName || "Underline");
+      const tooltip = [colorName, ...styleNames].filter(Boolean).join(", ");
+
+      const hasComments = leaf.comments?.length > 0;
+      return (
+        <span {...attributes} style={style} title={tooltip}>
+          {leaf.text !== "" ? children : "\u200B"}
+          {hasComments && (
+            <span
+              onClick={() => setActiveComment(leaf.comments)}
+              style={{
+                cursor: "pointer",
+                color: "blue",
+                fontWeight: "bold",
+                marginInlineStart: "5px",
+                display: "inline-block",
+                verticalAlign: "middle",
+                zIndex: 10,
+              }}
+            >
+              📝
+            </span>
+          )}
+        </span>
+      );
+    },
+    [colors, styleSettings]
+  );
 
   // ✅ FIX: Update counts immediately after marking color
   const handleMarkColor = (colorCode) => {

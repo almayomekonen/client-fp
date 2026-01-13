@@ -24,7 +24,37 @@ export default function RegisterPage() {
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
+  // Validate password complexity
+  const validatePassword = (pwd) => {
+    // Minimum 8 characters, at least one uppercase, and one lowercase letter
+    const regex = /^(?=.*[a-z])(?=.*[A-Z]).{8,}$/;
+    return regex.test(pwd);
+  };
+
   const handleSendCode = async () => {
+    // 1. Client-side validation before sending code
+    if (
+      !form.username ||
+      !form.email ||
+      !form.password ||
+      !form.confirmPassword
+    ) {
+      setMessage("Error: All fields are required.");
+      return;
+    }
+
+    if (form.password !== form.confirmPassword) {
+      setMessage("Error: Passwords do not match.");
+      return;
+    }
+
+    if (!validatePassword(form.password)) {
+      setMessage(
+        "Error: Password must be at least 8 characters long and contain both uppercase and lowercase English letters."
+      );
+      return;
+    }
+
     const result = await sendVerificationCode(form.email);
     setMessage(result.message);
     if (result.success) setStep(3);
@@ -37,6 +67,7 @@ export default function RegisterPage() {
   };
 
   const handleRegister = async () => {
+    // Final registration attempt
     const result = await register(
       form.username,
       form.password,
@@ -46,21 +77,23 @@ export default function RegisterPage() {
     );
 
     if (result.success) {
-      // Show success message and redirect to login after 2 seconds
-      setMessage(
-        "✅ Registration successful! Your account is pending admin approval. You will be redirected to login..."
-      );
-      setTimeout(() => {
-        navigate("/", {
-          state: {
-            message:
-              "Registration successful! Please wait for admin approval before logging in.",
-          },
-        });
-      }, 2000);
+      // Show confirmation popup instead of auto-redirect
+      if (
+        window.confirm(
+          "✅ Registration successful!\n\nYour account is pending admin approval.\n\nClick OK to go to the login page."
+        )
+      ) {
+        navigate("/");
+      }
     } else {
       setMessage(result.message);
     }
+  };
+
+  const handleResendCode = async () => {
+    // Allow resending code
+    const result = await sendVerificationCode(form.email);
+    setMessage(result.message);
   };
 
   return (
@@ -148,6 +181,19 @@ export default function RegisterPage() {
             <button onClick={handleVerifyCode} className="auth-btn">
               Verify
             </button>
+            <div style={{ marginTop: "10px", textAlign: "center" }}>
+              <span
+                onClick={handleResendCode}
+                style={{
+                  color: "#666",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  textDecoration: "underline",
+                }}
+              >
+                Code expired? Click to resend
+              </span>
+            </div>
           </div>
         )}
 

@@ -1,8 +1,9 @@
 // src/components/Auth/LoginForm.jsx
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { FaSignInAlt, FaKey } from "react-icons/fa";
 
-export default function LoginForm({ onSubmit, onForgotPassword }) {
+export default function LoginForm({ onSubmit }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
@@ -39,14 +40,15 @@ export default function LoginForm({ onSubmit, onForgotPassword }) {
         <FaSignInAlt /> Login
       </button>
 
-      <button
-        type="button"
-        onClick={onForgotPassword}
-        className="auth-btn"
-        style={{ marginTop: "12px", background: "#666666" }}
-      >
-        <FaKey /> Forgot Password
-      </button>
+      <div style={{ marginTop: "15px", textAlign: "center" }}>
+        <Link
+          to="/reset-password"
+          style={{ color: "#666", textDecoration: "none", fontSize: "14px" }}
+        >
+          <FaKey style={{ marginRight: "5px" }} />
+          Forgot Passwords
+        </Link>
+      </div>
     </form>
   );
 }

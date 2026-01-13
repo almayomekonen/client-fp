@@ -175,11 +175,31 @@ export default function ViewStatementWithComments() {
     socket.on("commentCreated", handleCommentCreated);
     socket.on("commentDeleted", handleCommentDeleted);
 
+    const handleCopyDeleted = (data) => {
+      if (data.copyId === copyId) {
+        alert("This copy has been deleted.");
+        navigate("/");
+      }
+    };
+
+    socket.on("copyDeleted", handleCopyDeleted);
+
+    const handleCopyUpdated = (data) => {
+      if (data.copy._id === copyId && data.copy.status !== "completed") {
+        alert("This copy has been reopened for editing.");
+        navigate("/");
+      }
+    };
+
+    socket.on("copyUpdated", handleCopyUpdated);
+
     return () => {
       socket.off("commentCreated", handleCommentCreated);
       socket.off("commentDeleted", handleCommentDeleted);
+      socket.off("copyDeleted", handleCopyDeleted);
+      socket.off("copyUpdated", handleCopyUpdated);
     };
-  }, [socket, copyId]);
+  }, [socket, copyId, navigate]);
 
   // Update results tables when data changes
   useEffect(() => {
@@ -259,9 +279,17 @@ export default function ViewStatementWithComments() {
       fontStyle: leaf.italic ? "italic" : undefined,
       outline: leaf.isDiff ? "2px solid red" : undefined,
     };
+
+    const colorName = colors.find((c) => c.code === leaf.highlight)?.name;
+    const styleNames = [];
+    if (leaf.bold) styleNames.push(styleSettings.boldName || "Bold");
+    if (leaf.italic) styleNames.push(styleSettings.italicName || "Italic");
+    if (leaf.underline) styleNames.push(styleSettings.underlineName || "Underline");
+    const tooltip = [colorName, ...styleNames].filter(Boolean).join(", ");
+
     const hasComments = leaf.comments?.length > 0;
     return (
-      <span {...attributes} style={style}>
+      <span {...attributes} style={style} title={tooltip}>
         {leaf.text !== "" ? children : "\u200B"}
         {hasComments && (
           <span
@@ -278,7 +306,7 @@ export default function ViewStatementWithComments() {
         )}
       </span>
     );
-  }, []);
+  }, [colors, styleSettings]);
 
   // Show loading while checking auth
   if (!isAuthChecked) {
@@ -432,7 +460,7 @@ export default function ViewStatementWithComments() {
             display: "flex",
             flexDirection: "column",
             minHeight: 0,
-            overflow: "auto",
+            overflow: "hidden",
           }}
         >
           {/* Viewer Card - Takes space */}
@@ -495,7 +523,7 @@ export default function ViewStatementWithComments() {
             style={{
               display: "flex",
               gap: "6px",
-              marginTop: "8px",
+              marginBottom: "8px",
               flexShrink: 0,
             }}
           >
@@ -534,9 +562,11 @@ export default function ViewStatementWithComments() {
               background: "#fff",
               borderRadius: "8px",
               padding: "10px",
-              marginTop: "8px",
+              marginBottom: "8px", // Changed from marginTop to match EditCopy spacing
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
               flexShrink: 0,
+              height: "250px", // Fixed height
+              overflowY: "auto", // Scrollable
             }}
           >
             <h3
