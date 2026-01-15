@@ -523,11 +523,11 @@ export default function StatementEditor() {
   return (
     <div
       style={{
-        height: "calc(100vh - 20px)",
+        height: "100vh",
         display: "flex",
         flexDirection: "column",
         padding: "10px",
-        overflow: "hidden",
+        overflow: "auto",
       }}
     >
       {/* Header - Compact */}
@@ -549,8 +549,9 @@ export default function StatementEditor() {
           display: "grid",
           gridTemplateColumns: "1fr 420px",
           gap: "10px",
-          flex: 1,
-          minHeight: "500px",
+          flex: "1 1 auto",
+          minHeight: 0,
+          overflow: "hidden",
         }}
       >
         {/* Left Column - Full Height */}
@@ -558,8 +559,8 @@ export default function StatementEditor() {
           style={{
             display: "flex",
             flexDirection: "column",
-            minHeight: "500px",
-            overflow: "hidden",
+            height: "100%",
+            overflow: "auto",
           }}
         >
           {/* Toolbar Card - Compact */}
@@ -669,10 +670,10 @@ export default function StatementEditor() {
               padding: "10px",
               marginBottom: "8px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              flex: 1,
-              minHeight: "350px",
+              flex: "1 1 auto",
               display: "flex",
               flexDirection: "column",
+              minHeight: 0,
             }}
           >
             <h3
@@ -694,8 +695,7 @@ export default function StatementEditor() {
             >
               <div
                 style={{
-                  flex: 1,
-                  minHeight: "300px",
+                  height: "400px",
                   overflowY: "auto",
                   border: "1px solid #ddd",
                   borderRadius: "4px",
@@ -808,8 +808,9 @@ export default function StatementEditor() {
           style={{
             display: "flex",
             flexDirection: "column",
-            minHeight: "500px",
+            height: "100%",
             width: "420px",
+            overflow: "auto",
           }}
         >
           {/* Chat - Takes space */}
