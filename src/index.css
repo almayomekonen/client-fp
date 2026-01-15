@@ -19,6 +19,19 @@ body {
   max-width: 100vw;
 }
 
+/* Ensure root and body take full height properly on all browsers */
+html,
+body {
+  height: 100%;
+  width: 100%;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+}
+
 /* Prevent horizontal overflow globally */
 html {
   overflow-x: hidden;

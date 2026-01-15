@@ -523,15 +523,16 @@ export default function StatementEditor() {
   return (
     <div
       style={{
-        height: "100vh",
+        width: "100%",
+        minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
         padding: "10px",
-        overflow: "auto",
+        boxSizing: "border-box",
       }}
     >
       {/* Header - Compact */}
-      <div style={{ marginBottom: "10px", flexShrink: 0 }}>
+      <div style={{ flexShrink: 0, marginBottom: "10px" }}>
         <h1
           style={{ fontSize: "22px", fontWeight: "600", marginBottom: "5px" }}
         >
@@ -546,21 +547,20 @@ export default function StatementEditor() {
       {/* Main Content Grid - Takes remaining space */}
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 350px",
+          display: "flex",
           gap: "10px",
-          flex: "1 1 auto",
-          minHeight: 0,
-          overflow: "hidden",
+          flex: 1,
+          minHeight: "600px",
         }}
       >
         {/* Left Column - Full Height */}
         <div
           style={{
+            flex: 1,
             display: "flex",
             flexDirection: "column",
-            height: "100%",
-            overflow: "auto",
+            minWidth: 0,
+            overflow: "hidden",
           }}
         >
           {/* Toolbar Card - Compact */}
@@ -568,7 +568,7 @@ export default function StatementEditor() {
             style={{
               background: "#fff",
               borderRadius: "8px",
-              padding: "10px",
+              padding: "8px",
               marginBottom: "8px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
               flexShrink: 0,
@@ -670,10 +670,11 @@ export default function StatementEditor() {
               padding: "10px",
               marginBottom: "8px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              flex: "1 1 auto",
+              flex: 1,
               display: "flex",
               flexDirection: "column",
               minHeight: 0,
+              overflow: "hidden",
             }}
           >
             <h3
@@ -695,14 +696,13 @@ export default function StatementEditor() {
             >
               <div
                 style={{
-                  height: "calc(100vh - 450px)",
-                  minHeight: "300px",
-                  maxHeight: "600px",
+                  flex: 1,
                   overflowY: "auto",
                   border: "1px solid #ddd",
                   borderRadius: "4px",
                   padding: "15px",
                   backgroundColor: "#fafafa",
+                  minHeight: 0,
                 }}
               >
                 <Editable
@@ -778,11 +778,11 @@ export default function StatementEditor() {
             style={{
               background: "#fff",
               borderRadius: "8px",
-              padding: "10px",
+              padding: "8px",
               marginTop: "8px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
               flexShrink: 0,
-              maxHeight: "200px",
+              height: "180px",
               overflowY: "auto",
             }}
           >
@@ -808,11 +808,12 @@ export default function StatementEditor() {
         {/* Right Column - Sidebar Full Height */}
         <div
           style={{
+            width: "330px",
+            flexShrink: 0,
             display: "flex",
             flexDirection: "column",
-            height: "100%",
-            width: "350px",
-            overflow: "auto",
+            minHeight: 0,
+            overflow: "hidden",
           }}
         >
           {/* Chat - Takes space */}
@@ -820,13 +821,14 @@ export default function StatementEditor() {
             style={{
               background: "#fff",
               borderRadius: "8px",
-              padding: "10px",
+              padding: "8px",
               marginBottom: "8px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
               flex: 1,
               minHeight: 0,
               display: "flex",
               flexDirection: "column",
+              overflow: "hidden",
             }}
           >
             <h3
@@ -854,7 +856,7 @@ export default function StatementEditor() {
             style={{
               background: "#fff",
               borderRadius: "8px",
-              padding: "10px",
+              padding: "8px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
               flexShrink: 0,
             }}
