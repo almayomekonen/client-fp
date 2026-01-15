@@ -454,7 +454,8 @@ export default function CoderComparePage() {
       const styleNames = [];
       if (leaf.bold) styleNames.push(styleSettings.boldName || "Bold");
       if (leaf.italic) styleNames.push(styleSettings.italicName || "Italic");
-      if (leaf.underline) styleNames.push(styleSettings.underlineName || "Underline");
+      if (leaf.underline)
+        styleNames.push(styleSettings.underlineName || "Underline");
       const tooltip = [colorName, ...styleNames].filter(Boolean).join(", ");
 
       const hasComments = leaf.comments?.length > 0;
@@ -1014,7 +1015,12 @@ export default function CoderComparePage() {
 
             {/* Style Buttons */}
             <div
-              style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "12px" }}
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "8px",
+                marginBottom: "12px",
+              }}
             >
               {styleSettings.underlineEnabled && (
                 <button
@@ -1052,20 +1058,35 @@ export default function CoderComparePage() {
             </div>
 
             {/* Remove All and Save Buttons */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: "8px",
+                justifyContent: "flex-start",
+              }}
+            >
               <button
                 onClick={() => removeFormatting(editorA)}
                 className="dashboard-btn btn-secondary btn-sm"
-                style={{ width: "100%", justifyContent: "center", color: "#dc3545" }}
+                style={{
+                  padding: "6px 12px",
+                  fontSize: "13px",
+                  color: "#dc3545",
+                  fontWeight: "500",
+                }}
               >
                 <FaEraser /> Remove All
               </button>
               <button
                 onClick={() => handleSave(editorA, copyA, valueA, setCountsA)}
                 className="dashboard-btn btn-primary btn-sm"
-                style={{ width: "100%", justifyContent: "center" }}
+                style={{
+                  padding: "6px 12px",
+                  fontSize: "13px",
+                  fontWeight: "500",
+                }}
               >
-                <FaSave /> Save Changes
+                <FaSave /> Save
               </button>
             </div>
           </div>
@@ -1074,7 +1095,10 @@ export default function CoderComparePage() {
 
       {/* Middle Section: Text Editors Side by Side */}
       <div>
-        <div className="comparison-container" style={{ flexWrap: "nowrap", marginBottom: "20px" }}>
+        <div
+          className="comparison-container"
+          style={{ flexWrap: "nowrap", marginBottom: "20px" }}
+        >
           {/* Editor A */}
           <div
             className="coding-block dashboard-card"
@@ -1083,8 +1107,8 @@ export default function CoderComparePage() {
             <div className="card-header">
               <h3 className="card-title" style={{ fontSize: "16px" }}>
                 <FaUser /> Coding A -{" "}
-                {users.find((user) => user._id === copyA?.coderId)
-                  ?.username || "Your Coding"}
+                {users.find((user) => user._id === copyA?.coderId)?.username ||
+                  "Your Coding"}
               </h3>
             </div>
             <div className="card-body" style={{ padding: "12px" }}>
@@ -1130,8 +1154,8 @@ export default function CoderComparePage() {
             <div className="card-header">
               <h3 className="card-title" style={{ fontSize: "16px" }}>
                 <FaUser /> Coding B -{" "}
-                {users.find((user) => user._id === copyB?.coderId)
-                  ?.username || "Comparison"}
+                {users.find((user) => user._id === copyB?.coderId)?.username ||
+                  "Comparison"}
               </h3>
             </div>
             <div className="card-body" style={{ padding: "12px" }}>
@@ -1174,7 +1198,10 @@ export default function CoderComparePage() {
       {/* Bottom Section: Results Side by Side */}
       <div style={{ display: "flex", gap: "20px" }}>
         {/* Results for A */}
-        <div className="dashboard-card" style={{ flex: 1 }}>
+        <div
+          className="dashboard-card"
+          style={{ flex: 1, maxHeight: "500px", overflowY: "auto" }}
+        >
           <h3
             className="card-title"
             style={{ fontSize: "14px", marginBottom: "12px" }}
@@ -1202,7 +1229,10 @@ export default function CoderComparePage() {
         </div>
 
         {/* Results for B */}
-        <div className="dashboard-card" style={{ flex: 1 }}>
+        <div
+          className="dashboard-card"
+          style={{ flex: 1, maxHeight: "500px", overflowY: "auto" }}
+        >
           <h3
             className="card-title"
             style={{ fontSize: "14px", marginBottom: "12px" }}
@@ -1229,7 +1259,6 @@ export default function CoderComparePage() {
           </div>
         </div>
       </div>
-
 
       {/* Comment Modals */}
       {activeCommentA && (

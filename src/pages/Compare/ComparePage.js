@@ -1217,18 +1217,17 @@ export default function ComparePage() {
             </div>
 
             {/* Remove All and Save Buttons */}
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "8px" }}
-            >
+            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-start" }}>
               <button
                 onClick={() =>
                   removeFormatting(editTarget === "A" ? editorA : editorB)
                 }
                 className="dashboard-btn btn-secondary btn-sm"
                 style={{
-                  width: "100%",
-                  justifyContent: "center",
+                  padding: "6px 12px",
+                  fontSize: "13px",
                   color: "#dc3545",
+                  fontWeight: "500"
                 }}
               >
                 <FaEraser /> Remove All
@@ -1243,9 +1242,13 @@ export default function ComparePage() {
                   )
                 }
                 className="dashboard-btn btn-primary btn-sm"
-                style={{ width: "100%", justifyContent: "center" }}
+                style={{
+                  padding: "6px 12px",
+                  fontSize: "13px",
+                  fontWeight: "500"
+                }}
               >
-                <FaSave /> Save Changes
+                <FaSave /> Save
               </button>
             </div>
           </div>
@@ -1516,7 +1519,7 @@ export default function ComparePage() {
       {/* Bottom Section: Results Side by Side */}
       <div style={{ display: "flex", gap: "20px" }}>
         {/* Results for A */}
-        <div className="dashboard-card" style={{ flex: 1 }}>
+        <div className="dashboard-card" style={{ flex: 1, maxHeight: "500px", overflowY: "auto" }}>
           <h3
             className="card-title"
             style={{ fontSize: "14px", marginBottom: "12px" }}
@@ -1544,7 +1547,7 @@ export default function ComparePage() {
         </div>
 
         {/* Results for B */}
-        <div className="dashboard-card" style={{ flex: 1 }}>
+        <div className="dashboard-card" style={{ flex: 1, maxHeight: "500px", overflowY: "auto" }}>
           <h3
             className="card-title"
             style={{ fontSize: "14px", marginBottom: "12px" }}
