@@ -149,7 +149,11 @@ export default function InvestigatorHomePage() {
     }
 
     const newExp = await addExperiment(expName, expDesc, currentUser._id);
-    if (newExp) setRelevantExperiments((prev) => [...prev, newExp]);
+    if (newExp) {
+      // Refetch experiments to get the updated list
+      const exps = await experimentsByInvestigatorId(currentUser._id);
+      setRelevantExperiments(exps);
+    }
     setExpName("");
     setExpDesc("");
     setShowExpForm(false);
