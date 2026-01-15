@@ -506,7 +506,8 @@ export default function ComparePage() {
       const styleNames = [];
       if (leaf.bold) styleNames.push(styleSettings.boldName || "Bold");
       if (leaf.italic) styleNames.push(styleSettings.italicName || "Italic");
-      if (leaf.underline) styleNames.push(styleSettings.underlineName || "Underline");
+      if (leaf.underline)
+        styleNames.push(styleSettings.underlineName || "Underline");
       const tooltip = [colorName, ...styleNames].filter(Boolean).join(", ");
 
       const hasComments = leaf.comments?.length > 0;
@@ -1083,358 +1084,178 @@ export default function ComparePage() {
         </div>
       </div>
 
-      {/* Main Layout Grid: Comparison Editors + Sidebar */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 350px",
-          gap: "20px",
-        }}
-      >
-        {/* Left: Side-by-Side Comparison */}
-        <div>
-          <div className="comparison-container" style={{ flexWrap: "nowrap" }}>
-            {/* Editor A */}
-            <div
-              className="coding-block dashboard-card"
-              style={{ flex: 1, minWidth: 0 }}
+      {/* Top Section: Editing Tools and Comments */}
+      <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
+        {/* Editing Tools */}
+        {(currentUser?._id === copyA?.coderId ||
+          currentUser?._id === copyB?.coderId ||
+          ["investigator", "admin"].includes(currentUser?.role)) && (
+          <div className="dashboard-card" style={{ flex: 1 }}>
+            <h3
+              className="card-title"
+              style={{ fontSize: "16px", marginBottom: "12px" }}
             >
-              {/* ✅ Navigation for Copy A Title */}
-              <div className="card-header">
-                <h3 className="card-title" style={{ fontSize: "16px" }}>
-                  <FaUser /> Coding A -{" "}
-                  <span
-                    onClick={() =>
-                      copyA && navigate(`/view-statement/${copyA._id}`)
-                    }
-                    style={{ cursor: "pointer", textDecoration: "underline" }}
-                    title="View Full Page"
-                  >
-                    {users.find((user) => user._id === copyA?.coderId)
-                      ?.username || "Unknown"}
-                  </span>
-                </h3>
-              </div>
-              <div className="card-body" style={{ padding: "12px" }}>
-                <Slate
-                  key={`slate-A-${copyA?._id}-${diffKey}-${commentKeyA}`}
-                  editor={editorA}
-                  initialValue={valueA}
-                  value={valueA}
-                  onChange={setValueA}
-                >
-                  <div
-                    ref={scrollContainerA}
-                    onScroll={handleScrollA}
-                    style={{
-                      minHeight: "500px",
-                      maxHeight: "700px",
-                      overflowY: "auto",
-                      border: "2px solid #e0e0e0",
-                      borderRadius: "8px",
-                      padding: "16px",
-                      backgroundColor: "#fafafa",
-                    }}
-                  >
-                    <Editable
-                      renderLeaf={getRenderLeaf(setActiveCommentA)}
-                      placeholder="Coding A"
-                      readOnly={true}
-                      dir="auto"
-                      style={{
-                        fontSize: "16px",
-                        lineHeight: "1.8",
-                      }}
-                    />
-                  </div>
-                </Slate>
-              </div>
-            </div>
+              <FaPalette /> Edit Coding {editTarget}
+            </h3>
 
-            {/* Editor B */}
-            <div
-              className="coding-block dashboard-card"
-              style={{ flex: 1, minWidth: 0 }}
-            >
-              {/* ✅ Navigation for Copy B Title */}
-              <div className="card-header">
-                <h3 className="card-title" style={{ fontSize: "16px" }}>
-                  <FaUser /> Coding B -{" "}
-                  <span
-                    onClick={() =>
-                      copyB && navigate(`/view-statement/${copyB._id}`)
-                    }
-                    style={{ cursor: "pointer", textDecoration: "underline" }}
-                    title="View Full Page"
-                  >
-                    {users.find((user) => user._id === copyB?.coderId)
-                      ?.username || "Unknown"}
-                  </span>
-                </h3>
-              </div>
-              <div className="card-body" style={{ padding: "12px" }}>
-                <Slate
-                  key={`slate-B-${copyB?._id}-${diffKey}-${commentKeyB}`}
-                  editor={editorB}
-                  initialValue={valueB}
-                  value={valueB}
-                  onChange={setValueB}
-                >
-                  <div
-                    ref={scrollContainerB}
-                    onScroll={handleScrollB}
-                    style={{
-                      minHeight: "500px",
-                      maxHeight: "700px",
-                      overflowY: "auto",
-                      border: "2px solid #e0e0e0",
-                      borderRadius: "8px",
-                      padding: "16px",
-                      backgroundColor: "#fafafa",
-                    }}
-                  >
-                    <Editable
-                      renderLeaf={getRenderLeaf(setActiveCommentB)}
-                      placeholder="Coding B"
-                      readOnly={true}
-                      dir="auto"
-                      style={{
-                        fontSize: "16px",
-                        lineHeight: "1.8",
-                      }}
-                    />
-                  </div>
-                </Slate>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Toolbar & Stats Sidebar */}
-        <div
-          style={{
-            position: "sticky",
-            top: "20px",
-            alignSelf: "start",
-            maxHeight: "calc(100vh - 100px)",
-            overflowY: "auto",
-          }}
-        >
-          {/* ✅ Editing Tools with Target Toggle */}
-          {(currentUser?._id === copyA?.coderId ||
-            currentUser?._id === copyB?.coderId ||
-            ["investigator", "admin"].includes(currentUser?.role)) && (
-            <div className="dashboard-card" style={{ marginBottom: "20px" }}>
-              <h3
-                className="card-title"
-                style={{ fontSize: "16px", marginBottom: "12px" }}
-              >
-                <FaPalette /> Edit Coding {editTarget}
-              </h3>
-
-              {/* Target Toggle for Admin/Investigator */}
-              {["investigator", "admin"].includes(currentUser?.role) && (
-                <div
-                  style={{ display: "flex", gap: "5px", marginBottom: "10px" }}
-                >
-                  <button
-                    className={`dashboard-btn btn-sm ${
-                      editTarget === "A" ? "btn-primary" : "btn-secondary"
-                    }`}
-                    onClick={() => setEditTarget("A")}
-                    style={{ flex: 1 }}
-                  >
-                    Copy A
-                  </button>
-                  <button
-                    className={`dashboard-btn btn-sm ${
-                      editTarget === "B" ? "btn-primary" : "btn-secondary"
-                    }`}
-                    onClick={() => setEditTarget("B")}
-                    style={{ flex: 1 }}
-                  >
-                    Copy B
-                  </button>
-                </div>
-              )}
-
-              {/* Color Palette */}
+            {/* Target Toggle for Admin/Investigator */}
+            {["investigator", "admin"].includes(currentUser?.role) && (
               <div
-                style={{
-                  display: "flex",
-                  gap: "6px",
-                  marginBottom: "12px",
-                  flexWrap: "wrap",
-                }}
-              >
-                {colors.map((color) => (
-                  <button
-                    key={color._id}
-                    onClick={() =>
-                      markColor(
-                        editTarget === "A" ? editorA : editorB,
-                        color.code
-                      )
-                    }
-                    style={{
-                      backgroundColor: color.code,
-                      border: "2px solid #000",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                      padding: "4px 10px",
-                      fontWeight: "600",
-                      fontSize: "12px",
-                      color: (() => {
-                        const hex = color.code.replace("#", "");
-                        const r = parseInt(hex.substr(0, 2), 16);
-                        const g = parseInt(hex.substr(2, 2), 16);
-                        const b = parseInt(hex.substr(4, 2), 16);
-                        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-                        return brightness > 155 ? "#000000" : "#FFFFFF";
-                      })(),
-                    }}
-                    title={color.name}
-                  >
-                    {color.name}
-                  </button>
-                ))}
-              </div>
-
-              {/* Action Buttons */}
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+                style={{ display: "flex", gap: "5px", marginBottom: "10px" }}
               >
                 <button
-                  onClick={() =>
-                    removeFormatting(editTarget === "A" ? editorA : editorB)
-                  }
-                  className="dashboard-btn btn-secondary btn-sm"
-                  style={{ width: "100%", justifyContent: "center" }}
+                  className={`dashboard-btn btn-sm ${
+                    editTarget === "A" ? "btn-primary" : "btn-secondary"
+                  }`}
+                  onClick={() => setEditTarget("A")}
+                  style={{ flex: 1 }}
                 >
-                  <FaEraser /> Remove All
+                  Copy A
                 </button>
-                {styleSettings.underlineEnabled && (
-                  <button
-                    onClick={() =>
-                      markUnderline(editTarget === "A" ? editorA : editorB)
-                    }
-                    className="dashboard-btn btn-secondary btn-sm"
-                    style={{
-                      width: "100%",
-                      justifyContent: "center",
-                      textDecoration: "underline",
-                    }}
-                  >
-                    <FaUnderline /> {styleSettings.underlineName || "Underline"}
-                  </button>
-                )}
-                {styleSettings.boldEnabled && (
-                  <button
-                    onClick={() =>
-                      markBold(editTarget === "A" ? editorA : editorB)
-                    }
-                    className="dashboard-btn btn-secondary btn-sm"
-                    style={{
-                      width: "100%",
-                      justifyContent: "center",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    <FaBold /> {styleSettings.boldName || "Bold"}
-                  </button>
-                )}
-                {styleSettings.italicEnabled && (
-                  <button
-                    onClick={() =>
-                      markItalic(editTarget === "A" ? editorA : editorB)
-                    }
-                    className="dashboard-btn btn-secondary btn-sm"
-                    style={{
-                      width: "100%",
-                      justifyContent: "center",
-                      fontStyle: "italic",
-                    }}
-                  >
-                    <FaItalic /> {styleSettings.italicName || "Italic"}
-                  </button>
-                )}
                 <button
+                  className={`dashboard-btn btn-sm ${
+                    editTarget === "B" ? "btn-primary" : "btn-secondary"
+                  }`}
+                  onClick={() => setEditTarget("B")}
+                  style={{ flex: 1 }}
+                >
+                  Copy B
+                </button>
+              </div>
+            )}
+
+            {/* Color Palette */}
+            <div
+              style={{
+                display: "flex",
+                gap: "6px",
+                marginBottom: "12px",
+                flexWrap: "wrap",
+              }}
+            >
+              {colors.map((color) => (
+                <button
+                  key={color._id}
                   onClick={() =>
-                    handleSave(
+                    markColor(
                       editTarget === "A" ? editorA : editorB,
-                      editTarget === "A" ? copyA : copyB,
-                      editTarget === "A" ? valueA : valueB,
-                      editTarget === "A" ? setCountsA : setCountsB
+                      color.code
                     )
                   }
-                  className="dashboard-btn btn-primary btn-sm"
-                  style={{ width: "100%", justifyContent: "center" }}
+                  style={{
+                    backgroundColor: color.code,
+                    border: "2px solid #000",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    padding: "4px 10px",
+                    fontWeight: "600",
+                    fontSize: "12px",
+                    color: (() => {
+                      const hex = color.code.replace("#", "");
+                      const r = parseInt(hex.substr(0, 2), 16);
+                      const g = parseInt(hex.substr(2, 2), 16);
+                      const b = parseInt(hex.substr(4, 2), 16);
+                      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                      return brightness > 155 ? "#000000" : "#FFFFFF";
+                    })(),
+                  }}
+                  title={color.name}
                 >
-                  <FaSave /> Save Changes
+                  {color.name}
                 </button>
-              </div>
+              ))}
             </div>
-          )}
 
-          {/* Results for A */}
-          <div className="dashboard-card" style={{ marginBottom: "20px" }}>
-            <h3
-              className="card-title"
-              style={{ fontSize: "14px", marginBottom: "12px" }}
+            {/* Style Buttons */}
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "8px",
+                marginBottom: "12px",
+              }}
             >
-              <FaChartBar /> Results A
-            </h3>
-            <button
-              onClick={() =>
-                calculateSelectionCounts(editorA, setSelectionCountsA)
-              }
-              className="dashboard-btn btn-secondary btn-sm"
-              style={{ width: "100%", marginBottom: "12px", fontSize: "12px" }}
+              {styleSettings.underlineEnabled && (
+                <button
+                  onClick={() =>
+                    markUnderline(editTarget === "A" ? editorA : editorB)
+                  }
+                  className="dashboard-btn btn-secondary btn-sm"
+                  style={{
+                    textDecoration: "underline",
+                  }}
+                >
+                  <FaUnderline /> {styleSettings.underlineName || "Underline"}
+                </button>
+              )}
+              {styleSettings.boldEnabled && (
+                <button
+                  onClick={() =>
+                    markBold(editTarget === "A" ? editorA : editorB)
+                  }
+                  className="dashboard-btn btn-secondary btn-sm"
+                  style={{
+                    fontWeight: "bold",
+                  }}
+                >
+                  <FaBold /> {styleSettings.boldName || "Bold"}
+                </button>
+              )}
+              {styleSettings.italicEnabled && (
+                <button
+                  onClick={() =>
+                    markItalic(editTarget === "A" ? editorA : editorB)
+                  }
+                  className="dashboard-btn btn-secondary btn-sm"
+                  style={{
+                    fontStyle: "italic",
+                  }}
+                >
+                  <FaItalic /> {styleSettings.italicName || "Italic"}
+                </button>
+              )}
+            </div>
+
+            {/* Remove All and Save Buttons */}
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "8px" }}
             >
-              <FaChartBar /> Analyze Selection
-            </button>
-            <div style={{ fontSize: "11px" }}>
-              <ResultsTables
-                fullTextTable={fullTextTableA}
-                selectionTable={selectionTableA}
-                additionalStats={additionalStatsA}
-                colors={colors}
-                styleSettings={styleSettings}
-              />
+              <button
+                onClick={() =>
+                  removeFormatting(editTarget === "A" ? editorA : editorB)
+                }
+                className="dashboard-btn btn-secondary btn-sm"
+                style={{
+                  width: "100%",
+                  justifyContent: "center",
+                  color: "#dc3545",
+                }}
+              >
+                <FaEraser /> Remove All
+              </button>
+              <button
+                onClick={() =>
+                  handleSave(
+                    editTarget === "A" ? editorA : editorB,
+                    editTarget === "A" ? copyA : copyB,
+                    editTarget === "A" ? valueA : valueB,
+                    editTarget === "A" ? setCountsA : setCountsB
+                  )
+                }
+                className="dashboard-btn btn-primary btn-sm"
+                style={{ width: "100%", justifyContent: "center" }}
+              >
+                <FaSave /> Save Changes
+              </button>
             </div>
           </div>
+        )}
 
-          {/* Results for B */}
-          <div className="dashboard-card" style={{ marginBottom: "20px" }}>
-            <h3
-              className="card-title"
-              style={{ fontSize: "14px", marginBottom: "12px" }}
-            >
-              <FaChartBar /> Results B
-            </h3>
-            <button
-              onClick={() =>
-                calculateSelectionCounts(editorB, setSelectionCountsB)
-              }
-              className="dashboard-btn btn-secondary btn-sm"
-              style={{ width: "100%", marginBottom: "12px", fontSize: "12px" }}
-            >
-              <FaChartBar /> Analyze Selection
-            </button>
-            <div style={{ fontSize: "11px" }}>
-              <ResultsTables
-                fullTextTable={fullTextTableB}
-                selectionTable={selectionTableB}
-                additionalStats={additionalStatsB}
-                colors={colors}
-                styleSettings={styleSettings}
-              />
-            </div>
-          </div>
-
-          {/* Comments Section for Copy A */}
+        {/* Comments Sections */}
+        <div style={{ flex: 1, display: "flex", gap: "10px" }}>
+          {/* Comments for A */}
           {copyA && (
-            <div className="dashboard-card" style={{ marginBottom: "20px" }}>
+            <div className="dashboard-card" style={{ flex: 1 }}>
               <h3
                 className="card-title"
                 style={{ fontSize: "14px", marginBottom: "12px" }}
@@ -1459,8 +1280,9 @@ export default function ComparePage() {
                     className="form-textarea"
                     style={{
                       marginBottom: "8px",
-                      minHeight: "80px",
+                      minHeight: "60px",
                       fontSize: "12px",
+                      width: "100%",
                     }}
                   />
                   <div style={{ display: "flex", gap: "6px" }}>
@@ -1501,9 +1323,9 @@ export default function ComparePage() {
             </div>
           )}
 
-          {/* Comments Section for Copy B */}
+          {/* Comments for B */}
           {copyB && (
-            <div className="dashboard-card" style={{ marginBottom: "20px" }}>
+            <div className="dashboard-card" style={{ flex: 1 }}>
               <h3
                 className="card-title"
                 style={{ fontSize: "14px", marginBottom: "12px" }}
@@ -1528,8 +1350,9 @@ export default function ComparePage() {
                     className="form-textarea"
                     style={{
                       marginBottom: "8px",
-                      minHeight: "80px",
+                      minHeight: "60px",
                       fontSize: "12px",
+                      width: "100%",
                     }}
                   />
                   <div style={{ display: "flex", gap: "6px" }}>
@@ -1569,6 +1392,183 @@ export default function ComparePage() {
               )}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Middle Section: Text Editors Side by Side */}
+      <div>
+        <div
+          className="comparison-container"
+          style={{ flexWrap: "nowrap", marginBottom: "20px" }}
+        >
+          {/* Editor A */}
+          <div
+            className="coding-block dashboard-card"
+            style={{ flex: 1, minWidth: 0 }}
+          >
+            <div className="card-header">
+              <h3 className="card-title" style={{ fontSize: "16px" }}>
+                <FaUser /> Coding A -{" "}
+                <span
+                  onClick={() =>
+                    copyA && navigate(`/view-statement/${copyA._id}`)
+                  }
+                  style={{ cursor: "pointer", textDecoration: "underline" }}
+                  title="View Full Page"
+                >
+                  {users.find((user) => user._id === copyA?.coderId)
+                    ?.username || "Unknown"}
+                </span>
+              </h3>
+            </div>
+            <div className="card-body" style={{ padding: "12px" }}>
+              <Slate
+                key={`slate-A-${copyA?._id}-${diffKey}-${commentKeyA}`}
+                editor={editorA}
+                initialValue={valueA}
+                value={valueA}
+                onChange={setValueA}
+              >
+                <div
+                  ref={scrollContainerA}
+                  onScroll={handleScrollA}
+                  style={{
+                    height: "400px",
+                    overflowY: "auto",
+                    border: "2px solid #e0e0e0",
+                    borderRadius: "8px",
+                    padding: "16px",
+                    backgroundColor: "#fafafa",
+                  }}
+                >
+                  <Editable
+                    renderLeaf={getRenderLeaf(setActiveCommentA)}
+                    placeholder="Coding A"
+                    readOnly={true}
+                    dir="auto"
+                    style={{
+                      fontSize: "16px",
+                      lineHeight: "1.8",
+                    }}
+                  />
+                </div>
+              </Slate>
+            </div>
+          </div>
+
+          {/* Editor B */}
+          <div
+            className="coding-block dashboard-card"
+            style={{ flex: 1, minWidth: 0 }}
+          >
+            <div className="card-header">
+              <h3 className="card-title" style={{ fontSize: "16px" }}>
+                <FaUser /> Coding B -{" "}
+                <span
+                  onClick={() =>
+                    copyB && navigate(`/view-statement/${copyB._id}`)
+                  }
+                  style={{ cursor: "pointer", textDecoration: "underline" }}
+                  title="View Full Page"
+                >
+                  {users.find((user) => user._id === copyB?.coderId)
+                    ?.username || "Unknown"}
+                </span>
+              </h3>
+            </div>
+            <div className="card-body" style={{ padding: "12px" }}>
+              <Slate
+                key={`slate-B-${copyB?._id}-${diffKey}-${commentKeyB}`}
+                editor={editorB}
+                initialValue={valueB}
+                value={valueB}
+                onChange={setValueB}
+              >
+                <div
+                  ref={scrollContainerB}
+                  onScroll={handleScrollB}
+                  style={{
+                    height: "400px",
+                    overflowY: "auto",
+                    border: "2px solid #e0e0e0",
+                    borderRadius: "8px",
+                    padding: "16px",
+                    backgroundColor: "#fafafa",
+                  }}
+                >
+                  <Editable
+                    renderLeaf={getRenderLeaf(setActiveCommentB)}
+                    placeholder="Coding B"
+                    readOnly={true}
+                    dir="auto"
+                    style={{
+                      fontSize: "16px",
+                      lineHeight: "1.8",
+                    }}
+                  />
+                </div>
+              </Slate>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Section: Results Side by Side */}
+      <div style={{ display: "flex", gap: "20px" }}>
+        {/* Results for A */}
+        <div className="dashboard-card" style={{ flex: 1 }}>
+          <h3
+            className="card-title"
+            style={{ fontSize: "14px", marginBottom: "12px" }}
+          >
+            <FaChartBar /> Results A
+          </h3>
+          <button
+            onClick={() =>
+              calculateSelectionCounts(editorA, setSelectionCountsA)
+            }
+            className="dashboard-btn btn-secondary btn-sm"
+            style={{ width: "100%", marginBottom: "12px", fontSize: "12px" }}
+          >
+            <FaChartBar /> Analyze Selection
+          </button>
+          <div style={{ fontSize: "11px" }}>
+            <ResultsTables
+              fullTextTable={fullTextTableA}
+              selectionTable={selectionTableA}
+              additionalStats={additionalStatsA}
+              colors={colors}
+              styleSettings={styleSettings}
+            />
+          </div>
+        </div>
+
+        {/* Results for B */}
+        <div className="dashboard-card" style={{ flex: 1 }}>
+          <h3
+            className="card-title"
+            style={{ fontSize: "14px", marginBottom: "12px" }}
+          >
+            <FaChartBar /> Results B
+          </h3>
+          <button
+            onClick={() =>
+              calculateSelectionCounts(editorB, setSelectionCountsB)
+            }
+            className="dashboard-btn btn-secondary btn-sm"
+            style={{ width: "100%", marginBottom: "12px", fontSize: "12px" }}
+          >
+            <FaChartBar /> Analyze Selection
+          </button>
+          <div style={{ fontSize: "11px" }}>
+            <ResultsTables
+              fullTextTable={fullTextTableB}
+              selectionTable={selectionTableB}
+              additionalStats={additionalStatsB}
+              colors={colors}
+              styleSettings={styleSettings}
+            />
+          </div>
         </div>
       </div>
 

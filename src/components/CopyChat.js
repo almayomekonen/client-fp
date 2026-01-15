@@ -189,6 +189,7 @@ export default function CopyChat({ copyId }) {
     if (!newMessage.trim() || isSending) return;
 
     setIsSending(true);
+
     try {
       await sendMessage(
         copyId,
@@ -359,12 +360,11 @@ export default function CopyChat({ copyId }) {
         >
           {isSending ? (
             <>
-              <span className="chat-loading-spinner"></span>{" "}
-              <span>Sending...</span>
+              <span>Sending</span>
             </>
           ) : (
             <>
-              <FaPaperPlane /> <span>Send</span>
+              <FaPaperPlane size={20} />
             </>
           )}
         </button>

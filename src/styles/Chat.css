@@ -250,10 +250,7 @@
 /* Chat Input Area */
 .chat-input-area {
   padding: 20px;
-  background: #ffffff;
-  border-top: 2px solid #e0e0e0;
   display: flex;
-  flex-direction: column;
   gap: 12px;
 }
 
@@ -276,6 +273,7 @@
   font-size: 15px;
   transition: all 0.3s ease;
   font-family: inherit;
+  width: 100%;
 }
 
 .chat-input:focus {
@@ -285,28 +283,16 @@
 }
 
 .chat-send-btn {
-  padding: 14px 28px;
-  background: #000000;
-  color: #ffffff;
   border: none;
+  background: none;
   border-radius: 24px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-}
-
-.chat-send-btn:hover {
-  background: #333333;
-  transform: scale(1.05);
 }
 
 .chat-send-btn:disabled {
-  background: #cccccc;
   cursor: not-allowed;
   transform: none;
 }
@@ -416,11 +402,6 @@
     padding: 15px;
     gap: 8px;
     flex-wrap: nowrap;
-  }
-
-  .chat-send-btn {
-    padding: 14px 20px;
-    white-space: nowrap;
   }
 
   .chat-input {
