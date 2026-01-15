@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { createEditor } from "slate";
+import { createEditor, Transforms, Editor } from "slate";
 import { Slate, Editable, withReact } from "slate-react";
 import {
   FaEdit,
@@ -81,17 +81,14 @@ export default function StatementEditor() {
   const [styleSettings, setStyleSettings] = useState({});
   const [statementsMap, setStatementsMap] = useState({});
 
-  // New state for results tables
   const [fullTextTable, setFullTextTable] = useState(null);
   const [selectionTable, setSelectionTable] = useState(null);
   const [additionalStats, setAdditionalStats] = useState(null);
 
-  // User check
   useEffect(() => {
     if (isAuthChecked && !currentUser) navigate("/", { replace: true });
   }, [currentUser, isAuthChecked, navigate]);
 
-  // Load Style Settings
   useEffect(() => {
     const loadStyle = async () => {
       const data = await getStyleSetting();
@@ -100,7 +97,6 @@ export default function StatementEditor() {
     loadStyle();
   }, [getStyleSetting]);
 
-  // Load colors
   useEffect(() => {
     const loadColors = async () => {
       try {
@@ -113,13 +109,11 @@ export default function StatementEditor() {
     loadColors();
   }, [getColors]);
 
-  // Load Copy data and statement asynchronously
   useEffect(() => {
     const loadData = async () => {
       const copy = copyById(copyId);
       if (!copy) return;
 
-      // Get statement from server if it doesn't exist in state
       let statement = statementsMap[copy.statementId];
 
       if (!statement) {
@@ -169,7 +163,6 @@ export default function StatementEditor() {
     const handleCommentCreated = (data) => {
       if (data.copyId === copyId) {
         setLocalComments((prevComments) => {
-          // Avoid duplicates
           const exists = prevComments.some((c) => c._id === data.comment._id);
           if (exists) return prevComments;
           return [...prevComments, data.comment];
@@ -179,7 +172,6 @@ export default function StatementEditor() {
     };
 
     const handleCommentDeleted = (data) => {
-      // Only update if the comment is for this copy
       if (data.copyId === copyId) {
         setLocalComments((prevComments) =>
           prevComments.filter((c) => c._id !== data.commentId)
@@ -207,11 +199,9 @@ export default function StatementEditor() {
     };
   }, [socket, copyId, navigate]);
 
-  // Update results tables when data changes
   useEffect(() => {
     if (!value || !colors.length || !styleSettings) return;
 
-    // Build full text table
     const fullTable = buildResultsTable(
       counts,
       wordCounts,
@@ -220,7 +210,6 @@ export default function StatementEditor() {
     );
     setFullTextTable(fullTable);
 
-    // Build selection table if we have selection data
     if (selectionCounts && selectionWordCounts) {
       const selTable = buildResultsTable(
         selectionCounts,
@@ -233,7 +222,6 @@ export default function StatementEditor() {
       setSelectionTable(null);
     }
 
-    // Calculate additional stats
     const stats = calculateAdditionalStats(value, editor);
     setAdditionalStats(stats);
   }, [
@@ -249,7 +237,6 @@ export default function StatementEditor() {
     calculateAdditionalStats,
   ]);
 
-  // Calculate global offset
   const getGlobalOffsetFromSelection = () => {
     if (!editor.selection) return null;
 
@@ -262,7 +249,6 @@ export default function StatementEditor() {
         const currentPath = [...path, i];
 
         if (node.text !== undefined) {
-          // Check if this is the target path
           if (
             currentPath.length === anchor.path.length &&
             currentPath.every((val, idx) => val === anchor.path[idx])
@@ -278,7 +264,6 @@ export default function StatementEditor() {
           if (traverse(node.children, currentPath)) return true;
         }
 
-        // Add newline between paragraphs
         if (path.length === 0 && i < nodes.length - 1) {
           globalOffset += 1;
         }
@@ -334,22 +319,23 @@ export default function StatementEditor() {
     [colors, styleSettings]
   );
 
-  // ✅ FIX: Update counts immediately after marking color
   const handleMarkColor = (colorCode) => {
     markColor(editor, colorCode);
 
-    // Force update the value to trigger re-render
     const newValue = [...editor.children];
     setValue(newValue);
 
-    // Update counts immediately
     const { colorCounts } = extractHighlightsFromValue(newValue);
     setCounts(colorCounts);
     setWordCounts(calculateWordCounts(newValue));
   };
 
-  // ✅ FIX: Clear all formatting and update immediately
   const handleClearAll = () => {
+    Transforms.select(editor, {
+      anchor: Editor.start(editor, []),
+      focus: Editor.end(editor, []),
+    });
+
     removeFormatting(editor);
 
     // Force update the value
@@ -408,6 +394,7 @@ export default function StatementEditor() {
     setValue(decoratedText);
     setCommentKey((prev) => prev + 1);
     setWordCounts(calculateWordCounts(decoratedText));
+    alert("✅ Changes saved successfully!");
   };
 
   const handleCloseCoding = async () => {
@@ -718,6 +705,7 @@ export default function StatementEditor() {
                 <Editable
                   renderLeaf={renderLeaf}
                   placeholder="Select text to highlight..."
+                  readOnly={true}
                   dir="auto"
                   style={{
                     fontSize: "18px",

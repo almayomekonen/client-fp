@@ -1010,7 +1010,7 @@ export default function CoderComparePage() {
                     <Editable
                       renderLeaf={getRenderLeaf(setActiveCommentA)}
                       placeholder="Coding A"
-                      readOnly={currentUser?._id !== copyA?.coderId}
+                      readOnly={true}
                       dir="auto"
                       style={{
                         fontSize: "16px",
@@ -1058,7 +1058,7 @@ export default function CoderComparePage() {
                     <Editable
                       renderLeaf={getRenderLeaf(setActiveCommentB)}
                       placeholder="Coding B"
-                      readOnly={currentUser?._id !== copyB?.coderId}
+                      readOnly={true}
                       dir="auto"
                       style={{
                         fontSize: "16px",
