@@ -523,7 +523,7 @@ export default function StatementEditor() {
   return (
     <div
       style={{
-        height: "100vh",
+        height: "calc(100vh - 20px)",
         display: "flex",
         flexDirection: "column",
         padding: "10px",
@@ -550,7 +550,7 @@ export default function StatementEditor() {
           gridTemplateColumns: "1fr 420px",
           gap: "10px",
           flex: 1,
-          minHeight: 0,
+          minHeight: "500px",
         }}
       >
         {/* Left Column - Full Height */}
@@ -558,7 +558,7 @@ export default function StatementEditor() {
           style={{
             display: "flex",
             flexDirection: "column",
-            minHeight: 0,
+            minHeight: "500px",
             overflow: "hidden",
           }}
         >
@@ -670,7 +670,7 @@ export default function StatementEditor() {
               marginBottom: "8px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
               flex: 1,
-              minHeight: 0,
+              minHeight: "350px",
               display: "flex",
               flexDirection: "column",
             }}
@@ -695,6 +695,7 @@ export default function StatementEditor() {
               <div
                 style={{
                   flex: 1,
+                  minHeight: "300px",
                   overflowY: "auto",
                   border: "1px solid #ddd",
                   borderRadius: "4px",
@@ -807,7 +808,7 @@ export default function StatementEditor() {
           style={{
             display: "flex",
             flexDirection: "column",
-            minHeight: 0,
+            minHeight: "500px",
             width: "420px",
           }}
         >
