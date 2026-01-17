@@ -6,6 +6,7 @@ import {
   createGroupOnServer as createGroupOnServerpService,
   deleteGroupFromServer as deleteGroupFromServerService,
   fetchGroupsByExperimentId as groupsByExperimentIdService,
+  fetchGroupsFromServer as fetchGroupsFromServerService,
 } from "../api/GroupApi";
 
 const GroupContext = createContext();
@@ -33,6 +34,11 @@ export function GroupProvider({ children }) {
     return await groupsByExperimentIdService(experimentId);
   };
 
+  // All groups
+  const fetchAllGroups = async () => {
+    return await fetchGroupsFromServerService();
+  };
+
   const deleteGroup = async (id) => {
     const result = await deleteGroupFromServerService(id);
     // ✅ Refresh ALL related data after deletion
@@ -47,7 +53,7 @@ export function GroupProvider({ children }) {
 
   return (
     <GroupContext.Provider
-      value={{ addGroup, groupsByExperimentId, deleteGroup }}
+      value={{ addGroup, groupsByExperimentId, fetchAllGroups, deleteGroup }}
     >
       {children}
     </GroupContext.Provider>

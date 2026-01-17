@@ -1,21 +1,25 @@
 import React, { useState } from "react";
 import { FaSave } from "react-icons/fa";
+import "../../styles/Auth.css";
 
 export default function ResetPasswordForm({ onSubmit }) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setErrorMessage(""); // Clear previous errors
+
     if (newPassword !== confirmNewPassword) {
-      alert("Error: Passwords do not match");
+      setErrorMessage("❌ Passwords do not match");
       return;
     }
 
     const regex = /^(?=.*[a-z])(?=.*[A-Z]).{8,}$/;
     if (!regex.test(newPassword)) {
-      alert(
-        "Error: Password must be at least 8 characters long and contain both uppercase and lowercase English letters."
+      setErrorMessage(
+        "❌ Password must be at least 8 characters long and contain both uppercase and lowercase English letters."
       );
       return;
     }
@@ -50,6 +54,12 @@ export default function ResetPasswordForm({ onSubmit }) {
       <button type="submit" className="auth-btn">
         <FaSave /> Change Password
       </button>
+
+      {errorMessage && (
+        <div className="auth-message error" style={{ marginTop: "15px" }}>
+          {errorMessage}
+        </div>
+      )}
     </form>
   );
 }

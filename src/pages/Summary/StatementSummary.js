@@ -10,6 +10,8 @@ import { useColor } from "../../context/ColorContext";
 import { useStyleSetting } from "../../context/StyleSettingContext";
 import { useExperiment } from "../../context/ExperimentContext";
 import { fetchGroupById } from "../../api/GroupApi";
+import { FaChartBar, FaFileExcel, FaArrowLeft, FaFileAlt } from "react-icons/fa";
+import "../../styles/Dashboard.css";
 
 export default function StatementSummary() {
   const { statementId } = useParams();
@@ -227,169 +229,140 @@ export default function StatementSummary() {
   };
 
   const renderTable = (type) => (
-    <div style={{ overflowX: "auto", marginBottom: 30 }}>
-      <table
-        style={{
-          borderCollapse: "collapse",
-          width: "100%",
-          textAlign: "center",
-          minWidth: 600,
-        }}
-      >
-        <thead>
-          <tr>
-            <th style={{ border: "1px solid #ccc", padding: "8px" }}>Coder</th>
-            <th style={{ border: "1px solid #ccc", padding: "8px" }}>
-              Experiment Condition
-            </th>
-            {allColors.map((c) => (
-              <th
-                key={`${type}-${c._id}`}
-                style={{
-                  border: "1px solid #ccc",
-                  padding: "8px",
-                  backgroundColor: c.code,
-                  color: (() => {
-                    // Calculate contrast color for text
-                    const hex = c.code.replace("#", "");
-                    const r = parseInt(hex.substr(0, 2), 16);
-                    const g = parseInt(hex.substr(2, 2), 16);
-                    const b = parseInt(hex.substr(4, 2), 16);
-                    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-                    return brightness > 155 ? "#000000" : "#FFFFFF";
-                  })(),
-                }}
-              >
-                {c.name}
-              </th>
-            ))}
-            {commonStyles.map((s) => (
-              <th
-                key={`${type}-${s.key}`}
-                style={{
-                  border: "1px solid #ccc",
-                  padding: "8px",
-                  fontWeight: s.key === "bold" ? "bold" : "normal",
-                  fontStyle: s.key === "italic" ? "italic" : "normal",
-                  textDecoration: s.key === "underline" ? "underline" : "none",
-                }}
-              >
-                {s.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {copies.map((copy) => {
-            const baseText = statement.text;
-            const highlights = copy?.highlights || [];
-            const coder = userById(copy.coderId);
-            const decoratedText = applyHighlightsToText(
-              baseText,
-              highlights,
-              [],
-              []
-            );
-            const wordCounts = calculateWordCounts(decoratedText);
+    <div className="dashboard-card" style={{ marginBottom: "20px" }}>
+      <h3 className="card-title" style={{ marginBottom: "20px" }}>
+        {type === "marks" ? "Codings" : "Words"}
+      </h3>
+      <div style={{ overflowX: "auto" }}>
+        <table className="summary-table">
+          <thead>
+            <tr>
+              <th>Coder</th>
+              <th>Experiment Condition</th>
+              {allColors.map((c) => (
+                <th
+                  key={`${type}-${c._id}`}
+                  style={{
+                    backgroundColor: c.code,
+                    color: (() => {
+                      const hex = c.code.replace("#", "");
+                      const r = parseInt(hex.substr(0, 2), 16);
+                      const g = parseInt(hex.substr(2, 2), 16);
+                      const b = parseInt(hex.substr(4, 2), 16);
+                      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                      return brightness > 155 ? "#000000" : "#FFFFFF";
+                    })(),
+                  }}
+                >
+                  {c.name}
+                </th>
+              ))}
+              {commonStyles.map((s) => (
+                <th
+                  key={`${type}-${s.key}`}
+                  style={{
+                    fontWeight: s.key === "bold" ? "bold" : "normal",
+                    fontStyle: s.key === "italic" ? "italic" : "normal",
+                    textDecoration: s.key === "underline" ? "underline" : "none",
+                  }}
+                >
+                  {s.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {copies.map((copy) => {
+              const baseText = statement.text;
+              const highlights = copy?.highlights || [];
+              const coder = userById(copy.coderId);
+              const decoratedText = applyHighlightsToText(
+                baseText,
+                highlights,
+                [],
+                []
+              );
+              const wordCounts = calculateWordCounts(decoratedText);
 
-            return (
-              <tr key={copy._id}>
-                <td style={{ border: "1px solid #ccc", padding: "8px" }}>
-                  {coder?.username || "No name"}
-                </td>
-                <td style={{ border: "1px solid #ccc", padding: "8px" }}>
-                  {group?.name || "No group"}
-                </td>
+              return (
+                <tr key={copy._id}>
+                  <td>{coder?.username || "No name"}</td>
+                  <td>{group?.name || "No group"}</td>
 
-                {type === "marks" && (
-                  <>
-                    {allColors.map((c) => (
-                      <td
-                        key={`mark-${copy._id}-${c._id}`}
-                        style={{ border: "1px solid #ccc", padding: "8px" }}
-                      >
-                        {copy.colorCounts?.[c.code] || 0}
-                      </td>
-                    ))}
-                    {commonStyles.map((s) => (
-                      <td
-                        key={`style-${copy._id}-${s.key}`}
-                        style={{ border: "1px solid #ccc", padding: "8px" }}
-                      >
-                        {copy.colorCounts?.[s.key] || 0}
-                      </td>
-                    ))}
-                  </>
-                )}
+                  {type === "marks" && (
+                    <>
+                      {allColors.map((c) => (
+                        <td key={`mark-${copy._id}-${c._id}`}>
+                          {copy.colorCounts?.[c.code] || 0}
+                        </td>
+                      ))}
+                      {commonStyles.map((s) => (
+                        <td key={`style-${copy._id}-${s.key}`}>
+                          {copy.colorCounts?.[s.key] || 0}
+                        </td>
+                      ))}
+                    </>
+                  )}
 
-                {type === "words" && (
-                  <>
-                    {allColors.map((c) => (
-                      <td
-                        key={`word-${copy._id}-${c._id}`}
-                        style={{ border: "1px solid #ccc", padding: "8px" }}
-                      >
-                        {wordCounts?.[c.code] || 0}
-                      </td>
-                    ))}
-                    {commonStyles.map((s) => (
-                      <td
-                        key={`style-${copy._id}-${s.key}`}
-                        style={{ border: "1px solid #ccc", padding: "8px" }}
-                      >
-                        {wordCounts?.[s.key] || 0}
-                      </td>
-                    ))}
-                  </>
-                )}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                  {type === "words" && (
+                    <>
+                      {allColors.map((c) => (
+                        <td key={`word-${copy._id}-${c._id}`}>
+                          {wordCounts?.[c.code] || 0}
+                        </td>
+                      ))}
+                      {commonStyles.map((s) => (
+                        <td key={`style-${copy._id}-${s.key}`}>
+                          {wordCounts?.[s.key] || 0}
+                        </td>
+                      ))}
+                    </>
+                  )}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 
   return (
-    <div style={{ padding: 20 }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 20,
-        }}
-      >
-        <h2>Comparison of coders for the statement: {statement.name}</h2>
-        <div style={{ display: "flex", gap: "10px" }}>
+    <div className="dashboard-container">
+      <div className="dashboard-header">
+        <div>
+          <h1 className="dashboard-title">
+            <FaChartBar /> Statement Summary
+          </h1>
+          <p className="dashboard-subtitle">
+            <FaFileAlt style={{ marginRight: "8px" }} />
+            Statement: {statement.name}
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
           <button
             onClick={handleExportToExcel}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#4CAF50",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "bold",
-            }}
+            className="dashboard-btn btn-success"
             disabled={!statement || !experiment || copies.length === 0}
+            style={{
+              opacity:
+                !statement || !experiment || copies.length === 0 ? 0.5 : 1,
+              cursor:
+                !statement || !experiment || copies.length === 0
+                  ? "not-allowed"
+                  : "pointer",
+            }}
           >
-            📊 Export to Excel
+            <FaFileExcel /> Export to Excel
+          </button>
+          <button onClick={() => navigate(-1)} className="dashboard-btn">
+            <FaArrowLeft /> Back
           </button>
         </div>
       </div>
 
-      <h3>Codings</h3>
       {renderTable("marks")}
-
-      <h3>Words</h3>
       {renderTable("words")}
-
-      <button style={{ marginTop: 20 }} onClick={() => navigate(-1)}>
-        Back
-      </button>
     </div>
   );
 }

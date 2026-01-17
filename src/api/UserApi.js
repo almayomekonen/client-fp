@@ -108,7 +108,7 @@ export async function logout(setCurrentUser, navigate) {
       window.location.hostname +
       ";";
 
-    if (navigate) {
+    if (navigate) { 
       navigate("/", { replace: true });
     }
   }

@@ -52,7 +52,7 @@ export default function ComparePage() {
   const {
     calculateSelectionCounts,
     calculateWordCounts,
-    renderKeyLabel,
+    calculateWordCountsForSelection,
     buildResultsTable,
     calculateAdditionalStats,
   } = useResult();
@@ -75,6 +75,7 @@ export default function ComparePage() {
   const [countsA, setCountsA] = useState({});
   const [wordCountsA, setWordCountsA] = useState({});
   const [selectionCountsA, setSelectionCountsA] = useState(null);
+  const [selectionWordCountsA, setSelectionWordCountsA] = useState(null);
   const [copyA, setCopyA] = useState(null);
   const [localCommentsA, setLocalCommentsA] = useState([]);
   const [activeCommentA, setActiveCommentA] = useState(null);
@@ -86,6 +87,7 @@ export default function ComparePage() {
   const [countsB, setCountsB] = useState({});
   const [wordCountsB, setWordCountsB] = useState({});
   const [selectionCountsB, setSelectionCountsB] = useState(null);
+  const [selectionWordCountsB, setSelectionWordCountsB] = useState(null);
   const [copyB, setCopyB] = useState(null);
   const [localCommentsB, setLocalCommentsB] = useState([]);
   const [activeCommentB, setActiveCommentB] = useState(null);
@@ -423,11 +425,10 @@ export default function ComparePage() {
     );
     setFullTextTableA(fullTable);
 
-    if (selectionCountsA) {
-      const wordCounts = calculateWordCounts(valueA);
+    if (selectionCountsA && selectionWordCountsA) {
       const selTable = buildResultsTable(
         selectionCountsA,
-        wordCounts,
+        selectionWordCountsA,
         colors,
         styleSettings
       );
@@ -443,12 +444,12 @@ export default function ComparePage() {
     countsA,
     wordCountsA,
     selectionCountsA,
+    selectionWordCountsA,
     colors,
     styleSettings,
     editorA,
     buildResultsTable,
     calculateAdditionalStats,
-    calculateWordCounts,
   ]);
 
   // Update results tables for Copy B
@@ -463,11 +464,10 @@ export default function ComparePage() {
     );
     setFullTextTableB(fullTable);
 
-    if (selectionCountsB) {
-      const wordCounts = calculateWordCounts(valueB);
+    if (selectionCountsB && selectionWordCountsB) {
       const selTable = buildResultsTable(
         selectionCountsB,
-        wordCounts,
+        selectionWordCountsB,
         colors,
         styleSettings
       );
@@ -483,12 +483,12 @@ export default function ComparePage() {
     countsB,
     wordCountsB,
     selectionCountsB,
+    selectionWordCountsB,
     colors,
     styleSettings,
     editorB,
     buildResultsTable,
     calculateAdditionalStats,
-    calculateWordCounts,
   ]);
 
   const getRenderLeaf =
@@ -1090,10 +1090,10 @@ export default function ComparePage() {
         {(currentUser?._id === copyA?.coderId ||
           currentUser?._id === copyB?.coderId ||
           ["investigator", "admin"].includes(currentUser?.role)) && (
-          <div className="dashboard-card" style={{ flex: 1 }}>
+          <div className="dashboard-card" style={{ flex: 1.2, minWidth: "350px" }}>
             <h3
               className="card-title"
-              style={{ fontSize: "16px", marginBottom: "12px" }}
+              style={{ fontSize: "16px", marginBottom: "16px" }}
             >
               <FaPalette /> Edit Coding {editTarget}
             </h3>
@@ -1107,8 +1107,24 @@ export default function ComparePage() {
                   className={`dashboard-btn btn-sm ${
                     editTarget === "A" ? "btn-primary" : "btn-secondary"
                   }`}
-                  onClick={() => setEditTarget("A")}
-                  style={{ flex: 1 }}
+                  onClick={() => {
+                    if (currentUser._id === copyA?.coderId) {
+                      setEditTarget("A");
+                    } else {
+                      alert("❌ You can only edit your own codings.");
+                    }
+                  }}
+                  disabled={currentUser._id !== copyA?.coderId}
+                  style={{ 
+                    flex: 1,
+                    opacity: currentUser._id !== copyA?.coderId ? 0.5 : 1,
+                    cursor: currentUser._id !== copyA?.coderId ? "not-allowed" : "pointer"
+                  }}
+                  title={
+                    currentUser._id !== copyA?.coderId
+                      ? "You can only edit your own codings"
+                      : "Edit Copy A"
+                  }
                 >
                   Copy A
                 </button>
@@ -1116,23 +1132,40 @@ export default function ComparePage() {
                   className={`dashboard-btn btn-sm ${
                     editTarget === "B" ? "btn-primary" : "btn-secondary"
                   }`}
-                  onClick={() => setEditTarget("B")}
-                  style={{ flex: 1 }}
+                  onClick={() => {
+                    if (currentUser._id === copyB?.coderId) {
+                      setEditTarget("B");
+                    } else {
+                      alert("❌ You can only edit your own codings.");
+                    }
+                  }}
+                  disabled={currentUser._id !== copyB?.coderId}
+                  style={{ 
+                    flex: 1,
+                    opacity: currentUser._id !== copyB?.coderId ? 0.5 : 1,
+                    cursor: currentUser._id !== copyB?.coderId ? "not-allowed" : "pointer"
+                  }}
+                  title={
+                    currentUser._id !== copyB?.coderId
+                      ? "You can only edit your own codings"
+                      : "Edit Copy B"
+                  }
                 >
                   Copy B
                 </button>
               </div>
             )}
 
-            {/* Color Palette */}
+            {currentUser._id === (editTarget === "A" ? copyA?.coderId : copyB?.coderId) ? (
             <div
               style={{
                 display: "flex",
-                gap: "6px",
-                marginBottom: "12px",
+                gap: "8px",
                 flexWrap: "wrap",
+                alignItems: "center",
               }}
             >
+              {/* Color Palette Buttons */}
               {colors.map((color) => (
                 <button
                   key={color._id}
@@ -1164,17 +1197,8 @@ export default function ComparePage() {
                   {color.name}
                 </button>
               ))}
-            </div>
 
-            {/* Style Buttons */}
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "8px",
-                marginBottom: "12px",
-              }}
-            >
+              {/* Style Buttons */}
               {styleSettings.underlineEnabled && (
                 <button
                   onClick={() =>
@@ -1214,10 +1238,8 @@ export default function ComparePage() {
                   <FaItalic /> {styleSettings.italicName || "Italic"}
                 </button>
               )}
-            </div>
 
-            {/* Remove All and Save Buttons */}
-            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-start" }}>
+              {/* Clear and Save Buttons */}
               <button
                 onClick={() =>
                   removeFormatting(editTarget === "A" ? editorA : editorB)
@@ -1227,10 +1249,10 @@ export default function ComparePage() {
                   padding: "6px 12px",
                   fontSize: "13px",
                   color: "#dc3545",
-                  fontWeight: "500"
+                  fontWeight: "500",
                 }}
               >
-                <FaEraser /> Remove All
+                <FaEraser /> Clear
               </button>
               <button
                 onClick={() =>
@@ -1245,23 +1267,31 @@ export default function ComparePage() {
                 style={{
                   padding: "6px 12px",
                   fontSize: "13px",
-                  fontWeight: "500"
+                  fontWeight: "500",
                 }}
               >
                 <FaSave /> Save
               </button>
             </div>
+            ) : (
+              <div style={{ padding: "20px", textAlign: "center", color: "#888" }}>
+                <p>🔒 You can only edit your own codings.</p>
+                <p style={{ fontSize: "14px", marginTop: "8px" }}>
+                  Select one of your copies using the buttons above to enable editing.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Comments Sections */}
-        <div style={{ flex: 1, display: "flex", gap: "10px" }}>
+        {/* Comments Sections - Stacked Vertically */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "16px", minWidth: "300px" }}>
           {/* Comments for A */}
           {copyA && (
-            <div className="dashboard-card" style={{ flex: 1 }}>
+            <div className="dashboard-card" style={{ padding: "20px" }}>
               <h3
                 className="card-title"
-                style={{ fontSize: "14px", marginBottom: "12px" }}
+                style={{ fontSize: "15px", marginBottom: "14px" }}
               >
                 <FaComment /> Comments A
               </h3>
@@ -1269,7 +1299,7 @@ export default function ComparePage() {
                 <button
                   onClick={() => setIsAddingCommentA(true)}
                   className="dashboard-btn btn-primary btn-sm"
-                  style={{ width: "100%", fontSize: "12px" }}
+                  style={{ width: "100%", fontSize: "13px", padding: "8px" }}
                 >
                   <FaPlus /> Add Comment to A
                 </button>
@@ -1282,13 +1312,13 @@ export default function ComparePage() {
                     placeholder="Select text in A and add comment..."
                     className="form-textarea"
                     style={{
-                      marginBottom: "8px",
-                      minHeight: "60px",
-                      fontSize: "12px",
+                      marginBottom: "10px",
+                      minHeight: "70px",
+                      fontSize: "13px",
                       width: "100%",
                     }}
                   />
-                  <div style={{ display: "flex", gap: "6px" }}>
+                  <div style={{ display: "flex", gap: "8px" }}>
                     <button
                       onClick={() => {
                         handleAddComment(
@@ -1306,7 +1336,7 @@ export default function ComparePage() {
                         setIsAddingCommentA(false);
                       }}
                       className="dashboard-btn btn-success btn-sm"
-                      style={{ flex: 1, fontSize: "11px" }}
+                      style={{ flex: 1, fontSize: "12px" }}
                     >
                       <FaSave /> Save
                     </button>
@@ -1316,7 +1346,7 @@ export default function ComparePage() {
                         setNewCommentA("");
                       }}
                       className="dashboard-btn btn-secondary btn-sm"
-                      style={{ flex: 1, fontSize: "11px" }}
+                      style={{ flex: 1, fontSize: "12px" }}
                     >
                       <FaTimes /> Cancel
                     </button>
@@ -1328,10 +1358,10 @@ export default function ComparePage() {
 
           {/* Comments for B */}
           {copyB && (
-            <div className="dashboard-card" style={{ flex: 1 }}>
+            <div className="dashboard-card" style={{ padding: "20px" }}>
               <h3
                 className="card-title"
-                style={{ fontSize: "14px", marginBottom: "12px" }}
+                style={{ fontSize: "15px", marginBottom: "14px" }}
               >
                 <FaComment /> Comments B
               </h3>
@@ -1339,7 +1369,7 @@ export default function ComparePage() {
                 <button
                   onClick={() => setIsAddingCommentB(true)}
                   className="dashboard-btn btn-primary btn-sm"
-                  style={{ width: "100%", fontSize: "12px" }}
+                  style={{ width: "100%", fontSize: "13px", padding: "8px" }}
                 >
                   <FaPlus /> Add Comment to B
                 </button>
@@ -1352,13 +1382,13 @@ export default function ComparePage() {
                     placeholder="Select text in B and add comment..."
                     className="form-textarea"
                     style={{
-                      marginBottom: "8px",
-                      minHeight: "60px",
-                      fontSize: "12px",
+                      marginBottom: "10px",
+                      minHeight: "70px",
+                      fontSize: "13px",
                       width: "100%",
                     }}
                   />
-                  <div style={{ display: "flex", gap: "6px" }}>
+                  <div style={{ display: "flex", gap: "8px" }}>
                     <button
                       onClick={() => {
                         handleAddComment(
@@ -1376,7 +1406,7 @@ export default function ComparePage() {
                         setIsAddingCommentB(false);
                       }}
                       className="dashboard-btn btn-success btn-sm"
-                      style={{ flex: 1, fontSize: "11px" }}
+                      style={{ flex: 1, fontSize: "12px" }}
                     >
                       <FaSave /> Save
                     </button>
@@ -1386,7 +1416,7 @@ export default function ComparePage() {
                         setNewCommentB("");
                       }}
                       className="dashboard-btn btn-secondary btn-sm"
-                      style={{ flex: 1, fontSize: "11px" }}
+                      style={{ flex: 1, fontSize: "12px" }}
                     >
                       <FaTimes /> Cancel
                     </button>
@@ -1448,6 +1478,11 @@ export default function ComparePage() {
                     renderLeaf={getRenderLeaf(setActiveCommentA)}
                     placeholder="Coding A"
                     readOnly={true}
+                    onKeyDown={(event) => {
+                      if (!event.ctrlKey && !event.metaKey && !event.altKey) {
+                        event.preventDefault();
+                      }
+                    }}
                     dir="auto"
                     style={{
                       fontSize: "16px",
@@ -1503,6 +1538,12 @@ export default function ComparePage() {
                     renderLeaf={getRenderLeaf(setActiveCommentB)}
                     placeholder="Coding B"
                     readOnly={true}
+                    onKeyDown={(event) => {
+                      // Prevent all keyboard input that would modify text
+                      if (!event.ctrlKey && !event.metaKey && !event.altKey) {
+                        event.preventDefault();
+                      }
+                    }}
                     dir="auto"
                     style={{
                       fontSize: "16px",
@@ -1519,7 +1560,10 @@ export default function ComparePage() {
       {/* Bottom Section: Results Side by Side */}
       <div style={{ display: "flex", gap: "20px" }}>
         {/* Results for A */}
-        <div className="dashboard-card" style={{ flex: 1, maxHeight: "500px", overflowY: "auto" }}>
+        <div
+          className="dashboard-card"
+          style={{ flex: 1, maxHeight: "500px", overflowY: "auto" }}
+        >
           <h3
             className="card-title"
             style={{ fontSize: "14px", marginBottom: "12px" }}
@@ -1527,9 +1571,14 @@ export default function ComparePage() {
             <FaChartBar /> Results A
           </h3>
           <button
-            onClick={() =>
-              calculateSelectionCounts(editorA, setSelectionCountsA)
-            }
+            onClick={() => {
+              calculateSelectionCounts(editorA, setSelectionCountsA);
+              const wordCounts = calculateWordCountsForSelection(
+                editorA,
+                valueA
+              );
+              setSelectionWordCountsA(wordCounts);
+            }}
             className="dashboard-btn btn-secondary btn-sm"
             style={{ width: "100%", marginBottom: "12px", fontSize: "12px" }}
           >
@@ -1547,7 +1596,10 @@ export default function ComparePage() {
         </div>
 
         {/* Results for B */}
-        <div className="dashboard-card" style={{ flex: 1, maxHeight: "500px", overflowY: "auto" }}>
+        <div
+          className="dashboard-card"
+          style={{ flex: 1, maxHeight: "500px", overflowY: "auto" }}
+        >
           <h3
             className="card-title"
             style={{ fontSize: "14px", marginBottom: "12px" }}
@@ -1555,9 +1607,14 @@ export default function ComparePage() {
             <FaChartBar /> Results B
           </h3>
           <button
-            onClick={() =>
-              calculateSelectionCounts(editorB, setSelectionCountsB)
-            }
+            onClick={() => {
+              calculateSelectionCounts(editorB, setSelectionCountsB);
+              const wordCounts = calculateWordCountsForSelection(
+                editorB,
+                valueB
+              );
+              setSelectionWordCountsB(wordCounts);
+            }}
             className="dashboard-btn btn-secondary btn-sm"
             style={{ width: "100%", marginBottom: "12px", fontSize: "12px" }}
           >
@@ -1591,63 +1648,6 @@ export default function ComparePage() {
               </button>
             </div>
             <div className="comment-modal-body">
-              {/* Add Comment Section */}
-              {!isAddingCommentA && (
-                <button
-                  onClick={() => setIsAddingCommentA(true)}
-                  className="dashboard-btn btn-primary btn-sm"
-                  style={{ width: "100%", marginBottom: "16px" }}
-                >
-                  <FaPlus /> Add Comment
-                </button>
-              )}
-              {isAddingCommentA && (
-                <div style={{ marginBottom: "16px" }}>
-                  <textarea
-                    value={newCommentA}
-                    onChange={(e) => setNewCommentA(e.target.value)}
-                    placeholder="Write a comment..."
-                    className="dashboard-input"
-                    style={{
-                      width: "100%",
-                      minHeight: "80px",
-                      marginBottom: "8px",
-                    }}
-                  />
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <button
-                      onClick={() => {
-                        handleAddComment(
-                          editorA,
-                          valueA,
-                          setNewCommentA,
-                          localCommentsA,
-                          setLocalCommentsA,
-                          setValueA,
-                          copyA._id,
-                          statement,
-                          setCommentKeyA,
-                          newCommentA
-                        );
-                        setIsAddingCommentA(false);
-                      }}
-                      className="dashboard-btn btn-primary btn-sm"
-                    >
-                      <FaSave /> Save
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsAddingCommentA(false);
-                        setNewCommentA("");
-                      }}
-                      className="dashboard-btn btn-secondary btn-sm"
-                    >
-                      <FaTimes /> Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-
               {/* Existing Comments */}
               {activeCommentA.map((c) => (
                 <div key={c._id} className="comment-item">
@@ -1718,63 +1718,6 @@ export default function ComparePage() {
               </button>
             </div>
             <div className="comment-modal-body">
-              {/* Add Comment Section */}
-              {!isAddingCommentB && (
-                <button
-                  onClick={() => setIsAddingCommentB(true)}
-                  className="dashboard-btn btn-primary btn-sm"
-                  style={{ width: "100%", marginBottom: "16px" }}
-                >
-                  <FaPlus /> Add Comment
-                </button>
-              )}
-              {isAddingCommentB && (
-                <div style={{ marginBottom: "16px" }}>
-                  <textarea
-                    value={newCommentB}
-                    onChange={(e) => setNewCommentB(e.target.value)}
-                    placeholder="Write a comment..."
-                    className="dashboard-input"
-                    style={{
-                      width: "100%",
-                      minHeight: "80px",
-                      marginBottom: "8px",
-                    }}
-                  />
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <button
-                      onClick={() => {
-                        handleAddComment(
-                          editorB,
-                          valueB,
-                          setNewCommentB,
-                          localCommentsB,
-                          setLocalCommentsB,
-                          setValueB,
-                          copyB._id,
-                          statement,
-                          setCommentKeyB,
-                          newCommentB
-                        );
-                        setIsAddingCommentB(false);
-                      }}
-                      className="dashboard-btn btn-primary btn-sm"
-                    >
-                      <FaSave /> Save
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsAddingCommentB(false);
-                        setNewCommentB("");
-                      }}
-                      className="dashboard-btn btn-secondary btn-sm"
-                    >
-                      <FaTimes /> Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-
               {/* Existing Comments */}
               {activeCommentB.map((c) => (
                 <div key={c._id} className="comment-item">

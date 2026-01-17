@@ -57,6 +57,13 @@ export default function UserListForDeletion({ users, onDelete, onUpdateRole }) {
     }
   };
 
+  const getRoleDisplayName = (role) => {
+    if (role === "investigator") return "Researcher";
+    if (role === "admin") return "Admin";
+    if (role === "coder") return "Coder";
+    return role;
+  };
+
   return (
     <div>
       {users.map((user) => (
@@ -71,7 +78,7 @@ export default function UserListForDeletion({ users, onDelete, onUpdateRole }) {
           }}
         >
           <span>
-            {user.username} ({user.role})
+            {user.username} ({getRoleDisplayName(user.role)})
           </span>
 
           <div style={{ display: "flex", gap: "8px" }}>
@@ -80,7 +87,7 @@ export default function UserListForDeletion({ users, onDelete, onUpdateRole }) {
               onChange={(e) => handleOnUpdateRole(user._id, e.target.value)}
             >
               <option value="admin">Admin</option>
-              <option value="investigator">Investigator</option>
+              <option value="investigator">Researcher</option>
               <option value="coder">Coder</option>
             </select>
 

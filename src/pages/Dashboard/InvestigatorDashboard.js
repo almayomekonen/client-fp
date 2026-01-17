@@ -15,10 +15,7 @@ import {
   FaChartLine,
   FaPlus,
   FaTrash,
-  FaTimes,
-  FaSave,
   FaUsers,
-  FaChevronLeft,
   FaChevronRight,
   FaArrowLeft,
   FaComment,
@@ -32,18 +29,24 @@ export default function InvestigatorHomePage() {
     experimentsByInvestigatorId,
     deleteExperiment,
     experimentById,
+    fetchExperiments,
   } = useExperiment();
-  const { groupsByExperimentId, addGroup, deleteGroup } = useGroup();
-  const { statementsByGroupId, addStatement, deleteStatement } = useStatement();
+  const { groupsByExperimentId, addGroup, deleteGroup, fetchAllGroups } = useGroup();
+  const { statementsByGroupId, addStatement, deleteStatement, fetchAllStatements } = useStatement();
   const { copiesByStatementId, deleteCopy, addCopy } = useCopy();
   const { addTask, addTaskForCopy, addCopyToTask } = useTask();
   const { users, currentUser, isAuthChecked } = useData();
   const { getUnreadCount } = useCopyMessage();
 
   const [relevantExperiments, setRelevantExperiments] = useState([]);
+  
+  // Global data for uniqueness checks
+  const [allExperiments, setAllExperiments] = useState([]);
+  const [allGroups, setAllGroups] = useState([]);
+  const [allStatements, setAllStatements] = useState([]);
 
   // Navigation State
-  const [currentView, setCurrentView] = useState("experiments"); // experiments, groups, statements, copies
+  const [currentView, setCurrentView] = useState("experiments"); 
   const [selectedExperiment, setSelectedExperiment] = useState(null);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [selectedStatement, setSelectedStatement] = useState(null);
@@ -75,7 +78,12 @@ export default function InvestigatorHomePage() {
 
   const navigate = useNavigate();
 
-  // Load Experiments
+  useEffect(() => {
+    if (isAuthChecked && !currentUser) {
+      navigate("/", { replace: true });
+    }
+  }, [isAuthChecked, currentUser, navigate]);
+
   useEffect(() => {
     const fetchExperiments = async () => {
       if (!isAuthChecked || !currentUser?._id) return;
@@ -87,9 +95,28 @@ export default function InvestigatorHomePage() {
       }
     };
     fetchExperiments();
-  }, [isAuthChecked, currentUser, experimentsByInvestigatorId]);
+  }, [isAuthChecked, currentUser, experimentsByInvestigatorId, users]);
 
-  // Load Groups when Experiment Selected
+  // Fetch ALL experiments, groups, and statements for global uniqueness checks
+  useEffect(() => {
+    const fetchAllData = async () => {
+      if (!isAuthChecked || !currentUser) return;
+      try {
+        const [exps, grps, stmts] = await Promise.all([
+          fetchExperiments(),
+          fetchAllGroups(),
+          fetchAllStatements(),
+        ]);
+        setAllExperiments(exps);
+        setAllGroups(grps);
+        setAllStatements(stmts);
+      } catch (err) {
+        console.error("❌ Error loading global data:", err);
+      }
+    };
+    fetchAllData();
+  }, [isAuthChecked, currentUser, fetchExperiments, fetchAllGroups, fetchAllStatements]);
+
   useEffect(() => {
     if (selectedExperiment) {
       const fetchGroups = async () => {
@@ -106,7 +133,6 @@ export default function InvestigatorHomePage() {
     }
   }, [selectedExperiment, groupsByExperimentId]);
 
-  // Load Statements when Group Selected
   useEffect(() => {
     if (selectedGroup) {
       const fetchStatements = async () => {
@@ -138,7 +164,8 @@ export default function InvestigatorHomePage() {
     e.preventDefault();
     if (!expName.trim()) return alert("Please enter an experiment name");
 
-    const duplicateExp = relevantExperiments.find(
+    // Check globally across ALL experiments, not just the current user's
+    const duplicateExp = allExperiments.find(
       (exp) => exp.name.toLowerCase() === expName.trim().toLowerCase()
     );
 
@@ -150,7 +177,6 @@ export default function InvestigatorHomePage() {
 
     const newExp = await addExperiment(expName, expDesc, currentUser._id);
     if (newExp) {
-      // Refetch experiments to get the updated list
       const exps = await experimentsByInvestigatorId(currentUser._id);
       setRelevantExperiments(exps);
     }
@@ -163,13 +189,14 @@ export default function InvestigatorHomePage() {
     e.preventDefault();
     if (!groupName.trim()) return alert("Please enter a group name");
 
-    const duplicateGroup = groups.find(
+    // Check globally across ALL groups, not just the current experiment's
+    const duplicateGroup = allGroups.find(   
       (g) => g.name.toLowerCase() === groupName.trim().toLowerCase()
     );
 
     if (duplicateGroup) {
       return alert(
-        "Group name already exists in this experiment. Please choose a different name."
+        "Group name already exists. Please choose a different name."
       );
     }
 
@@ -189,13 +216,14 @@ export default function InvestigatorHomePage() {
     if (!statementName.trim() || !statementText.trim())
       return alert("Please fill in all fields");
 
-    const duplicateStatement = statements.find(
+    // Check globally across ALL statements, not just the current group's
+    const duplicateStatement = allStatements.find(
       (stmt) => stmt.name.toLowerCase() === statementName.trim().toLowerCase()
     );
 
     if (duplicateStatement) {
       return alert(
-        "Statement name already exists in this group. Please choose a different name."
+        "Statement name already exists. Please choose a different name."
       );
     }
 
@@ -208,7 +236,6 @@ export default function InvestigatorHomePage() {
 
     setStatements((prev) => [...prev, newStatement]);
 
-    // Auto-create copy for researcher? (Matches old logic)
     const r = await addCopy(
       newStatement._id,
       selectedGroup._id,
@@ -241,20 +268,30 @@ export default function InvestigatorHomePage() {
   };
 
   const handleCreateTask = async () => {
-    if (!taskCoderId) return alert("Select coder first");
+    if (!taskCoderId) return alert("❌ Please select a coder first");
     if (taskPercent < 0 || taskPercent > 100)
-      return alert("Invalid percentage");
+      return alert("❌ Invalid percentage (must be 0-100)");
 
-    await addTask(
-      selectedExperiment._id,
-      currentUser._id,
-      taskCoderId,
-      taskPercent
-    );
-    setTaskCoderId("");
-    setTaskPercent(100);
-    setShowTaskModal(false);
-    alert("Task created successfully!");
+    try {
+      const result = await addTask(
+        selectedExperiment._id,
+        currentUser._id,
+        taskCoderId,
+        taskPercent
+      );
+
+      if (!result.success) {
+        alert("❌ Failed to create task. Please try again.");
+        return;
+      }
+
+      setTaskCoderId("");
+      setTaskPercent(100);
+      setShowTaskModal(false);
+    } catch (err) {
+      console.error("Error creating task:", err);
+      alert(`❌ ${err.message || "Error creating task. Please try again."}`);
+    }
   };
 
   const handleDeleteExperiment = async (e, experimentId) => {
@@ -271,9 +308,19 @@ export default function InvestigatorHomePage() {
 
   const handleDeleteGroup = async (e, groupId) => {
     e.stopPropagation();
-    if (window.confirm("Delete this group?")) {
-      const success = await deleteGroup(groupId);
-      if (success) setGroups((prev) => prev.filter((g) => g._id !== groupId));
+    if (window.confirm("Delete this group and all its statements, copies, and related data?")) {
+      try {
+        await deleteGroup(groupId);
+        setGroups((prev) => prev.filter((g) => g._id !== groupId));
+        if (selectedGroup && selectedGroup._id === groupId) {
+          setSelectedGroup(null);
+          setStatements([]);
+          setCurrentView("groups");
+        }
+      } catch (err) {
+        console.error("Error deleting group:", err);
+        alert("Failed to delete group. Please try again.");
+      }
     }
   };
 
@@ -289,9 +336,6 @@ export default function InvestigatorHomePage() {
     if (window.confirm("Delete this copy?")) await deleteCopy(copyId);
   };
 
-  // --- Render Helpers ---
-
-  // Breadcrumbs
   const renderBreadcrumbs = () => (
     <div className="breadcrumbs">
       <span
@@ -345,7 +389,6 @@ export default function InvestigatorHomePage() {
 
   return (
     <div className="dashboard-container">
-      {/* Header */}
       <div className="dashboard-header">
         <h1 className="dashboard-title">
           <FaMicroscope /> Experiments of {currentUser.username}
@@ -353,7 +396,6 @@ export default function InvestigatorHomePage() {
         <p className="dashboard-subtitle">Manage your research hierarchy</p>
       </div>
 
-      {/* Navigation Bar */}
       <div className="investigator-nav-bar">
         {currentView !== "experiments" && (
           <button
@@ -609,37 +651,42 @@ export default function InvestigatorHomePage() {
               </div>
             )}
 
-            <div className="list-layout">
+            <div className="grid-layout">
               {statements.map((stmt) => (
                 <div
                   key={stmt._id}
-                  className="list-item-card"
+                  className="folder-card statement-card"
                   onClick={() => {
                     setSelectedStatement(stmt);
                     setCurrentView("copies");
                   }}
                 >
-                  <div className="list-item-content">
-                    <FaBalanceScale className="list-icon" />
-                    <span className="list-title">{stmt.name}</span>
+                  <div className="card-top">
+                    <FaFileAlt className="card-icon" />
+                    <div className="card-actions">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/statement-summary/${stmt._id}`);
+                        }}
+                        className="icon-btn"
+                        title="View Summary"
+                      >
+                        <FaChartLine />
+                      </button>
+                      <button
+                        onClick={(e) => handleDeleteStatement(e, stmt._id)}
+                        className="icon-btn delete"
+                        title="Delete"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
                   </div>
-                  <div className="list-actions">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/statement-summary/${stmt._id}`);
-                      }}
-                      className="text-btn"
-                    >
-                      <FaChartLine /> Summary
-                    </button>
-                    <button
-                      onClick={(e) => handleDeleteStatement(e, stmt._id)}
-                      className="icon-btn delete"
-                    >
-                      <FaTrash />
-                    </button>
-                  </div>
+                  <h3 className="card-title">{stmt.name}</h3>
+                  <p className="card-desc">
+                    {stmt.content || "No content"}
+                  </p>
                 </div>
               ))}
               {statements.length === 0 && !showStatementForm && (
@@ -685,6 +732,55 @@ export default function InvestigatorHomePage() {
                 </form>
               </div>
             )}
+
+            {/* Compare Button - Always visible */}
+            <div style={{ marginBottom: "16px", display: "flex", gap: "8px" }}>
+              <button
+                onClick={() => {
+                  const completedCopies = copiesByStatementId(
+                    selectedStatement._id
+                  ).filter((copy) => copy.status === "completed");
+                  
+                  if (completedCopies.length < 2) {
+                    alert(
+                      "❌ Cannot compare: At least 2 completed copies are required to compare this statement."
+                    );
+                    return;
+                  }
+                  
+                  navigate(`/compare/${selectedStatement._id}`);
+                }}
+                disabled={
+                  copiesByStatementId(selectedStatement._id).filter(
+                    (copy) => copy.status === "completed"
+                  ).length < 2
+                }
+                className="btn-primary"
+                style={{
+                  opacity:
+                    copiesByStatementId(selectedStatement._id).filter(
+                      (copy) => copy.status === "completed"
+                    ).length < 2
+                      ? 0.5
+                      : 1,
+                  cursor:
+                    copiesByStatementId(selectedStatement._id).filter(
+                      (copy) => copy.status === "completed"
+                    ).length < 2
+                      ? "not-allowed"
+                      : "pointer",
+                }}
+                title={
+                  copiesByStatementId(selectedStatement._id).filter(
+                    (copy) => copy.status === "completed"
+                  ).length < 2
+                    ? "At least 2 completed copies required"
+                    : "Compare completed copies"
+                }
+              >
+                <FaBalanceScale /> Compare Copies
+              </button>
+            </div>
 
             <div className="copies-grid">
               {copiesByStatementId(selectedStatement._id).map((copy) => {
@@ -752,7 +848,6 @@ export default function InvestigatorHomePage() {
         )}
       </div>
 
-      {/* Task Creation Modal */}
       {showTaskModal && (
         <div className="modal-overlay">
           <div className="modal-content">

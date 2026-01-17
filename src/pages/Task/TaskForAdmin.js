@@ -151,6 +151,9 @@ export default function TaskManagementPage() {
   const getCoderName = (coderId) =>
     users.find((u) => u._id === coderId)?.username || "User not found";
 
+  const getResearcherName = (investigatorId) =>
+    users.find((u) => u._id === investigatorId)?.username || "User not found";
+
   const handleDeleteTask = async (taskId) => {
     if (
       !window.confirm(
@@ -258,7 +261,11 @@ export default function TaskManagementPage() {
                           {experimentNames[task.experimentId] || "Loading..."}
                         </div>
                         <div className="task-meta">
-                          {/* Removed Coder name from here since it's grouped */}
+                          {/* Researcher name */}
+                          <span className="task-meta-item">
+                            <FaUser />
+                            Researcher: {getResearcherName(task.investigatorId)}
+                          </span>
                           <span className="task-meta-item">
                             <FaChartLine />
                             Experiment: {experimentPercentMap[task._id] ?? 0}%

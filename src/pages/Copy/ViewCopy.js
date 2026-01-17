@@ -447,19 +447,19 @@ export default function ViewStatementWithComments() {
       {/* Main Content Grid - Takes remaining space */}
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 420px",
+          display: "flex",
           gap: "10px",
           flex: 1,
-          minHeight: 0,
+          minHeight: "600px",
         }}
       >
         {/* Left Column - Full Height */}
         <div
           style={{
+            flex: 1,
             display: "flex",
             flexDirection: "column",
-            minHeight: 0,
+            minWidth: 0,
             overflow: "hidden",
           }}
         >
@@ -507,6 +507,12 @@ export default function ViewStatementWithComments() {
                 <Editable
                   renderLeaf={renderLeaf}
                   readOnly
+                  onKeyDown={(event) => {
+                    // Prevent all keyboard input that would modify text
+                    if (!event.ctrlKey && !event.metaKey && !event.altKey) {
+                      event.preventDefault();
+                    }
+                  }}
                   dir="auto"
                   placeholder="No text available"
                   style={{
@@ -562,10 +568,10 @@ export default function ViewStatementWithComments() {
               background: "#fff",
               borderRadius: "8px",
               padding: "10px",
-              marginBottom: "8px", // Changed from marginTop to match EditCopy spacing
+              marginTop: "8px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
               flexShrink: 0,
-              height: "250px", // Fixed height
+              height: "180px", // Fixed height
               overflowY: "auto", // Scrollable
             }}
           >
@@ -591,10 +597,12 @@ export default function ViewStatementWithComments() {
         {/* Right Column - Sidebar Full Height */}
         <div
           style={{
+            width: "330px",
+            flexShrink: 0,
             display: "flex",
             flexDirection: "column",
             minHeight: 0,
-            width: "420px",
+            overflow: "hidden",
           }}
         >
           {/* Chat - Takes space */}
@@ -602,13 +610,14 @@ export default function ViewStatementWithComments() {
             style={{
               background: "#fff",
               borderRadius: "8px",
-              padding: "10px",
+              padding: "8px",
               marginBottom: "8px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
               flex: 1,
               minHeight: 0,
               display: "flex",
               flexDirection: "column",
+              overflow: "hidden",
             }}
           >
             <h3
@@ -636,7 +645,7 @@ export default function ViewStatementWithComments() {
             style={{
               background: "#fff",
               borderRadius: "8px",
-              padding: "10px",
+              padding: "8px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
               flexShrink: 0,
             }}

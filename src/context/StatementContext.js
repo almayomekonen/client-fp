@@ -7,6 +7,7 @@ import {
   deleteStatementFromServer as deleteStatementFromServerService,
   fetchStatementsByGroupId as fetchStatementsByGroupIdService,
   fetchStatementById as fetchStatementByIdService,
+  fetchStatementsFromServer as fetchStatementsFromServerService,
 } from "../api/StatementApi";
 
 const StatementContext = createContext();
@@ -37,6 +38,11 @@ export function StatementProvider({ children }) {
     return await fetchStatementByIdService(statementId);
   };
 
+  // All statements
+  const fetchAllStatements = async () => {
+    return await fetchStatementsFromServerService();
+  };
+
   // --- Delete statement ---
   const deleteStatement = async (id) => {
     await deleteStatementFromServerService(id);
@@ -55,6 +61,7 @@ export function StatementProvider({ children }) {
         addStatement,
         statementsByGroupId,
         statementById,
+        fetchAllStatements,
         deleteStatement,
       }}
     >

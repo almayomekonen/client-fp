@@ -242,3 +242,108 @@
 .auth-card {
   animation: fadeIn 0.5s ease forwards;
 }
+
+/* Success Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  padding: 48px 40px;
+  max-width: 480px;
+  width: 90%;
+  text-align: center;
+  position: relative;
+  animation: slideUp 0.4s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(50px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.success-modal {
+  border-top: 6px solid #4caf50;
+}
+
+.modal-icon {
+  font-size: 72px;
+  margin-bottom: 24px;
+  animation: bounce 0.6s ease;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.success-icon {
+  color: #4caf50;
+}
+
+.modal-title {
+  font-size: 32px;
+  font-weight: 800;
+  color: #000000;
+  margin: 0 0 20px 0;
+  letter-spacing: -0.5px;
+}
+
+.modal-text {
+  font-size: 16px;
+  color: #666666;
+  line-height: 1.6;
+  margin: 12px 0;
+}
+
+.modal-btn {
+  margin-top: 32px;
+  padding: 16px 40px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.success-btn {
+  background: #4caf50;
+  color: #ffffff;
+}
+
+.success-btn:hover {
+  background: #43a047;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(76, 175, 80, 0.3);
+}
+
+.success-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 8px rgba(76, 175, 80, 0.2);
+}

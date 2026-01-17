@@ -1,152 +1,4 @@
-/*import React, { useState, useEffect } from 'react';
-import { useData } from '../context/DataContext';
-import { useCopyMessage } from '../context/CopyMessageContext';
 
-export default function CopyChat({ copyId }) {
-  const { currentUser, users } = useData();
-  const {
-    getMessagesForCopy,
-    sendMessage,
-    markAsRead,
-    messageById,
-    deleteMessage,
-  } = useCopyMessage();
-
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [replyTo, setReplyTo] = useState(null);
-
-  // Load messages from server
-  useEffect(() => {
-    const loadMessages = async () => {
-      const msgs = await getMessagesForCopy(copyId);
-      setMessages(msgs);
-
-      // Mark as read
-      if (msgs.length > 0 && currentUser?._id) {
-        for (const m of msgs) {
-          if (!m.readBy.includes(currentUser._id)) {
-            await markAsRead(m._id, currentUser._id);
-          }
-        }
-      }
-    };
-
-    loadMessages();
-  }, [copyId, currentUser?._id, getMessagesForCopy, markAsRead]);
-
-  // Send new message
-  const handleSend = async () => {
-    if (!newMessage.trim()) return;
-    await sendMessage(copyId, currentUser?._id, newMessage, replyTo?._id || null);
-    setNewMessage('');
-    setReplyTo(null);
-
-    const msgs = await getMessagesForCopy(copyId);
-    setMessages(msgs);
-  };
-
-  // Delete message
-  const handleDeleteMessage = async (msgId) => {
-    await deleteMessage(msgId);
-    const msgs = await getMessagesForCopy(copyId);
-    setMessages(msgs);
-  };
-
-  // Get username
-  const getUserName = (userId) => {
-    const user = users.find((u) => u._id === userId);
-    return user ? user.username : 'Unknown';
-  };
-
-  // Format date
-  const formatTimestamp = (timestamp) => {
-    if (!timestamp) return '';
-    return new Date(timestamp).toLocaleString('he-IL', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  };
-
-  // Reply to message
-  const handleReply = async (msgId) => {
-    const msg = await messageById(msgId);
-    if (msg) setReplyTo(msg);
-  };
-
-  const cancelReply = () => setReplyTo(null);
-
-  return (
-    <div className="border rounded p-4 bg-gray-50">
-      <div className="h-64 overflow-y-auto mb-4 border p-2 bg-white">
-        {messages.map((msg) => (
-          <div key={msg._id} className="mb-3 border-b pb-2">
-            {msg.replyToMessageId && (
-              <div className="text-xs text-gray-600 bg-gray-100 px-2 py-1 mb-1 rounded">
-                Reply to:{' '}
-                <strong>{getUserName(messages.find(m => m._id === msg.replyToMessageId)?.senderId)}:</strong>{' '}
-                {messages.find(m => m._id === msg.replyToMessageId)?.text || 'Message unavailable'}
-              </div>
-            )}
-            <div>
-              <strong>{getUserName(msg.senderId)}:</strong> {msg.text}
-            </div>
-            <div className="text-xs text-gray-500 flex justify-between">
-              <span>{formatTimestamp(msg.createdAt)}</span>
-              <span>
-                <button
-                  onClick={() => handleReply(msg._id)}
-                  className="text-blue-500 text-xs ml-2"
-                >
-                  Reply
-                </button>
-                {msg.senderId === currentUser?._id && (
-                  <button
-                    onClick={() => handleDeleteMessage(msg._id)}
-                    className="text-red-500 text-xs ml-2"
-                  >
-                    Delete
-                  </button>
-                )}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {replyTo && (
-        <div className="mb-2 bg-yellow-100 p-2 rounded text-sm">
-          Reply to: <strong>{getUserName(replyTo.senderId)}:</strong> {replyTo.text}
-          <button onClick={cancelReply} className="ml-4 text-red-600 text-xs">
-            Cancel
-          </button>
-        </div>
-      )}
-
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          className="border flex-1 p-2"
-          placeholder="Type a message..."
-        />
-        <button
-          onClick={handleSend}
-          className="bg-blue-500 text-white px-4 py-2 rounded"
-        >
-          Send
-        </button>
-      </div>
-    </div>
-  );
-}
-
-*/
 
 import React, { useState, useEffect, useRef } from "react";
 import { useData } from "../context/DataContext";
@@ -163,6 +15,7 @@ export default function CopyChat({ copyId }) {
     deleteCopyMessage,
   } = useCopyMessage();
   const messagesEndRef = useRef(null);
+  const markedAsReadRef = useRef(new Set()); // Track messages already marked as read
 
   const copyMessages = getMessagesForCopy(copyId);
 
@@ -175,10 +28,13 @@ export default function CopyChat({ copyId }) {
   };
 
   useEffect(() => {
-    if (copyMessages.length > 0) {
+    if (copyMessages.length > 0 && currentUser?._id) {
       copyMessages.forEach((m) => {
-        if (!m.readBy.includes(currentUser?._id)) {
-          markAsRead(m?._id, currentUser?._id);
+        // Only mark as read if not already in the user's readBy array
+        // AND we haven't already called markAsRead for this message in this session
+        if (!m.readBy.includes(currentUser._id) && !markedAsReadRef.current.has(m._id)) {
+          markedAsReadRef.current.add(m._id); // Mark as processed to prevent duplicate calls
+          markAsRead(m._id, currentUser._id);
         }
       });
       scrollToBottom();

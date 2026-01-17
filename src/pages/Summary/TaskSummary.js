@@ -11,6 +11,8 @@ import { useStyleSetting } from "../../context/StyleSettingContext";
 import { useExperiment } from "../../context/ExperimentContext";
 import { useData } from "../../context/DataContext";
 import { fetchGroupById } from "../../api/GroupApi";
+import { FaChartBar, FaFileExcel, FaArrowLeft, FaUser } from "react-icons/fa";
+import "../../styles/Dashboard.css";
 
 export default function TaskSummary() {
   const { taskId } = useParams();
@@ -296,120 +298,91 @@ export default function TaskSummary() {
   };
 
   const renderTable = (type) => (
-    <div style={{ overflowX: "auto", marginBottom: 30 }}>
-      <table
-        style={{
-          borderCollapse: "collapse",
-          width: "100%",
-          textAlign: "center",
-          minWidth: 600,
-        }}
-      >
-        <thead>
-          <tr>
-            <th style={{ border: "1px solid #ccc", padding: "8px" }}>
-              Statement
-            </th>
-            <th style={{ border: "1px solid #ccc", padding: "8px" }}>
-              Experiment Condition
-            </th>
-            {type === "words" && (
-              <th style={{ border: "1px solid #ccc", padding: "8px" }}>
-                Word Count
-              </th>
-            )}
-            {allColors.map((c) => (
-              <th
-                key={`${type}-${c._id}`}
-                style={{
-                  border: "1px solid #ccc",
-                  padding: "8px",
-                  backgroundColor: c.code,
-                  color: (() => {
-                    // Calculate contrast color for text
-                    const hex = c.code.replace("#", "");
-                    const r = parseInt(hex.substr(0, 2), 16);
-                    const g = parseInt(hex.substr(2, 2), 16);
-                    const b = parseInt(hex.substr(4, 2), 16);
-                    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-                    return brightness > 155 ? "#000000" : "#FFFFFF";
-                  })(),
-                }}
-              >
-                {c.name}
-              </th>
-            ))}
-            {commonStyles.map((s) => (
-              <th
-                key={s.key}
-                style={{
-                  border: "1px solid #ccc",
-                  padding: "8px",
-                  fontWeight: s.key === "bold" ? "bold" : "normal",
-                  fontStyle: s.key === "italic" ? "italic" : "normal",
-                  textDecoration: s.key === "underline" ? "underline" : "none",
-                }}
-              >
-                {s.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {copies.map((copy) => {
-            const statement = statementsCache[copy.statementId];
-            const group = statement?.groupId
-              ? groupsCache[statement.groupId]
-              : null;
-            const baseText = statement?.text || [
-              { type: "paragraph", children: [{ text: "" }] },
-            ];
-            const decoratedText = applyHighlightsToText(
-              baseText,
-              copy.highlights || [],
-              [],
-              []
-            );
-            const wordCounts = calculateWordCounts(decoratedText);
+    <div className="dashboard-card" style={{ marginBottom: "20px" }}>
+      <h3 className="card-title" style={{ marginBottom: "20px" }}>
+        {type === "marks" ? "Codings" : "Words"}
+      </h3>
+      <div style={{ overflowX: "auto" }}>
+        <table className="summary-table">
+          <thead>
+            <tr>
+              <th>Statement</th>
+              <th>Experiment Condition</th>
+              {type === "words" && <th>Word Count</th>}
+              {allColors.map((c) => (
+                <th
+                  key={`${type}-${c._id}`}
+                  style={{
+                    backgroundColor: c.code,
+                    color: (() => {
+                      const hex = c.code.replace("#", "");
+                      const r = parseInt(hex.substr(0, 2), 16);
+                      const g = parseInt(hex.substr(2, 2), 16);
+                      const b = parseInt(hex.substr(4, 2), 16);
+                      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                      return brightness > 155 ? "#000000" : "#FFFFFF";
+                    })(),
+                  }}
+                >
+                  {c.name}
+                </th>
+              ))}
+              {commonStyles.map((s) => (
+                <th
+                  key={s.key}
+                  style={{
+                    fontWeight: s.key === "bold" ? "bold" : "normal",
+                    fontStyle: s.key === "italic" ? "italic" : "normal",
+                    textDecoration: s.key === "underline" ? "underline" : "none",
+                  }}
+                >
+                  {s.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {copies.map((copy) => {
+              const statement = statementsCache[copy.statementId];
+              const group = statement?.groupId
+                ? groupsCache[statement.groupId]
+                : null;
+              const baseText = statement?.text || [
+                { type: "paragraph", children: [{ text: "" }] },
+              ];
+              const decoratedText = applyHighlightsToText(
+                baseText,
+                copy.highlights || [],
+                [],
+                []
+              );
+              const wordCounts = calculateWordCounts(decoratedText);
 
-            return (
-              <tr key={copy._id}>
-                <td style={{ border: "1px solid #ccc", padding: "8px" }}>
-                  {statement?.name || "No name"}
-                </td>
-                <td style={{ border: "1px solid #ccc", padding: "8px" }}>
-                  {group?.name || "No group"}
-                </td>
-                {type === "words" && (
-                  <td style={{ border: "1px solid #ccc", padding: "8px" }}>
-                    {wordCounts?.total || 0}
-                  </td>
-                )}
-                {allColors.map((c) => (
-                  <td
-                    key={`val-${copy._id}-${c._id}`}
-                    style={{ border: "1px solid #ccc", padding: "8px" }}
-                  >
-                    {type === "marks"
-                      ? copy.colorCounts?.[c.code] || 0
-                      : wordCounts?.[c.code] || 0}
-                  </td>
-                ))}
-                {commonStyles.map((s) => (
-                  <td
-                    key={`style-${copy._id}-${s.key}`}
-                    style={{ border: "1px solid #ccc", padding: "8px" }}
-                  >
-                    {type === "marks"
-                      ? copy.colorCounts?.[s.key] || 0
-                      : wordCounts?.[s.key] || 0}
-                  </td>
-                ))}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+              return (
+                <tr key={copy._id}>
+                  <td>{statement?.name || "No name"}</td>
+                  <td>{group?.name || "No group"}</td>
+                  {type === "words" && <td>{wordCounts?.total || 0}</td>}
+                  {allColors.map((c) => (
+                    <td key={`val-${copy._id}-${c._id}`}>
+                      {type === "marks"
+                        ? copy.colorCounts?.[c.code] || 0
+                        : wordCounts?.[c.code] || 0}
+                    </td>
+                  ))}
+                  {commonStyles.map((s) => (
+                    <td key={`style-${copy._id}-${s.key}`}>
+                      {type === "marks"
+                        ? copy.colorCounts?.[s.key] || 0
+                        : wordCounts?.[s.key] || 0}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 
@@ -417,71 +390,46 @@ export default function TaskSummary() {
   const coderName = coder?.username || "Unknown";
 
   return (
-    <div style={{ padding: 20 }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 20,
-        }}
-      >
-        <h2>Task Summary of {coderName}</h2>
-        <div
-          style={{
-            display: "flex",
-            gap: "10px",
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
+    <div className="dashboard-container">
+      <div className="dashboard-header">
+        <div>
+          <h1 className="dashboard-title">
+            <FaChartBar /> Task Summary
+          </h1>
+          <p className="dashboard-subtitle">
+            <FaUser style={{ marginRight: "8px" }} />
+            Coder: {coderName}
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
           {copies.length === 0 && (
-            <div
-              style={{
-                fontSize: "13px",
-                color: "#d32f2f",
-                backgroundColor: "#ffebee",
-                padding: "8px 12px",
-                borderRadius: "4px",
-                border: "1px solid #ef5350",
-                flex: "1 1 100%",
-              }}
-            >
+            <div className="auth-message error" style={{ margin: 0 }}>
               ⚠️ No completed copies to export. Please complete at least one
               copy first.
             </div>
           )}
           <button
             onClick={handleExportToExcel}
+            className="dashboard-btn btn-success"
+            disabled={!task || !experiment || copies.length === 0}
             style={{
-              padding: "10px 20px",
-              backgroundColor:
-                !task || !experiment || copies.length === 0
-                  ? "#999"
-                  : "#4CAF50",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
+              opacity: !task || !experiment || copies.length === 0 ? 0.5 : 1,
               cursor:
                 !task || !experiment || copies.length === 0
                   ? "not-allowed"
                   : "pointer",
-              fontSize: "14px",
-              fontWeight: "bold",
             }}
-            disabled={!task || !experiment || copies.length === 0}
           >
-            📊 Export to Excel
+            <FaFileExcel /> Export to Excel
+          </button>
+          <button onClick={() => navigate(-1)} className="dashboard-btn">
+            <FaArrowLeft /> Back
           </button>
         </div>
       </div>
-      <h3>Codings</h3>
+
       {renderTable("marks")}
-      <h3>Words</h3>
       {renderTable("words")}
-      <button style={{ marginTop: 20 }} onClick={() => navigate(-1)}>
-        Back
-      </button>
     </div>
   );
 }

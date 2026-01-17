@@ -26,13 +26,11 @@ export function DataProvider({ children }) {
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   const { socket } = useSocket();
 
-  // Keep ref to currentUser for socket listeners to avoid stale closures
   const currentUserRef = useRef(currentUser);
   useEffect(() => {
     currentUserRef.current = currentUser;
   }, [currentUser]);
 
-  // ✅ Start role change detection when user logs in
   useEffect(() => {
     if (currentUser && currentUser.role) {
       roleChangeDetector.start(currentUser.role);
@@ -40,11 +38,9 @@ export function DataProvider({ children }) {
       roleChangeDetector.stop();
     }
 
-    // Cleanup on unmount
     return () => {
       roleChangeDetector.stop();
     };
-    // Only run when the role actually changes, not when the user object changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.role]);
 
@@ -54,7 +50,7 @@ export function DataProvider({ children }) {
         const storedUser = localStorage.getItem("currentUser");
         if (storedUser) {
           try {
-            JSON.parse(storedUser); // Just validate it's valid JSON
+            JSON.parse(storedUser); 
           } catch (e) {
             console.warn("⚠️ Invalid stored user data, clearing...");
             localStorage.removeItem("currentUser");

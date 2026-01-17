@@ -30,13 +30,15 @@ export default function ResultsTables({
         <div
           style={{
             width: "100%",
+            overflowX: "auto",
             borderRadius: "8px",
             boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
           }}
         >
           <table
             style={{
-              width: "100%",
+              minWidth: "100%",
+              width: "max-content",
               borderCollapse: "collapse",
               fontSize: "14px",
               border: "1px solid #e0e0e0",
@@ -51,7 +53,11 @@ export default function ResultsTables({
                     textAlign: "left",
                     borderBottom: "2px solid #ccc",
                     fontWeight: "600",
-                    width: "30%",
+                    minWidth: "150px",
+                    position: "sticky",
+                    left: 0,
+                    backgroundColor: "#f5f5f5",
+                    zIndex: 1,
                   }}
                 >
                   Metric
@@ -64,6 +70,8 @@ export default function ResultsTables({
                       textAlign: "center",
                       borderBottom: "2px solid #ccc",
                       fontWeight: "600",
+                      minWidth: "120px",
+                      whiteSpace: "nowrap",
                     }}
                   >
                     <div
@@ -100,6 +108,10 @@ export default function ResultsTables({
                     padding: "12px",
                     borderBottom: "1px solid #e0e0e0",
                     fontWeight: "500",
+                    position: "sticky",
+                    left: 0,
+                    backgroundColor: "#ffffff",
+                    zIndex: 1,
                   }}
                 >
                   Number of codings
@@ -114,6 +126,7 @@ export default function ResultsTables({
                       fontWeight: "700",
                       color: "#1F4E78",
                       fontSize: "15px",
+                      whiteSpace: "nowrap",
                     }}
                   >
                     {codingsRow[col.key] || 0}
@@ -127,6 +140,10 @@ export default function ResultsTables({
                     padding: "12px",
                     borderBottom: "1px solid #e0e0e0",
                     fontWeight: "500",
+                    position: "sticky",
+                    left: 0,
+                    backgroundColor: "#fafafa",
+                    zIndex: 1,
                   }}
                 >
                   Number of words
@@ -141,6 +158,7 @@ export default function ResultsTables({
                       fontWeight: "700",
                       color: "#1F4E78",
                       fontSize: "15px",
+                      whiteSpace: "nowrap",
                     }}
                   >
                     {wordsRow[col.key] || 0}

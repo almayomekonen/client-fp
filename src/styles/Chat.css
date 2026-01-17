@@ -67,6 +67,7 @@
   display: flex;
   flex-direction: column;
   background: #ffffff;
+  position: relative;
 }
 
 /* Chat Messages Area */
@@ -80,6 +81,7 @@
   flex-direction: column;
   gap: 16px;
   max-width: 100%;
+  min-height: 0; /* Important: allows flex item to shrink below content size */
 }
 
 /* Individual Message */
@@ -217,6 +219,7 @@
   align-items: center;
   justify-content: space-between;
   animation: slideDown 0.2s ease;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 .reply-info {
@@ -252,6 +255,9 @@
   padding: 20px;
   display: flex;
   gap: 12px;
+  flex-shrink: 0; /* Prevent shrinking - keeps it at bottom */
+  background: #ffffff; /* Ensure it has a background */
+  border-top: 1px solid #e0e0e0; /* Visual separation */
 }
 
 @keyframes slideDown {

@@ -51,6 +51,7 @@ export default function CoderComparePage() {
   const {
     calculateSelectionCounts,
     calculateWordCounts,
+    calculateWordCountsForSelection,
     buildResultsTable,
     calculateAdditionalStats,
   } = useResult();
@@ -68,6 +69,7 @@ export default function CoderComparePage() {
   const [countsA, setCountsA] = useState({});
   const [wordCountsA, setWordCountsA] = useState({});
   const [selectionCountsA, setSelectionCountsA] = useState(null);
+  const [selectionWordCountsA, setSelectionWordCountsA] = useState(null);
   const [copyA, setCopyA] = useState(null);
   const [localCommentsA, setLocalCommentsA] = useState([]);
   const [activeCommentA, setActiveCommentA] = useState(null);
@@ -79,6 +81,7 @@ export default function CoderComparePage() {
   const [countsB, setCountsB] = useState({});
   const [wordCountsB, setWordCountsB] = useState({});
   const [selectionCountsB, setSelectionCountsB] = useState(null);
+  const [selectionWordCountsB, setSelectionWordCountsB] = useState(null);
   const [copyB, setCopyB] = useState(null);
   const [localCommentsB, setLocalCommentsB] = useState([]);
   const [activeCommentB, setActiveCommentB] = useState(null);
@@ -371,11 +374,10 @@ export default function CoderComparePage() {
     );
     setFullTextTableA(fullTable);
 
-    if (selectionCountsA) {
-      const wordCounts = calculateWordCounts(valueA);
+    if (selectionCountsA && selectionWordCountsA) {
       const selTable = buildResultsTable(
         selectionCountsA,
-        wordCounts,
+        selectionWordCountsA,
         colors,
         styleSettings
       );
@@ -391,12 +393,12 @@ export default function CoderComparePage() {
     countsA,
     wordCountsA,
     selectionCountsA,
+    selectionWordCountsA,
     colors,
     styleSettings,
     editorA,
     buildResultsTable,
     calculateAdditionalStats,
-    calculateWordCounts,
   ]);
 
   // Update results tables for Copy B
@@ -411,11 +413,10 @@ export default function CoderComparePage() {
     );
     setFullTextTableB(fullTable);
 
-    if (selectionCountsB) {
-      const wordCounts = calculateWordCounts(valueB);
+    if (selectionCountsB && selectionWordCountsB) {
       const selTable = buildResultsTable(
         selectionCountsB,
-        wordCounts,
+        selectionWordCountsB,
         colors,
         styleSettings
       );
@@ -431,12 +432,12 @@ export default function CoderComparePage() {
     countsB,
     wordCountsB,
     selectionCountsB,
+    selectionWordCountsB,
     colors,
     styleSettings,
     editorB,
     buildResultsTable,
     calculateAdditionalStats,
-    calculateWordCounts,
   ]);
 
   const getRenderLeaf =
@@ -968,23 +969,24 @@ export default function CoderComparePage() {
       <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
         {/* Editing Tools (only for user's own copy) */}
         {currentUser?._id === copyA?.coderId && (
-          <div className="dashboard-card" style={{ flex: 1 }}>
+          <div className="dashboard-card" style={{ flex: 1, minWidth: "350px", padding: "20px" }}>
             <h3
               className="card-title"
-              style={{ fontSize: "16px", marginBottom: "12px" }}
+              style={{ fontSize: "16px", marginBottom: "16px" }}
             >
               <FaPalette /> Edit Your Coding
             </h3>
 
-            {/* Color Palette */}
+            {/* All Editing Tools in One Row */}
             <div
               style={{
                 display: "flex",
-                gap: "6px",
-                marginBottom: "12px",
+                gap: "8px",
                 flexWrap: "wrap",
+                alignItems: "center",
               }}
             >
+              {/* Color Palette Buttons */}
               {colors.map((color) => (
                 <button
                   key={color._id}
@@ -1011,17 +1013,8 @@ export default function CoderComparePage() {
                   {color.name}
                 </button>
               ))}
-            </div>
 
-            {/* Style Buttons */}
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "8px",
-                marginBottom: "12px",
-              }}
-            >
+              {/* Style Buttons */}
               {styleSettings.underlineEnabled && (
                 <button
                   onClick={() => markUnderline(editorA)}
@@ -1030,18 +1023,18 @@ export default function CoderComparePage() {
                     textDecoration: "underline",
                   }}
                 >
+                  {styleSettings.boldEnabled && (
+                    <button
+                      onClick={() => markBold(editorA)}
+                      className="dashboard-btn btn-secondary btn-sm"
+                      style={{
+                        fontWeight: "bold",
+                      }}
+                    >
+                      <FaBold /> {styleSettings.boldName || "Bold"}
+                    </button>
+                  )}
                   <FaUnderline /> {styleSettings.underlineName || "Underline"}
-                </button>
-              )}
-              {styleSettings.boldEnabled && (
-                <button
-                  onClick={() => markBold(editorA)}
-                  className="dashboard-btn btn-secondary btn-sm"
-                  style={{
-                    fontWeight: "bold",
-                  }}
-                >
-                  <FaBold /> {styleSettings.boldName || "Bold"}
                 </button>
               )}
               {styleSettings.italicEnabled && (
@@ -1055,16 +1048,8 @@ export default function CoderComparePage() {
                   <FaItalic /> {styleSettings.italicName || "Italic"}
                 </button>
               )}
-            </div>
 
-            {/* Remove All and Save Buttons */}
-            <div
-              style={{
-                display: "flex",
-                gap: "8px",
-                justifyContent: "flex-start",
-              }}
-            >
+              {/* Clear and Save Buttons */}
               <button
                 onClick={() => removeFormatting(editorA)}
                 className="dashboard-btn btn-secondary btn-sm"
@@ -1075,7 +1060,7 @@ export default function CoderComparePage() {
                   fontWeight: "500",
                 }}
               >
-                <FaEraser /> Remove All
+                <FaEraser /> Clear
               </button>
               <button
                 onClick={() => handleSave(editorA, copyA, valueA, setCountsA)}
@@ -1135,6 +1120,12 @@ export default function CoderComparePage() {
                     renderLeaf={getRenderLeaf(setActiveCommentA)}
                     placeholder="Coding A"
                     readOnly={true}
+                    onKeyDown={(event) => {
+                      // Prevent all keyboard input that would modify text
+                      if (!event.ctrlKey && !event.metaKey && !event.altKey) {
+                        event.preventDefault();
+                      }
+                    }}
                     dir="auto"
                     style={{
                       fontSize: "16px",
@@ -1182,6 +1173,12 @@ export default function CoderComparePage() {
                     renderLeaf={getRenderLeaf(setActiveCommentB)}
                     placeholder="Coding B"
                     readOnly={true}
+                    onKeyDown={(event) => {
+                      // Prevent all keyboard input that would modify text
+                      if (!event.ctrlKey && !event.metaKey && !event.altKey) {
+                        event.preventDefault();
+                      }
+                    }}
                     dir="auto"
                     style={{
                       fontSize: "16px",
@@ -1209,9 +1206,14 @@ export default function CoderComparePage() {
             <FaChartBar /> Results A
           </h3>
           <button
-            onClick={() =>
-              calculateSelectionCounts(editorA, setSelectionCountsA)
-            }
+            onClick={() => {
+              calculateSelectionCounts(editorA, setSelectionCountsA);
+              const wordCounts = calculateWordCountsForSelection(
+                editorA,
+                valueA
+              );
+              setSelectionWordCountsA(wordCounts);
+            }}
             className="dashboard-btn btn-secondary btn-sm"
             style={{ width: "100%", marginBottom: "12px", fontSize: "12px" }}
           >
@@ -1240,9 +1242,14 @@ export default function CoderComparePage() {
             <FaChartBar /> Results B
           </h3>
           <button
-            onClick={() =>
-              calculateSelectionCounts(editorB, setSelectionCountsB)
-            }
+            onClick={() => {
+              calculateSelectionCounts(editorB, setSelectionCountsB);
+              const wordCounts = calculateWordCountsForSelection(
+                editorB,
+                valueB
+              );
+              setSelectionWordCountsB(wordCounts);
+            }}
             className="dashboard-btn btn-secondary btn-sm"
             style={{ width: "100%", marginBottom: "12px", fontSize: "12px" }}
           >

@@ -8,22 +8,18 @@ import { useNavigate } from "react-router-dom";
 import { useCopyMessage } from "../../context/CopyMessageContext";
 import {
   FaMicroscope,
-  FaChevronRight,
+  FaArrowLeft,
   FaFolderOpen,
   FaFileAlt,
   FaBalanceScale,
   FaChartLine,
   FaUsers,
-  FaSort,
-  FaCalendarAlt,
-  FaCheckCircle,
-  FaClock,
-  FaTasks,
+  FaComment,
 } from "react-icons/fa";
 import "./AdminDashboard.css";
 
 export default function AdminHomePage() {
-  const { users, currentUser, isAuthChecked, copies } = useData();
+  const { users, currentUser, isAuthChecked } = useData();
   const { fetchExperiments, investigatorNameByExperimentId } = useExperiment();
   const { groupsByExperimentId } = useGroup();
   const { statementsByGroupId } = useStatement();
@@ -33,14 +29,15 @@ export default function AdminHomePage() {
   const [experiments, setExperiments] = useState([]);
   const [groups, setGroups] = useState([]);
   const [statements, setStatements] = useState([]);
-  const [expandedExperimentId, setExpandedExperimentId] = useState(null);
-  const [expandedGroupId, setExpandedGroupId] = useState(null);
-  const [expandedStatementId, setExpandedStatementId] = useState(null);
+
+  // Navigation State
+  const [currentView, setCurrentView] = useState("experiments");
+  const [selectedExperiment, setSelectedExperiment] = useState(null);
+  const [selectedGroup, setSelectedGroup] = useState(null);
+  const [selectedStatement, setSelectedStatement] = useState(null);
 
   // Sorting States
-  const [userSort, setUserSort] = useState("name"); // name, lastLogin, completed, active
-  const [experimentSort, setExperimentSort] = useState("name"); // name, date, status, coders
-  const [showUsers, setShowUsers] = useState(false); // Toggle to show/hide users list
+  const [experimentSort, setExperimentSort] = useState("name");
 
   const navigate = useNavigate();
 
@@ -50,6 +47,7 @@ export default function AdminHomePage() {
     }
   }, [currentUser, isAuthChecked, navigate]);
 
+  // Load Experiments
   useEffect(() => {
     const loadExperiments = async () => {
       if (!isAuthChecked || !currentUser) return;
@@ -80,56 +78,37 @@ export default function AdminHomePage() {
     loadExperiments();
   }, [isAuthChecked, currentUser]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Helper: Get derived data for sorting experiments
-  const getExperimentStats = (expId) => {
-    // This is expensive to calculate on the fly for all experiments if we don't have the tree loaded.
-    // However, 'copies' from useData contains ALL copies. We can filter by experimentId.
-    // But copies don't have experimentId directly? They do! (See Copy model or createCopy)
-    // Let's check Copy model structure in memory.
-    // Assuming copies have experimentId.
-    const expCopies = copies.filter((c) => c.experimentId === expId);
-    const completedCount = expCopies.filter(
-      (c) => c.status === "completed"
-    ).length;
-    const isCompleted =
-      expCopies.length > 0 && completedCount === expCopies.length;
-    const isActive = expCopies.length > 0 && !isCompleted;
-    const uniqueCoders = new Set(expCopies.map((c) => c.coderId)).size;
+  // Load Groups when Experiment Selected
+  useEffect(() => {
+    if (selectedExperiment) {
+      const fetchGroups = async () => {
+        try {
+          const loadedGroups = await groupsByExperimentId(
+            selectedExperiment._id
+          );
+          setGroups(loadedGroups);
+        } catch {
+          alert("❌ Error loading groups");
+        }
+      };
+      fetchGroups();
+    }
+  }, [selectedExperiment, groupsByExperimentId]);
 
-    return { isCompleted, isActive, uniqueCoders, createdDate: expId }; // approximation if createdAt missing
-  };
-
-  // Sorted Users
-  const sortedUsers = useMemo(() => {
-    return [...users].sort((a, b) => {
-      if (userSort === "name") return a.username.localeCompare(b.username);
-      if (userSort === "lastLogin") {
-        return (
-          new Date(b.lastLogin || 0).getTime() -
-          new Date(a.lastLogin || 0).getTime()
-        );
-      }
-      if (userSort === "completed") {
-        const aCount = copies.filter(
-          (c) => c.coderId === a._id && c.status === "completed"
-        ).length;
-        const bCount = copies.filter(
-          (c) => c.coderId === b._id && c.status === "completed"
-        ).length;
-        return bCount - aCount;
-      }
-      if (userSort === "active") {
-        const aCount = copies.filter(
-          (c) => c.coderId === a._id && c.status !== "completed"
-        ).length;
-        const bCount = copies.filter(
-          (c) => c.coderId === b._id && c.status !== "completed"
-        ).length;
-        return bCount - aCount;
-      }
-      return 0;
-    });
-  }, [users, userSort, copies]);
+  // Load Statements when Group Selected
+  useEffect(() => {
+    if (selectedGroup) {
+      const fetchStatements = async () => {
+        try {
+          const loadedStatements = await statementsByGroupId(selectedGroup._id);
+          setStatements(loadedStatements);
+        } catch {
+          alert("❌ Error loading statements");
+        }
+      };
+      fetchStatements();
+    }
+  }, [selectedGroup, statementsByGroupId]);
 
   // Sorted Experiments
   const sortedExperiments = useMemo(() => {
@@ -141,21 +120,9 @@ export default function AdminHomePage() {
           new Date(a.createdAt || 0).getTime()
         );
       }
-      if (experimentSort === "coders") {
-        const aStats = getExperimentStats(a._id);
-        const bStats = getExperimentStats(b._id);
-        return bStats.uniqueCoders - aStats.uniqueCoders;
-      }
-      if (experimentSort === "status") {
-        const aStats = getExperimentStats(a._id);
-        const bStats = getExperimentStats(b._id);
-        // Completed > Active > Empty
-        const getScore = (s) => (s.isCompleted ? 2 : s.isActive ? 1 : 0);
-        return getScore(bStats) - getScore(aStats);
-      }
       return 0;
     });
-  }, [experiments, experimentSort, copies]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [experiments, experimentSort]);
 
   if (!isAuthChecked) {
     return (
@@ -168,379 +135,357 @@ export default function AdminHomePage() {
 
   if (!currentUser) return null;
 
-  // Stats
-  const totalExperiments = experiments.length;
-  const totalUsers = users.length;
-  const totalCoders = users.filter((u) => u.role === "coder").length;
+  // Breadcrumbs Navigation
+  const renderBreadcrumbs = () => {
+    const crumbs = [];
+    crumbs.push(
+      <span
+        key="experiments"
+        onClick={() => {
+          setCurrentView("experiments");
+          setSelectedExperiment(null);
+          setSelectedGroup(null);
+          setSelectedStatement(null);
+        }}
+        style={{
+          cursor: currentView !== "experiments" ? "pointer" : "default",
+          color: currentView !== "experiments" ? "#2196f3" : "#666",
+          textDecoration:
+            currentView !== "experiments" ? "underline" : "none",
+        }}
+      >
+        Experiments
+      </span>
+    );
 
-  // Toggle helpers
-  const toggleExperiment = async (id) => {
-    if (expandedExperimentId === id) {
-      setExpandedExperimentId(null);
-      setGroups([]);
-      return;
+    if (selectedExperiment) {
+      crumbs.push(" > ");
+      crumbs.push(
+        <span
+          key="groups"
+          onClick={() => {
+            setCurrentView("groups");
+            setSelectedGroup(null);
+            setSelectedStatement(null);
+          }}
+          style={{
+            cursor: currentView !== "groups" ? "pointer" : "default",
+            color: currentView !== "groups" ? "#2196f3" : "#666",
+            textDecoration: currentView !== "groups" ? "underline" : "none",
+          }}
+        >
+          {selectedExperiment.name}
+        </span>
+      );
     }
-    setExpandedExperimentId(id);
-    try {
-      const loadedGroups = await groupsByExperimentId(id);
-      setGroups(loadedGroups);
-    } catch {
-      alert("❌ Error loading groups");
+
+    if (selectedGroup) {
+      crumbs.push(" > ");
+      crumbs.push(
+        <span
+          key="statements"
+          onClick={() => {
+            setCurrentView("statements");
+            setSelectedStatement(null);
+          }}
+          style={{
+            cursor: currentView !== "statements" ? "pointer" : "default",
+            color: currentView !== "statements" ? "#2196f3" : "#666",
+            textDecoration:
+              currentView !== "statements" ? "underline" : "none",
+          }}
+        >
+          {selectedGroup.name}
+        </span>
+      );
     }
+
+    if (selectedStatement) {
+      crumbs.push(" > ");
+      crumbs.push(
+        <span key="copies" style={{ color: "#666" }}>
+          {selectedStatement.name}
+        </span>
+      );
+    }
+
+    return <div className="investigator-breadcrumbs">{crumbs}</div>;
   };
 
-  const toggleGroup = async (id) => {
-    if (expandedGroupId === id) {
-      setExpandedGroupId(null);
-      setStatements([]);
-      return;
-    }
-    setExpandedGroupId(id);
-    try {
-      const loadedStatements = await statementsByGroupId(id);
-      setStatements(loadedStatements);
-    } catch {
-      alert("❌ Error loading statements");
-    }
-  };
+  // Back Button
+  const renderBackButton = () => {
+    if (currentView === "experiments") return null;
 
-  const toggleStatement = (id) => {
-    setExpandedStatementId(expandedStatementId === id ? null : id);
+    return (
+      <button
+        onClick={() => {
+          if (currentView === "copies") {
+            setCurrentView("statements");
+            setSelectedStatement(null);
+          } else if (currentView === "statements") {
+            setCurrentView("groups");
+            setSelectedGroup(null);
+          } else if (currentView === "groups") {
+            setCurrentView("experiments");
+            setSelectedExperiment(null);
+            setGroups([]);
+          }
+        }}
+        className="back-btn"
+      >
+        <FaArrowLeft /> Back
+      </button>
+    );
   };
 
   return (
     <div className="admin-dashboard">
-      <div className="dashboard-header">
-        <h1 className="dashboard-title">
-          <FaMicroscope /> Administration
-        </h1>
-        <p className="dashboard-subtitle">
-          Manage system experiments and users
-        </p>
+      {/* Top Navigation Bar */}
+      <div className="investigator-nav-bar">
+        {renderBackButton()}
+        {renderBreadcrumbs()}
       </div>
 
-      {/* Statistics Bar */}
-      <div className="stats-bar">
-        <div className="stat-card">
-          <div
-            className="stat-icon"
-            style={{ backgroundColor: "#e3f2fd", color: "#2196f3" }}
-          >
-            <FaMicroscope />
-          </div>
-          <div className="stat-info">
-            <span className="stat-value">{totalExperiments}</span>
-            <span className="stat-label">Total Experiments</span>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div
-            className="stat-icon"
-            style={{ backgroundColor: "#f3e5f5", color: "#9c27b0" }}
-          >
-            <FaUsers />
-          </div>
-          <div className="stat-info">
-            <span className="stat-value">{totalUsers}</span>
-            <span className="stat-label">
-              Total Users ({totalCoders} Coders)
-            </span>
-          </div>
-        </div>
-      </div>
+      <div className="dashboard-content">
+        {/* VIEW 1: EXPERIMENTS */}
+        {currentView === "experiments" && (
+          <>
+            <div className="section-title-row">
+              <h2 style={{ marginBottom: "20px" }}>
+                <FaMicroscope /> All Experiments
+              </h2>
+              <div className="sort-controls">
+                <span>Sort by:</span>
+                <button
+                  className={`sort-btn ${
+                    experimentSort === "name" ? "active" : ""
+                  }`}
+                  onClick={() => setExperimentSort("name")}
+                >
+                  Name
+                </button>
+                <button
+                  className={`sort-btn ${
+                    experimentSort === "date" ? "active" : ""
+                  }`}
+                  onClick={() => setExperimentSort("date")}
+                >
+                  Date
+                </button>
+              </div>
+            </div>
 
-      {/* Users Section */}
-      <div className="section-container">
-        <div className="section-header">
-          <h2>
-            <FaUsers /> Users Management
-            <button
-              className="toggle-btn"
-              onClick={() => setShowUsers(!showUsers)}
-            >
-              {showUsers ? "Hide" : "Show"}
-            </button>
-          </h2>
-          {showUsers && (
-            <div className="sort-controls">
-              <span>Sort by:</span>
+            <div className="grid-layout">
+              {sortedExperiments.map((exp) => (
+                <div
+                  key={exp._id}
+                  className="folder-card experiment-card"
+                  onClick={() => {
+                    setSelectedExperiment(exp);
+                    setCurrentView("groups");
+                  }}
+                >
+                  <div className="card-top">
+                    <FaMicroscope className="card-icon" />
+                  </div>
+                  <h3 className="card-title">{exp.name}</h3>
+                  <p className="card-desc">
+                    Researcher: {exp.investigatorName || "Unknown"}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* VIEW 2: GROUPS */}
+        {currentView === "groups" && (
+          <>
+            <h2 style={{ marginBottom: "20px" }}>
+              <FaFolderOpen /> Groups in {selectedExperiment.name}
+            </h2>
+
+            <div className="grid-layout">
+              {groups.map((group) => (
+                <div
+                  key={group._id}
+                  className="folder-card group-card"
+                  onClick={() => {
+                    setSelectedGroup(group);
+                    setCurrentView("statements");
+                  }}
+                >
+                  <div className="card-top">
+                    <FaFolderOpen className="card-icon" />
+                  </div>
+                  <h3 className="card-title">{group.name}</h3>
+                  <p className="card-desc">
+                    {group.description || "No description"}
+                  </p>
+                </div>
+              ))}
+              {groups.length === 0 && (
+                <div className="empty-message">
+                  No groups found in this experiment.
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* VIEW 3: STATEMENTS */}
+        {currentView === "statements" && (
+          <>
+            <h2 style={{ marginBottom: "20px" }}>
+              <FaFileAlt /> Statements in {selectedGroup.name}
+            </h2>
+
+            <div className="grid-layout">
+              {statements.map((stmt) => (
+                <div
+                  key={stmt._id}
+                  className="folder-card statement-card"
+                  onClick={() => {
+                    setSelectedStatement(stmt);
+                    setCurrentView("copies");
+                  }}
+                >
+                  <div className="card-top">
+                    <FaFileAlt className="card-icon" />
+                  </div>
+                  <h3 className="card-title">{stmt.name}</h3>
+                  <p className="card-desc">{stmt.content || "No content"}</p>
+                </div>
+              ))}
+              {statements.length === 0 && (
+                <div className="empty-message">
+                  No statements found in this group.
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* VIEW 4: COPIES */}
+        {currentView === "copies" && (
+          <>
+            <h2 style={{ marginBottom: "20px" }}>
+              <FaUsers /> Copies for {selectedStatement.name}
+            </h2>
+
+            {/* Compare Button - Always visible */}
+            <div style={{ marginBottom: "16px", display: "flex", gap: "8px" }}>
               <button
-                className={`sort-btn ${userSort === "name" ? "active" : ""}`}
-                onClick={() => setUserSort("name")}
+                onClick={() => {
+                  const completedCopies = copiesByStatementId(
+                    selectedStatement._id
+                  ).filter((copy) => copy.status === "completed");
+
+                  if (completedCopies.length < 2) {
+                    alert(
+                      "❌ Cannot compare: At least 2 completed copies are required to compare this statement."
+                    );
+                    return;
+                  }
+
+                  navigate(`/compare/${selectedStatement._id}`);
+                }}
+                disabled={
+                  copiesByStatementId(selectedStatement._id).filter(
+                    (copy) => copy.status === "completed"
+                  ).length < 2
+                }
+                className="btn-primary"
+                style={{
+                  opacity:
+                    copiesByStatementId(selectedStatement._id).filter(
+                      (copy) => copy.status === "completed"
+                    ).length < 2
+                      ? 0.5
+                      : 1,
+                  cursor:
+                    copiesByStatementId(selectedStatement._id).filter(
+                      (copy) => copy.status === "completed"
+                    ).length < 2
+                      ? "not-allowed"
+                      : "pointer",
+                }}
+                title={
+                  copiesByStatementId(selectedStatement._id).filter(
+                    (copy) => copy.status === "completed"
+                  ).length < 2
+                    ? "At least 2 completed copies required"
+                    : "Compare completed copies"
+                }
               >
-                Name
+                <FaBalanceScale /> Compare Copies
               </button>
+
               <button
-                className={`sort-btn ${
-                  userSort === "lastLogin" ? "active" : ""
-                }`}
-                onClick={() => setUserSort("lastLogin")}
+                onClick={() =>
+                  navigate(`/statement-summary/${selectedStatement._id}`)
+                }
+                className="btn-secondary"
               >
-                Last Connection
-              </button>
-              <button
-                className={`sort-btn ${
-                  userSort === "completed" ? "active" : ""
-                }`}
-                onClick={() => setUserSort("completed")}
-              >
-                Completed
-              </button>
-              <button
-                className={`sort-btn ${userSort === "active" ? "active" : ""}`}
-                onClick={() => setUserSort("active")}
-              >
-                Active
+                <FaChartLine /> View Summary
               </button>
             </div>
-          )}
-        </div>
 
-        {showUsers && (
-          <div className="users-list">
-            {sortedUsers.map((user) => {
-              // Calculate stats for display
-              const completedCount = copies.filter(
-                (c) => c.coderId === user._id && c.status === "completed"
-              ).length;
-              const activeCount = copies.filter(
-                (c) => c.coderId === user._id && c.status !== "completed"
-              ).length;
+            <div className="copies-grid">
+              {copiesByStatementId(selectedStatement._id).map((copy) => {
+                const unread = getUnreadCount(copy._id, currentUser._id);
+                const coderName =
+                  users.find((u) => u._id === copy.coderId)?.username ||
+                  "Unknown";
 
-              return (
-                <div key={user._id} className="user-card-row">
-                  <div className="user-info-main">
-                    <div className="user-avatar">
-                      <FaUsers />
+                return (
+                  <div key={copy._id} className="copy-card">
+                    <div className="copy-info">
+                      <span className="copy-coder">
+                        <FaUsers /> {coderName}
+                      </span>
+                      <span
+                        className={`copy-status status-${copy.status.replace(
+                          " ",
+                          "-"
+                        )}`}
+                      >
+                        {copy.status}
+                      </span>
                     </div>
-                    <div className="user-details">
-                      <div className="user-name">{user.username}</div>
-                      <div className="user-role">{user.role}</div>
+
+                    <div className="copy-actions">
+                      <button
+                        onClick={() => {
+                          if (copy.status === "completed") {
+                            navigate(`/view-statement/${copy._id}`);
+                          } else {
+                            alert(
+                              "❌ Cannot view statement before coding is completed"
+                            );
+                          }
+                        }}
+                        className={`action-btn view-btn ${
+                          copy.status !== "completed" ? "disabled" : ""
+                        }`}
+                      >
+                        View Coding
+                      </button>
+
+                      {unread > 0 && (
+                        <span className="unread-badge">
+                          <FaComment /> {unread} unread
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <div className="user-stats">
-                    <div className="stat-pill" title="Last Login">
-                      <FaClock />{" "}
-                      {user.lastLogin
-                        ? new Date(user.lastLogin).toLocaleDateString()
-                        : "Never"}
-                    </div>
-                    <div
-                      className="stat-pill success"
-                      title="Completed Assignments"
-                    >
-                      <FaCheckCircle /> {completedCount} Completed
-                    </div>
-                    <div
-                      className="stat-pill warning"
-                      title="Active Assignments"
-                    >
-                      <FaTasks /> {activeCount} Active
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Experiments Section */}
-      <div className="section-container">
-        <div className="section-header">
-          <h2>
-            <FaFolderOpen /> All Experiments
-          </h2>
-          <div className="sort-controls">
-            <span>Sort by:</span>
-            <button
-              className={`sort-btn ${
-                experimentSort === "name" ? "active" : ""
-              }`}
-              onClick={() => setExperimentSort("name")}
-            >
-              Name
-            </button>
-            <button
-              className={`sort-btn ${
-                experimentSort === "date" ? "active" : ""
-              }`}
-              onClick={() => setExperimentSort("date")}
-            >
-              Date
-            </button>
-            <button
-              className={`sort-btn ${
-                experimentSort === "status" ? "active" : ""
-              }`}
-              onClick={() => setExperimentSort("status")}
-            >
-              Status
-            </button>
-            <button
-              className={`sort-btn ${
-                experimentSort === "coders" ? "active" : ""
-              }`}
-              onClick={() => setExperimentSort("coders")}
-            >
-              Coders
-            </button>
-          </div>
-        </div>
-
-        {sortedExperiments.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">📊</div>
-            <p className="empty-state-text">No experiments in the system</p>
-          </div>
-        ) : (
-          <ul className="experiments-list">
-            {sortedExperiments.map((exp) => (
-              <li key={exp._id} className="experiment-card">
-                <div
-                  onClick={() => toggleExperiment(exp._id)}
-                  className="experiment-header"
-                >
-                  <div className="experiment-info">
-                    <div className="experiment-name">{exp.name}</div>
-                    <div className="experiment-investigator">
-                      Researcher: {exp.investigatorName || "Unknown"}
-                    </div>
-                    {/* Add Experiment Stats Badges here if desired */}
-                  </div>
-                  <div
-                    className={`expand-icon ${
-                      expandedExperimentId === exp._id ? "expanded" : ""
-                    }`}
-                  >
-                    <FaChevronRight />
-                  </div>
-                </div>
-
-                {expandedExperimentId === exp._id && (
-                  <div className="groups-container">
-                    {groups.map((group) => (
-                      <div key={group._id} className="group-item">
-                        <div
-                          onClick={() => toggleGroup(group._id)}
-                          className="group-header"
-                        >
-                          <FaFolderOpen /> {group.name}
-                        </div>
-
-                        {expandedGroupId === group._id && (
-                          <div className="statements-container">
-                            {statements.map((statement) => (
-                              <div
-                                key={statement._id}
-                                className="statement-item"
-                              >
-                                <div className="statement-header">
-                                  <div
-                                    onClick={() =>
-                                      toggleStatement(statement._id)
-                                    }
-                                    className="statement-name"
-                                  >
-                                    <FaFileAlt
-                                      style={{
-                                        display: "inline",
-                                        marginLeft: "8px",
-                                      }}
-                                    />
-                                    {statement.name}
-                                  </div>
-                                  <div className="statement-actions">
-                                    {copiesByStatementId(statement._id).filter(
-                                      (copy) => copy.status === "completed"
-                                    ).length >= 2 && (
-                                      <button
-                                        onClick={() =>
-                                          navigate(`/compare/${statement._id}`)
-                                        }
-                                        className="btn-dashboard btn-compare"
-                                      >
-                                        <FaBalanceScale /> Compare
-                                      </button>
-                                    )}
-                                    <button
-                                      onClick={() =>
-                                        navigate(
-                                          `/statement-summary/${statement._id}`
-                                        )
-                                      }
-                                      className="btn-dashboard btn-summary"
-                                    >
-                                      <FaChartLine /> Summary
-                                    </button>
-                                  </div>
-                                </div>
-
-                                {expandedStatementId === statement._id && (
-                                  <div className="copies-container">
-                                    {copiesByStatementId(statement._id).map(
-                                      (copy) => (
-                                        <div
-                                          key={copy._id}
-                                          className="copy-item"
-                                        >
-                                          <div
-                                            onClick={() => {
-                                              if (copy.status === "completed") {
-                                                navigate(
-                                                  `/view-statement/${copy._id}`
-                                                );
-                                              } else {
-                                                alert(
-                                                  "Cannot view statement before coding is completed"
-                                                );
-                                              }
-                                            }}
-                                            className={`copy-name ${
-                                              copy.status === "completed"
-                                                ? "completed"
-                                                : "incomplete"
-                                            }`}
-                                          >
-                                            {users.find(
-                                              (user) =>
-                                                user._id === copy.coderId
-                                            )?.username || "Unknown"}
-                                          </div>
-
-                                          <div className="copy-actions">
-                                            {getUnreadCount(
-                                              copy._id,
-                                              currentUser?._id
-                                            ) > 0 && (
-                                              <div className="unread-badge">
-                                                <span>
-                                                  💬{" "}
-                                                  {getUnreadCount(
-                                                    copy._id,
-                                                    currentUser?._id
-                                                  )}{" "}
-                                                  unread messages
-                                                </span>
-                                              </div>
-                                            )}
-                                          </div>
-                                        </div>
-                                      )
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
+                );
+              })}
+              {copiesByStatementId(selectedStatement._id).length === 0 && (
+                <div className="empty-message">No coders assigned yet.</div>
+              )}
+            </div>
+          </>
         )}
       </div>
     </div>

@@ -14,16 +14,13 @@ export default function LoginPage() {
 
   const [message, setMessage] = useState("");
 
-  // Check if there's a message from registration redirect
   useEffect(() => {
     if (location.state?.message) {
       setMessage(location.state.message);
-      // Clear the state so message doesn't persist on refresh
       window.history.replaceState({}, document.title);
     }
   }, [location]);
 
-  // If user is already authenticated, redirect to their home page
   useEffect(() => {
     if (isAuthChecked && currentUser) {
       switch (currentUser.role) {
@@ -47,8 +44,6 @@ export default function LoginPage() {
     if (!result.success) {
       setMessage(result.message);
     } else {
-      // The login function already sets currentUser and localStorage
-      // Just navigate to the appropriate page based on role
       switch (result.user.role) {
         case "coder":
           navigate("/coderHome");

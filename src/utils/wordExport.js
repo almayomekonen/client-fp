@@ -8,64 +8,12 @@ import {
   TableRow,
   WidthType,
   BorderStyle,
-  VerticalAlign,
   convertInchesToTwip,
   Packer,
 } from "docx";
 import { saveAs } from "file-saver";
 
-const extractFormattedTextRuns = (slateValue) => {
-  const textRuns = [];
 
-  const traverse = (nodes) => {
-    for (const node of nodes) {
-      if (node.text !== undefined) {
-        const runProperties = {
-          text: node.text || " ",
-          size: 24, // 12pt
-          font: "Calibri",
-        };
-
-        // Check all possible highlight properties
-        const highlightHex =
-          node.highlight || node.backgroundColor || node.bgColor;
-
-        if (node.bold) runProperties.bold = true;
-        if (node.italic) runProperties.italics = true;
-        if (node.underline) runProperties.underline = { type: "single" };
-
-        // Apply highlight as background color with explicit text color
-        if (highlightHex) {
-          const highlightColor = highlightHex.replace("#", "").toUpperCase();
-
-          // Apply background color using shading
-          runProperties.shading = {
-            fill: highlightColor,
-            type: "solid",
-            color: "000000",
-          };
-
-          // Set text color explicitly for contrast
-          const brightness = isLightColor(highlightColor);
-          runProperties.color = brightness ? "000000" : "FFFFFF";
-        }
-
-        textRuns.push(new TextRun(runProperties));
-      }
-
-      if (node.children) {
-        traverse(node.children);
-      }
-    }
-  };
-
-  traverse(slateValue);
-  return textRuns;
-};
-
-/**
- * Check if a color is light (for text contrast)
- */
 const isLightColor = (hexColor) => {
   const hex = hexColor.replace("#", "");
   const r = parseInt(hex.substr(0, 2), 16);
@@ -75,13 +23,7 @@ const isLightColor = (hexColor) => {
   return brightness > 155;
 };
 
-// ============================================
-// DOCUMENT SECTIONS
-// ============================================
 
-/**
- * Create professional header with title and subtitle
- */
 const createHeader = (title, subtitle) => {
   return [
     new Paragraph({
@@ -124,9 +66,7 @@ const createHeader = (title, subtitle) => {
   ];
 };
 
-/**
- * Create metadata line (export date)
- */
+
 const createMetadata = () => {
   return new Paragraph({
     children: [
@@ -274,7 +214,7 @@ const createCodedTextSection = (slateValue) => {
 };
 
 /**
- * Create statistics table
+ * Create statistics table (simplified, like website)
  */
 const createStatisticsTable = (
   counts,
@@ -303,11 +243,9 @@ const createStatisticsTable = (
 
   const rows = [];
 
-  // Header row
+  // Simple header row
   rows.push(
     new TableRow({
-      height: { value: 800, rule: "atLeast" },
-      tableHeader: true,
       children: [
         new TableCell({
           children: [
@@ -316,21 +254,18 @@ const createStatisticsTable = (
                 new TextRun({
                   text: "Category",
                   bold: true,
-                  size: 28,
-                  color: "FFFFFF",
+                  size: 24,
                   font: "Calibri",
                 }),
               ],
-              alignment: AlignmentType.CENTER,
             }),
           ],
-          shading: { fill: "1F4E78" },
-          verticalAlign: VerticalAlign.CENTER,
+          shading: { fill: "F0F0F0" },
           margins: {
-            top: 150,
-            bottom: 150,
-            left: 200,
-            right: 200,
+            top: 100,
+            bottom: 100,
+            left: 150,
+            right: 150,
           },
         }),
         new TableCell({
@@ -340,21 +275,18 @@ const createStatisticsTable = (
                 new TextRun({
                   text: "Count",
                   bold: true,
-                  size: 28,
-                  color: "FFFFFF",
+                  size: 24,
                   font: "Calibri",
                 }),
               ],
-              alignment: AlignmentType.CENTER,
             }),
           ],
-          shading: { fill: "1F4E78" },
-          verticalAlign: VerticalAlign.CENTER,
+          shading: { fill: "F0F0F0" },
           margins: {
-            top: 150,
-            bottom: 150,
-            left: 200,
-            right: 200,
+            top: 100,
+            bottom: 100,
+            left: 150,
+            right: 150,
           },
         }),
       ],
@@ -363,39 +295,6 @@ const createStatisticsTable = (
 
   // Coding counts section
   if (counts && Object.keys(counts).length > 0) {
-    rows.push(
-      new TableRow({
-        height: { value: 700, rule: "atLeast" },
-        children: [
-          new TableCell({
-            children: [
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: "Number of Codings (Encodings per Color)",
-                    bold: true,
-                    size: 24,
-                    color: "1F4E78",
-                    font: "Calibri",
-                  }),
-                ],
-                alignment: AlignmentType.CENTER,
-              }),
-            ],
-            columnSpan: 2,
-            shading: { fill: "E7E6E6" },
-            verticalAlign: VerticalAlign.CENTER,
-            margins: {
-              top: 180,
-              bottom: 180,
-              left: 200,
-              right: 200,
-            },
-          }),
-        ],
-      })
-    );
-
     const sortedCounts = Object.entries(counts).sort(([keyA], [keyB]) => {
       const nameA = keyA.startsWith("#")
         ? colors.find((c) => c.code === keyA)?.name || keyA
@@ -406,7 +305,7 @@ const createStatisticsTable = (
       return nameA.localeCompare(nameB);
     });
 
-    sortedCounts.forEach(([key, value], index) => {
+    sortedCounts.forEach(([key, value]) => {
       let displayName = key;
 
       if (key.startsWith("#")) {
@@ -420,11 +319,8 @@ const createStatisticsTable = (
         displayName = styleSettings.underlineName || "Underline";
       }
 
-      const rowColor = index % 2 === 0 ? "FFFFFF" : "F9F9F9";
-
       rows.push(
         new TableRow({
-          height: { value: 600, rule: "atLeast" },
           children: [
             new TableCell({
               children: [
@@ -432,19 +328,17 @@ const createStatisticsTable = (
                   children: [
                     new TextRun({
                       text: displayName,
-                      size: 24,
+                      size: 22,
                       font: "Calibri",
                     }),
                   ],
                 }),
               ],
-              shading: { fill: rowColor },
-              verticalAlign: VerticalAlign.CENTER,
               margins: {
-                top: 120,
-                bottom: 120,
-                left: 200,
-                right: 200,
+                top: 80,
+                bottom: 80,
+                left: 150,
+                right: 150,
               },
             }),
             new TableCell({
@@ -453,22 +347,17 @@ const createStatisticsTable = (
                   children: [
                     new TextRun({
                       text: value.toString(),
-                      bold: true,
-                      size: 28,
-                      color: "1F4E78",
+                      size: 22,
                       font: "Calibri",
                     }),
                   ],
-                  alignment: AlignmentType.CENTER,
                 }),
               ],
-              shading: { fill: rowColor },
-              verticalAlign: VerticalAlign.CENTER,
               margins: {
-                top: 120,
-                bottom: 120,
-                left: 200,
-                right: 200,
+                top: 80,
+                bottom: 80,
+                left: 150,
+                right: 150,
               },
             }),
           ],
@@ -479,39 +368,6 @@ const createStatisticsTable = (
 
   // Word counts section
   if (wordCounts && Object.keys(wordCounts).length > 0) {
-    rows.push(
-      new TableRow({
-        height: { value: 700, rule: "atLeast" },
-        children: [
-          new TableCell({
-            children: [
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: "Number of Words (Words per Color)",
-                    bold: true,
-                    size: 24,
-                    color: "C55A11",
-                    font: "Calibri",
-                  }),
-                ],
-                alignment: AlignmentType.CENTER,
-              }),
-            ],
-            columnSpan: 2,
-            shading: { fill: "FCE4D6" },
-            verticalAlign: VerticalAlign.CENTER,
-            margins: {
-              top: 180,
-              bottom: 180,
-              left: 200,
-              right: 200,
-            },
-          }),
-        ],
-      })
-    );
-
     const sortedWordCounts = Object.entries(wordCounts).sort(
       ([keyA], [keyB]) => {
         const nameA = keyA.startsWith("#")
@@ -524,7 +380,7 @@ const createStatisticsTable = (
       }
     );
 
-    sortedWordCounts.forEach(([key, value], index) => {
+    sortedWordCounts.forEach(([key, value]) => {
       let displayName = key;
 
       if (key.startsWith("#")) {
@@ -540,11 +396,8 @@ const createStatisticsTable = (
         displayName = `${key} (words)`;
       }
 
-      const rowColor = index % 2 === 0 ? "FFFFFF" : "F9F9F9";
-
       rows.push(
         new TableRow({
-          height: { value: 600, rule: "atLeast" },
           children: [
             new TableCell({
               children: [
@@ -552,19 +405,17 @@ const createStatisticsTable = (
                   children: [
                     new TextRun({
                       text: displayName,
-                      size: 24,
+                      size: 22,
                       font: "Calibri",
                     }),
                   ],
                 }),
               ],
-              shading: { fill: rowColor },
-              verticalAlign: VerticalAlign.CENTER,
               margins: {
-                top: 120,
-                bottom: 120,
-                left: 200,
-                right: 200,
+                top: 80,
+                bottom: 80,
+                left: 150,
+                right: 150,
               },
             }),
             new TableCell({
@@ -573,22 +424,17 @@ const createStatisticsTable = (
                   children: [
                     new TextRun({
                       text: value.toString(),
-                      bold: true,
-                      size: 28,
-                      color: "C55A11",
+                      size: 22,
                       font: "Calibri",
                     }),
                   ],
-                  alignment: AlignmentType.CENTER,
                 }),
               ],
-              shading: { fill: rowColor },
-              verticalAlign: VerticalAlign.CENTER,
               margins: {
-                top: 120,
-                bottom: 120,
-                left: 200,
-                right: 200,
+                top: 80,
+                bottom: 80,
+                left: 150,
+                right: 150,
               },
             }),
           ],
@@ -605,12 +451,12 @@ const createStatisticsTable = (
     },
     columnWidths: [7000, 2500],
     borders: {
-      top: { style: BorderStyle.SINGLE, size: 8, color: "1F4E78" },
-      bottom: { style: BorderStyle.SINGLE, size: 8, color: "1F4E78" },
-      left: { style: BorderStyle.SINGLE, size: 8, color: "1F4E78" },
-      right: { style: BorderStyle.SINGLE, size: 8, color: "1F4E78" },
-      insideHorizontal: { style: BorderStyle.SINGLE, size: 4, color: "D0CECE" },
-      insideVertical: { style: BorderStyle.SINGLE, size: 4, color: "D0CECE" },
+      top: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
+      bottom: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
+      left: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
+      right: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 2, color: "DDDDDD" },
+      insideVertical: { style: BorderStyle.SINGLE, size: 2, color: "DDDDDD" },
     },
   });
 };

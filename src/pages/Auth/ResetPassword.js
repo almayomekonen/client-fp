@@ -9,7 +9,7 @@ import "../../styles/Auth.css";
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
   const { users } = useData();
-  const { resetPassword } = useUsers(); // Access users to find the email
+  const { resetPassword } = useUsers(); 
   const { sendVerificationCode, verifyCode } = useEmailVerification();
 
   const [username, setUsername] = useState("");
@@ -20,68 +20,124 @@ export default function ResetPasswordPage() {
 
   const handleSendCode = async () => {
     if (!username) {
-      setMessage("Please enter username");
+      setMessage("❌ Please enter username");
       return;
     }
 
-    // Find email by username
+
     const user = users.find((u) => u.username === username);
     if (!user) {
-      setMessage("Username does not exist");
+      setMessage("❌ Username does not exist");
       return;
     }
     const userEmail = user.email;
     setEmail(userEmail);
 
-    // Send the code to email
+
+    setMessage("📧 Sending verification code...");
+    
+
     const result = await sendVerificationCode(userEmail);
-    setMessage(result.message);
+    
+
     if (result.success) {
+      setMessage("✅ " + result.message);
       setStep("waitingForCode");
+    } else {
+      setMessage("❌ " + result.message);
     }
   };
 
   const handleVerifyCode = async () => {
     if (!codeFromUser) {
-      setMessage("Please enter code");
+      setMessage("❌ Please enter code");
       return;
     }
 
+    // Show loading state
+    setMessage("🔍 Verifying code...");
+    
     const result = await verifyCode(email, codeFromUser);
+    
+    // Display the exact message from the API
     if (result.success) {
-      setMessage("");
+      setMessage(""); 
       setStep("verified");
     } else {
+      // Check for specific error types
       if (
         result.message &&
-        result.message.toLowerCase().includes("not found")
+        (result.message.toLowerCase().includes("not found") || 
+         result.message.toLowerCase().includes("expired"))
       ) {
-        setMessage("Code expired or invalid. Please resend code.");
+        setMessage("❌ Code expired or invalid. Please resend code.");
       } else {
-        setMessage(result.message);
+        setMessage("❌ " + result.message);
       }
     }
   };
 
   const handleResendCode = async () => {
+    setMessage("📧 Resending verification code...");
     const result = await sendVerificationCode(email);
-    setMessage(result.message);
+    
+    // Display the exact message from the API
+    if (result.success) {
+      setMessage("✅ " + result.message);
+    } else {
+      setMessage("❌ " + result.message);
+    }
   };
 
   const handlePasswordReset = async (newPassword) => {
     const user = users.find((u) => u.username === username);
     if (!user) {
-      setMessage("User not found");
+      setMessage("❌ User not found");
       return;
     }
 
-    const result = await resetPassword(user._id, newPassword);
-    if (result.success) {
-      setMessage("Password changed successfully! Redirecting to login...");
-      setTimeout(() => navigate("/"), 2000);
-    } else {
-      setMessage(result.message);
+    setMessage("🔄 Resetting password...");
+    
+    try {
+      const result = await resetPassword(user._id, newPassword);
+      if (result && result.message) {
+        setMessage("✅ Password changed successfully! Redirecting to login...");
+        setTimeout(() => navigate("/"), 2000);
+      } else {
+        setMessage("✅ Password changed successfully! Redirecting to login...");
+        setTimeout(() => navigate("/"), 2000);
+      }
+    } catch (err) {
+      setMessage("❌ " + (err.message || "Error resetting password"));
     }
+  };
+
+  // Determine message type based on content
+  const getMessageType = (msg) => {
+    if (!msg) return "";
+    
+    // Error messages (red)
+    if (msg.includes("❌") || 
+        msg.toLowerCase().includes("error") ||
+        msg.toLowerCase().includes("failed") ||
+        msg.toLowerCase().includes("invalid") ||
+        msg.toLowerCase().includes("expired") ||
+        msg.toLowerCase().includes("not found") ||
+        msg.toLowerCase().includes("not exist")) {
+      return "error";
+    }
+    
+    // Success messages (green)
+    if (msg.includes("✅") ||
+        msg.toLowerCase().includes("success") ||
+        msg.toLowerCase().includes("sent to email") ||
+        msg.toLowerCase().includes("code sent") ||
+        msg.toLowerCase().includes("changed")) {
+      return "success";
+    }
+    
+    // Info/loading messages (blue)
+    return "info";
   };
 
   return (
@@ -92,6 +148,12 @@ export default function ResetPasswordPage() {
           <h1 className="auth-title">Reset Password</h1>
           <p className="auth-subtitle">Reset your password</p>
         </div>
+
+        {message && step !== "verified" && (
+          <div className={`auth-message ${getMessageType(message)}`}>
+            {message}
+          </div>
+        )}
 
         {step === "enterUsername" && (
           <div className="auth-form">
@@ -113,9 +175,6 @@ export default function ResetPasswordPage() {
 
         {step === "waitingForCode" && (
           <div className="auth-form">
-            <div className="auth-message info">
-              A verification code has been sent to: <strong>{email}</strong>
-            </div>
             <div className="auth-form-group">
               <input
                 type="text"
@@ -146,21 +205,14 @@ export default function ResetPasswordPage() {
         )}
 
         {step === "verified" && (
-          <ResetPasswordForm onSubmit={handlePasswordReset} />
-        )}
-
-        {message && (
-          <div
-            className={`auth-message ${
-              message.toLowerCase().includes("error")
-                ? "error"
-                : message.toLowerCase().includes("success")
-                ? "success"
-                : "info"
-            }`}
-          >
-            {message}
-          </div>
+          <>
+            {message && (
+              <div className={`auth-message ${getMessageType(message)}`}>
+                {message}
+              </div>
+            )}
+            <ResetPasswordForm onSubmit={handlePasswordReset} />
+          </>
         )}
 
         <div className="auth-link">

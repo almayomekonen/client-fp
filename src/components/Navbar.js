@@ -15,14 +15,14 @@ function Navbar() {
 
   useEffect(() => {
     if (isAuthChecked && !currentUser && !isPublicPage) {
-      navigate("/");
+      navigate("/", { replace: true });
     }
-  }, [currentUser, isAuthChecked, location.pathname, navigate, isPublicPage]);
+  }, [currentUser, isAuthChecked, isPublicPage, navigate]);
 
   if (isPublicPage) return null;
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
   };
 
   const getRoleName = (role) => {

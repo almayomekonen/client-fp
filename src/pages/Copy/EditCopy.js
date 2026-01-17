@@ -630,7 +630,7 @@ export default function StatementEditor() {
                 onClick={handleClearAll}
                 className="dashboard-btn btn-danger btn-sm"
               >
-                <FaEraser /> Clear All
+                <FaEraser /> Clear
               </button>
               {styleSettings.underlineEnabled && (
                 <button
@@ -673,8 +673,7 @@ export default function StatementEditor() {
               flex: 1,
               display: "flex",
               flexDirection: "column",
-              minHeight: 0,
-              overflow: "hidden",
+              minHeight: "400px",
             }}
           >
             <h3
@@ -702,13 +701,19 @@ export default function StatementEditor() {
                   borderRadius: "4px",
                   padding: "15px",
                   backgroundColor: "#fafafa",
-                  minHeight: 0,
+                  minHeight: "350px",
                 }}
               >
                 <Editable
                   renderLeaf={renderLeaf}
                   placeholder="Select text to highlight..."
                   readOnly={true}
+                  onKeyDown={(event) => {
+                    // Prevent all keyboard input that would modify text
+                    if (!event.ctrlKey && !event.metaKey && !event.altKey) {
+                      event.preventDefault();
+                    }
+                  }}
                   dir="auto"
                   style={{
                     fontSize: "18px",

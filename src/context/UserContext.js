@@ -12,47 +12,40 @@ import {
 const UserContext = createContext();
 
 export function UserProvider({ children }) {
-  const { refreshUsers } = useRefresh(); // Refresh the users list
-  const navigate = useNavigate(); // Navigate to the previous page
+  const { refreshUsers } = useRefresh(); 
+  const navigate = useNavigate(); 
 
-  const { users, setCurrentUser } = useData(); // Get the users list and set the current user
+  const { users, setCurrentUser } = useData();
 
   const login = async (username, password) => {
-    const result = await loginService(username, password); // Login the user
+    const result = await loginService(username, password); 
 
     if (result.success) {
-      setCurrentUser(result.user); // Set the current user
+      setCurrentUser(result.user); 
       localStorage.setItem("currentUser", JSON.stringify(result.user));
     }
 
-    return result; // Return the result
+    return result; 
   };
   const resetPassword = async (userId, password) => {
     const result = await updateUserOnServerService(userId, {
       newPassword: password,
-    }); // Reset the password
-    await refreshUsers(); // Refresh the users list
-    return result; // Return the result
+    });
+    await refreshUsers(); 
+    return result; 
   };
 
-  const logout = () => {
-    logoutService(setCurrentUser, navigate); // Logout the user
+  const logout = async () => {
+    await logoutService(setCurrentUser, navigate); 
   };
 
   const deleteUser = async (id) => {
     try {
-      console.log("🗑️ Deleting user:", id); // Delete the user
-      const result = await deleteUserFromServerService(id); // Delete the user from the server
-      console.log("✅ User deleted successfully:", result);
-
-      // Wait a tiny bit for the server to finish the cascade delete
-      await new Promise((resolve) => setTimeout(resolve, 100)); // Wait a tiny bit for the server to finish the cascade delete
-
-      // Refresh the users list
-      console.log("🔄 Refreshing users list...");
+   
+      const result = await deleteUserFromServerService(id); 
+      await new Promise((resolve) => setTimeout(resolve, 100)); 
       try {
         await refreshUsers();
-        console.log("✅ Users list refreshed");
       } catch (refreshError) {
         console.error(
           "⚠️ Error refreshing users list (but deletion succeeded):",

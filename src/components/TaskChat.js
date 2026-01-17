@@ -13,6 +13,7 @@ export default function TaskChat({ taskId }) {
     deleteTaskMessage,
   } = useTaskMessage();
   const messagesEndRef = useRef(null);
+  const markedAsReadRef = useRef(new Set()); // Track messages already marked as read
 
   const taskMessages = getMessagesForTask(taskId);
 
@@ -25,10 +26,13 @@ export default function TaskChat({ taskId }) {
   };
 
   useEffect(() => {
-    if (taskMessages.length > 0) {
+    if (taskMessages.length > 0 && currentUser?._id) {
       taskMessages.forEach((m) => {
-        if (!m.readBy.includes(currentUser?._id)) {
-          markAsRead(m?._id, currentUser?._id);
+        // Only mark as read if not already in the user's readBy array
+        // AND we haven't already called markAsRead for this message in this session
+        if (!m.readBy.includes(currentUser._id) && !markedAsReadRef.current.has(m._id)) {
+          markedAsReadRef.current.add(m._id); // Mark as processed to prevent duplicate calls
+          markAsRead(m._id, currentUser._id);
         }
       });
       scrollToBottom();

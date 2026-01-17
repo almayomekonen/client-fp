@@ -7,11 +7,29 @@ export const addTask = async (
   copies,
   { experimentId, investigatorId, coderId, percent }
 ) => {
+  // Validate that experiment has statements
+  const statementsInExperiment = await fetchStatementsByExperimentId(
+    experimentId
+  );
+
+  if (statementsInExperiment.length === 0) {
+    throw new Error(
+      "Cannot create task: No statements found in this experiment. Please add statements first."
+    );
+  }
+
   const newCopyIds = await copiesForTask(copies, {
     experimentId,
     coderId,
     percent,
   });
+
+  // Validate that copies were created (unless percent is 0, which is valid)
+  if (newCopyIds.length === 0 && percent > 0) {
+    throw new Error(
+      "Cannot create task: No copies could be created. The coder may already have copies for all statements at the requested percentage."
+    );
+  }
 
   await createTaskOnServer({
     experimentId,

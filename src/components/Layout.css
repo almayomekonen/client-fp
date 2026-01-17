@@ -107,7 +107,6 @@
   transition: all 0.3s ease;
   border: 1px solid #e0e0e0;
   max-width: 100%;
-  overflow: hidden;
 }
 
 @media (max-width: 768px) {
