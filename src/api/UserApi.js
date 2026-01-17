@@ -58,6 +58,24 @@ export const updateUserOnServer = async (userId, updateFields) => {
   return data;
 };
 
+export const resetPasswordOnServer = async (userId, newPassword) => {
+  const res = await fetch(`${API_BASE_URL}/api/users/${userId}/reset-password`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ newPassword }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || "Error resetting password");
+  return data;
+};
+
+export const checkUsernameExists = async (username) => {
+  const res = await fetch(`${API_BASE_URL}/api/users/check-username/${username}`);
+  const data = await res.json();
+  return data; // { exists: true/false, userId: '...', email: '...' }
+};
+
 export async function login(username, password) {
   try {
     const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/auth/login`, {

@@ -3,16 +3,16 @@ import { useUsers } from "../../context/UserContext";
 import { useEmailVerification } from "../../context/EmailVerificationContext";
 import { useNavigate } from "react-router-dom";
 import ResetPasswordForm from "../../components/Auth/ResetPasswordForm";
-import { useData } from "../../context/DataContext";
+import { checkUsernameExists } from "../../api/UserApi";
 import "../../styles/Auth.css";
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
-  const { users } = useData();
   const { resetPassword } = useUsers(); 
   const { sendVerificationCode, verifyCode } = useEmailVerification();
 
   const [username, setUsername] = useState("");
+  const [userId, setUserId] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [codeFromUser, setCodeFromUser] = useState("");
@@ -24,27 +24,31 @@ export default function ResetPasswordPage() {
       return;
     }
 
-
-    const user = users.find((u) => u.username === username);
-    if (!user) {
-      setMessage("❌ Username does not exist");
-      return;
-    }
-    const userEmail = user.email;
-    setEmail(userEmail);
-
-
-    setMessage("📧 Sending verification code...");
+    setMessage("🔍 Checking username...");
     
+    try {
+      const result = await checkUsernameExists(username);
+      
+      if (!result.exists) {
+        setMessage("❌ Username does not exist");
+        return;
+      }
 
-    const result = await sendVerificationCode(userEmail);
-    
+      setUserId(result.userId);
+      setEmail(result.email);
 
-    if (result.success) {
-      setMessage("✅ " + result.message);
-      setStep("waitingForCode");
-    } else {
-      setMessage("❌ " + result.message);
+      setMessage("📧 Sending verification code...");
+      
+      const verificationResult = await sendVerificationCode(result.email);
+      
+      if (verificationResult.success) {
+        setMessage("✅ " + verificationResult.message);
+        setStep("waitingForCode");
+      } else {
+        setMessage("❌ " + verificationResult.message);
+      }
+    } catch (err) {
+      setMessage("❌ " + (err.message || "Error checking username"));
     }
   };
 
@@ -90,8 +94,7 @@ export default function ResetPasswordPage() {
   };
 
   const handlePasswordReset = async (newPassword) => {
-    const user = users.find((u) => u.username === username);
-    if (!user) {
+    if (!userId) {
       setMessage("❌ User not found");
       return;
     }
@@ -99,7 +102,7 @@ export default function ResetPasswordPage() {
     setMessage("🔄 Resetting password...");
     
     try {
-      const result = await resetPassword(user._id, newPassword);
+      const result = await resetPassword(userId, newPassword);
       if (result && result.message) {
         setMessage("✅ Password changed successfully! Redirecting to login...");
         setTimeout(() => navigate("/"), 2000);

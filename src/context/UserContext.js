@@ -8,6 +8,7 @@ import {
   deleteUserFromServer as deleteUserFromServerService,
   login as loginService,
   logout as logoutService,
+  resetPasswordOnServer as resetPasswordOnServerService,
 } from "../api/UserApi";
 const UserContext = createContext();
 
@@ -28,10 +29,7 @@ export function UserProvider({ children }) {
     return result; 
   };
   const resetPassword = async (userId, password) => {
-    const result = await updateUserOnServerService(userId, {
-      newPassword: password,
-    });
-    await refreshUsers(); 
+    const result = await resetPasswordOnServerService(userId, password);
     return result; 
   };
 
