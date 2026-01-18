@@ -424,11 +424,12 @@ export default function ViewStatementWithComments() {
   return (
     <div
       style={{
-        height: "100vh",
+        width: "100%",
+        minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
         padding: "10px",
-        overflow: "hidden",
+        boxSizing: "border-box",
       }}
     >
       {/* Header - Compact */}
@@ -450,7 +451,8 @@ export default function ViewStatementWithComments() {
           display: "flex",
           gap: "10px",
           flex: 1,
-          minHeight: "600px",
+          minHeight: 0,
+          overflow: "hidden",
         }}
       >
         {/* Left Column - Full Height */}
