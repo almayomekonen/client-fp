@@ -62,8 +62,8 @@
 /* Chat Component Container */
 .task-chat-container,
 .copy-chat-container {
-  height: 400px;
-  max-height: 50vh;
+  height: 480px;
+  max-height: 100vh;
   display: flex;
   flex-direction: column;
   background: #ffffff;
