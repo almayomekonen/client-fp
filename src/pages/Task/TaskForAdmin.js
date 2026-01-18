@@ -266,14 +266,15 @@ export default function TaskManagementPage() {
                             <FaUser />
                             Researcher: {getResearcherName(task.investigatorId)}
                           </span>
+                          {/* Experiment Completion % */}
+                          <span className="task-meta-item">
+                            <FaChartLine />
+                            Experiment Completion: {experimentPercentMap[task._id] ?? 0}%
+                          </span>
                           {/* Coder name */}
                           <span className="task-meta-item">
                             <FaUser />
                             Coder: {getCoderName(coderId)}
-                          </span>
-                          <span className="task-meta-item">
-                            <FaChartLine />
-                            Experiment Completion: {experimentPercentMap[task._id] ?? 0}%
                           </span>
                           {unreadCount > 0 && (
                             <span className="task-meta-item">
