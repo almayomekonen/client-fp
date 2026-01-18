@@ -296,7 +296,7 @@ export default function InvestigatorHomePage() {
 
   const handleDeleteExperiment = async (e, experimentId) => {
     e.stopPropagation();
-    if (window.confirm("Are you sure you want to delete this experiment?")) {
+    if (window.confirm("Are you sure you want to delete this experiment? This will delete all associated groups, declarations, copies, and tasks.")) {
       const success = await deleteExperiment(experimentId);
       if (success) {
         setRelevantExperiments((prev) =>
@@ -308,7 +308,7 @@ export default function InvestigatorHomePage() {
 
   const handleDeleteGroup = async (e, groupId) => {
     e.stopPropagation();
-    if (window.confirm("Delete this group and all its statements, copies, and related data?")) {
+    if (window.confirm("Are you sure you want to delete this group? This will delete all associated declarations, copies, and tasks.")) {
       try {
         await deleteGroup(groupId);
         setGroups((prev) => prev.filter((g) => g._id !== groupId));
@@ -326,14 +326,14 @@ export default function InvestigatorHomePage() {
 
   const handleDeleteStatement = async (e, statementId) => {
     e.stopPropagation();
-    if (window.confirm("Delete this statement?")) {
+    if (window.confirm("Are you sure you want to delete this declaration? This will delete all associated copies and comparisons.")) {
       await deleteStatement(statementId);
       setStatements((prev) => prev.filter((s) => s._id !== statementId));
     }
   };
 
   const handleDeleteCopy = async (copyId) => {
-    if (window.confirm("Delete this copy?")) await deleteCopy(copyId);
+    if (window.confirm("Are you sure you want to delete this copy? This action cannot be undone.")) await deleteCopy(copyId);
   };
 
   const renderBreadcrumbs = () => (
@@ -685,7 +685,7 @@ export default function InvestigatorHomePage() {
                   </div>
                   <h3 className="card-title">{stmt.name}</h3>
                   <p className="card-desc">
-                    {stmt.content || "No content"}
+                    {stmt.content}
                   </p>
                 </div>
               ))}
@@ -755,7 +755,13 @@ export default function InvestigatorHomePage() {
                     (copy) => copy.status === "completed"
                   ).length < 2
                 }
-                className="btn-primary"
+                className={`dashboard-btn ${
+                  copiesByStatementId(selectedStatement._id).filter(
+                    (copy) => copy.status === "completed"
+                  ).length < 2
+                    ? "btn-secondary"
+                    : "btn-primary"
+                }`}
                 style={{
                   opacity:
                     copiesByStatementId(selectedStatement._id).filter(

@@ -70,6 +70,12 @@
   position: relative;
 }
 
+/* When chat is used in a flex container (like EditCopy sidebar), allow it to fill available space */
+.copy-chat-container {
+  flex: 1;
+  min-height: 0; /* Allow shrinking in flex container */
+}
+
 /* Chat Messages Area */
 .chat-messages-area {
   flex: 1;

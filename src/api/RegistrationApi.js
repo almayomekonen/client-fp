@@ -60,3 +60,20 @@ export async function fetchRegistrationRequests() {
     return [];
   }
 }
+
+export async function checkAvailability(username, email) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/registration/check-availability`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, email }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) return { available: false, message: data.message };
+
+    return data; // { available: true/false, message: ... }
+  } catch (err) {
+    return { available: false, message: "Error connecting to server" };
+  }
+}

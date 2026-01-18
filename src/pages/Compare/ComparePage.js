@@ -95,6 +95,9 @@ export default function ComparePage() {
   const [isAddingCommentB, setIsAddingCommentB] = useState(false);
   const [newCommentB, setNewCommentB] = useState("");
 
+  const [storedSelectionA, setStoredSelectionA] = useState(null);
+  const [storedSelectionB, setStoredSelectionB] = useState(null);
+
   const [copies, setCopies] = useState([]);
   const [statement, setStatement] = useState(null);
   const [diffs, setDiffs] = useState([]);
@@ -580,9 +583,13 @@ export default function ComparePage() {
     copyId,
     statement,
     setCommentKey,
-    newComment
+    newComment,
+    storedSelection
   ) => {
-    if (!editor.selection) {
+    // Use stored selection if available, otherwise check current selection
+    const selection = storedSelection || editor.selection;
+    
+    if (!selection) {
       alert("Please select a location in the text before adding a comment");
       return;
     }
@@ -592,7 +599,7 @@ export default function ComparePage() {
       return;
     }
 
-    const { anchor } = editor.selection;
+    const { anchor } = selection;
     const offset = getGlobalOffsetFromValue(value, anchor.path, anchor.offset);
 
     const createdComment = await addComment(
@@ -1297,7 +1304,15 @@ export default function ComparePage() {
               </h3>
               {!isAddingCommentA && (
                 <button
-                  onClick={() => setIsAddingCommentA(true)}
+                  onClick={() => {
+                    if (!editorA.selection) {
+                      alert("Please select text in editor A first before adding a comment");
+                      return;
+                    }
+                    // Store the current selection
+                    setStoredSelectionA(editorA.selection);
+                    setIsAddingCommentA(true);
+                  }}
                   className="dashboard-btn btn-primary btn-sm"
                   style={{ width: "100%", fontSize: "13px", padding: "8px" }}
                 >
@@ -1331,9 +1346,11 @@ export default function ComparePage() {
                           copyA._id,
                           statement,
                           setCommentKeyA,
-                          newCommentA
+                          newCommentA,
+                          storedSelectionA
                         );
                         setIsAddingCommentA(false);
+                        setStoredSelectionA(null);
                       }}
                       className="dashboard-btn btn-success btn-sm"
                       style={{ flex: 1, fontSize: "12px" }}
@@ -1344,6 +1361,7 @@ export default function ComparePage() {
                       onClick={() => {
                         setIsAddingCommentA(false);
                         setNewCommentA("");
+                        setStoredSelectionA(null);
                       }}
                       className="dashboard-btn btn-secondary btn-sm"
                       style={{ flex: 1, fontSize: "12px" }}
@@ -1367,7 +1385,15 @@ export default function ComparePage() {
               </h3>
               {!isAddingCommentB && (
                 <button
-                  onClick={() => setIsAddingCommentB(true)}
+                  onClick={() => {
+                    if (!editorB.selection) {
+                      alert("Please select text in editor B first before adding a comment");
+                      return;
+                    }
+                    // Store the current selection
+                    setStoredSelectionB(editorB.selection);
+                    setIsAddingCommentB(true);
+                  }}
                   className="dashboard-btn btn-primary btn-sm"
                   style={{ width: "100%", fontSize: "13px", padding: "8px" }}
                 >
@@ -1401,9 +1427,11 @@ export default function ComparePage() {
                           copyB._id,
                           statement,
                           setCommentKeyB,
-                          newCommentB
+                          newCommentB,
+                          storedSelectionB
                         );
                         setIsAddingCommentB(false);
+                        setStoredSelectionB(null);
                       }}
                       className="dashboard-btn btn-success btn-sm"
                       style={{ flex: 1, fontSize: "12px" }}
@@ -1414,6 +1442,7 @@ export default function ComparePage() {
                       onClick={() => {
                         setIsAddingCommentB(false);
                         setNewCommentB("");
+                        setStoredSelectionB(null);
                       }}
                       className="dashboard-btn btn-secondary btn-sm"
                       style={{ flex: 1, fontSize: "12px" }}

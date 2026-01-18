@@ -352,9 +352,21 @@ export default function AdminHomePage() {
                 >
                   <div className="card-top">
                     <FaFileAlt className="card-icon" />
+                    <div className="card-actions">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/statement-summary/${stmt._id}`);
+                        }}
+                        className="icon-btn"
+                        title="View Summary"
+                      >
+                        <FaChartLine />
+                      </button>
+                    </div>
                   </div>
                   <h3 className="card-title">{stmt.name}</h3>
-                  <p className="card-desc">{stmt.content || "No content"}</p>
+                  <p className="card-desc">{stmt.content}</p>
                 </div>
               ))}
               {statements.length === 0 && (
@@ -395,7 +407,13 @@ export default function AdminHomePage() {
                     (copy) => copy.status === "completed"
                   ).length < 2
                 }
-                className="btn-primary"
+                className={`dashboard-btn ${
+                  copiesByStatementId(selectedStatement._id).filter(
+                    (copy) => copy.status === "completed"
+                  ).length < 2
+                    ? "btn-secondary"
+                    : "btn-primary"
+                }`}
                 style={{
                   opacity:
                     copiesByStatementId(selectedStatement._id).filter(
@@ -419,15 +437,6 @@ export default function AdminHomePage() {
                 }
               >
                 <FaBalanceScale /> Compare Copies
-              </button>
-
-              <button
-                onClick={() =>
-                  navigate(`/statement-summary/${selectedStatement._id}`)
-                }
-                className="btn-secondary"
-              >
-                <FaChartLine /> View Summary
               </button>
             </div>
 

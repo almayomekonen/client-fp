@@ -394,7 +394,6 @@ export default function StatementEditor() {
     setValue(decoratedText);
     setCommentKey((prev) => prev + 1);
     setWordCounts(calculateWordCounts(decoratedText));
-    alert("✅ Changes saved successfully!");
   };
 
   const handleCloseCoding = async () => {
@@ -846,14 +845,7 @@ export default function StatementEditor() {
             >
               <FaComment /> Chat
             </h3>
-            <div
-              style={{
-                flex: 1,
-                overflowY: "auto",
-              }}
-            >
-              <CopyChat copyId={copyId} />
-            </div>
+            <CopyChat copyId={copyId} />
           </div>
 
           {/* Comments Section - Compact */}

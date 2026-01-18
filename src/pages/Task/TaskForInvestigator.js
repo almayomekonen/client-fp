@@ -267,10 +267,13 @@ export default function TaskForInvestigator() {
                         {experimentNames[task.experimentId] || "Loading..."}
                       </div>
                       <div className="task-meta">
-                        {/* Removed Coder name from here since it's grouped */}
+                        <span className="task-meta-item">
+                          <FaUser />
+                          Coder: {getCoderName(coderId)}
+                        </span>
                         <span className="task-meta-item">
                           <FaChartLine />
-                          Experiment: {expPercent}%
+                          Experiment Completion: {expPercent}%
                         </span>
                         {unreadCount > 0 && (
                           <span className="task-meta-item">

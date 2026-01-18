@@ -68,10 +68,10 @@ export const copiesForTask = async (
     return [];
   }
 
-  let bestCount = 1;
-  let bestDiff = Math.abs((1 / totalStatementsCount) * 100 - percent);
+  let bestCount = 0;
+  let bestDiff = Infinity;
 
-  for (let i = 2; i <= totalStatementsCount; i++) {
+  for (let i = 0; i <= totalStatementsCount; i++) {
     const pct = (i / totalStatementsCount) * 100;
     const diff = Math.abs(pct - percent);
     if (diff < bestDiff) {
@@ -81,6 +81,11 @@ export const copiesForTask = async (
   }
 
   const desiredCount = bestCount;
+
+  // If the best count is 0, return empty array
+  if (desiredCount === 0) {
+    return [];
+  }
   const copyCountsByStatementId = {};
 
   for (const s of statementsInExperiment) {

@@ -262,9 +262,35 @@ export default function ResultsTables({
       {/* Table 1: Full Text Results */}
       {renderTable(fullTextTable, "Table 1 — Full Text Results")}
 
-      {/* Table 2: Selected Segment Results */}
-      {selectionTable &&
-        renderTable(selectionTable, "Table 2 — Selected Segment Results")}
+      {/* Table 2: Selected Segment Results - Always show, even with zeros */}
+      {selectionTable
+        ? renderTable(selectionTable, "Table 2 — Selected Segment Results")
+        : fullTextTable && (
+            <div style={{ marginBottom: "24px" }}>
+              <h4
+                style={{
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  marginBottom: "12px",
+                  color: "#444",
+                }}
+              >
+                Table 2 — Selected Segment Results
+              </h4>
+              <div
+                style={{
+                  padding: "20px",
+                  backgroundColor: "#f9f9f9",
+                  borderRadius: "8px",
+                  border: "1px solid #e0e0e0",
+                  textAlign: "center",
+                  color: "#666",
+                }}
+              >
+                No segment selected — select text to see results
+              </div>
+            </div>
+          )}
     </div>
   );
 }

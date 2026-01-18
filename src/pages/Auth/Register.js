@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useRegistrations } from "../../context/RegistrationContext";
 import { useEmailVerification } from "../../context/EmailVerificationContext";
+import { checkAvailability } from "../../api/RegistrationApi";
 import "../../styles/Auth.css";
 
 export default function RegisterPage() {
@@ -53,6 +54,15 @@ export default function RegisterPage() {
       setMessage(
         "❌ Password must be at least 8 characters long and contain both uppercase and lowercase English letters."
       );
+      return;
+    }
+
+    // Check username/email availability BEFORE sending code
+    setMessage("🔍 Checking username and email availability...");
+    const availabilityResult = await checkAvailability(form.username, form.email);
+    
+    if (!availabilityResult.available) {
+      setMessage("❌ " + availabilityResult.message);
       return;
     }
 
@@ -260,18 +270,19 @@ export default function RegisterPage() {
       {/* Success Modal */}
       {showSuccessModal && (
         <div className="modal-overlay">
-          <div className="modal-content success-modal">
-            <div className="modal-icon success-icon">✅</div>
-            <h2 className="modal-title">Registration Successful!</h2>
-            <p className="modal-text">
+          <div className="modal-content success-modal" style={{ maxWidth: "400px" }}>
+            <div className="modal-icon success-icon" style={{ fontSize: "48px" }}>✅</div>
+            <h2 className="modal-title" style={{ fontSize: "20px", marginBottom: "12px" }}>Registration Successful!</h2>
+            <p className="modal-text" style={{ fontSize: "14px", marginBottom: "8px" }}>
               Your account has been created and is pending admin approval.
             </p>
-            <p className="modal-text">
-              You will be notified once your account is approved.
+            <p className="modal-text" style={{ fontSize: "14px", marginBottom: "20px" }}>
+              You will be notified by email once your account is approved.
             </p>
             <button
               onClick={() => navigate("/")}
               className="modal-btn success-btn"
+              style={{ fontSize: "14px", padding: "10px 20px" }}
             >
               Go to Login
             </button>

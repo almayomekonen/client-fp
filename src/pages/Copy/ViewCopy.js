@@ -428,14 +428,14 @@ export default function ViewStatementWithComments() {
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
-        padding: "10px",
+        padding: "20px 10px 10px 10px",
         boxSizing: "border-box",
       }}
     >
       {/* Header - Compact */}
       <div style={{ marginBottom: "10px", flexShrink: 0 }}>
         <h1
-          style={{ fontSize: "22px", fontWeight: "600", marginBottom: "5px" }}
+          style={{ fontSize: "22px", fontWeight: "600", marginBottom: "5px", marginTop: "0" }}
         >
           <FaEye /> Statement Viewer
         </h1>
@@ -473,8 +473,9 @@ export default function ViewStatementWithComments() {
               padding: "10px",
               marginBottom: "8px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              flex: 1,
-              minHeight: 0,
+              flex: "0 1 45%",
+              minHeight: "250px",
+              maxHeight: "50vh",
               display: "flex",
               flexDirection: "column",
             }}
@@ -572,8 +573,8 @@ export default function ViewStatementWithComments() {
               padding: "10px",
               marginTop: "8px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              flexShrink: 0,
-              height: "180px", // Fixed height
+              flex: "1 1 auto",
+              minHeight: "300px",
               overflowY: "auto", // Scrollable
             }}
           >

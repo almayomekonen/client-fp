@@ -654,6 +654,65 @@ export default function CoderComparePage() {
     setCommentKeyB((prev) => prev + 1);
   };
 
+  const handleCopyASelection = async (id) => {
+    const selected = availableCopies.find((c) => c._id === id);
+    if (!selected || !statement) return;
+    
+    // Only allow selecting copies that belong to the current user
+    if (selected.coderId !== currentUser?._id) {
+      alert("You can only edit your own codings");
+      return;
+    }
+
+    const baseText = statement.text;
+
+    const nextCopyA = selected;
+    const nextCopyB = copyB;
+
+    const updatedDiffs = compareCopies(
+      nextCopyA,
+      nextCopyB,
+      baseText[0].children[0].text
+    );
+    setDiffs(updatedDiffs);
+    setDiffKey((prev) => prev + 1);
+
+    const commentsForA = nextCopyA
+      ? await fetchCommentsByCopyId(nextCopyA._id)
+      : [];
+    const commentsForB = nextCopyB
+      ? await fetchCommentsByCopyId(nextCopyB._id)
+      : [];
+    setLocalCommentsA(commentsForA);
+    setLocalCommentsB(commentsForB);
+
+    const newValueA = applyHighlightsToText(
+      baseText,
+      nextCopyA.highlights || [],
+      updatedDiffs,
+      commentsForA
+    );
+    const newValueB = applyHighlightsToText(
+      baseText,
+      nextCopyB.highlights || [],
+      updatedDiffs,
+      commentsForB
+    );
+    editorA.selection = null;
+    editorB.selection = null;
+    setValueA(newValueA);
+    setValueB(newValueB);
+
+    setCommentKeyA((prev) => prev + 1);
+    setCommentKeyB((prev) => prev + 1);
+
+    setCopyA(nextCopyA);
+    setCountsA(nextCopyA.colorCounts || {});
+
+    const wordCountsResultA = calculateWordCounts(newValueA);
+    setWordCountsA(wordCountsResultA);
+  };
+
   const handleCopyBSelection = async (id) => {
     const selected = availableCopies.find((c) => c._id === id);
     if (!selected || !statement) return;
@@ -905,14 +964,46 @@ export default function CoderComparePage() {
       {/* Copy Selector */}
       <div className="dashboard-card" style={{ marginBottom: "20px" }}>
         <h3 className="card-title">
-          <FaUser /> Select Coding for Comparison
+          <FaUser /> Select Codings for Comparison
         </h3>
+        
+        {/* Select Your Coding (Copy A) */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             gap: "12px",
             marginTop: "16px",
+            marginBottom: "12px",
+          }}
+        >
+          <label style={{ fontWeight: "600", minWidth: "150px" }}>
+            Your Coding (Edit):
+          </label>
+          <select
+            value={copyA?._id || ""}
+            onChange={(e) => handleCopyASelection(e.target.value)}
+            className="form-select"
+            style={{ flex: 1, maxWidth: "400px" }}
+          >
+            {!copyA && <option value="">-- Select Your Coding --</option>}
+            {availableCopies
+              .filter((c) => c.coderId === currentUser?._id)
+              .map((c) => (
+                <option key={c._id} value={c._id}>
+                  {users.find((u) => u._id === c.coderId)?.username ||
+                    "Your Coding"}
+                </option>
+              ))}
+          </select>
+        </div>
+        
+        {/* Select Comparison Coding (Copy B) */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
           }}
         >
           <label style={{ fontWeight: "600", minWidth: "150px" }}>
@@ -977,13 +1068,14 @@ export default function CoderComparePage() {
               <FaPalette /> Edit Your Coding
             </h3>
 
-            {/* All Editing Tools in One Row */}
+            {/* Color Buttons Row */}
             <div
               style={{
                 display: "flex",
                 gap: "8px",
                 flexWrap: "wrap",
                 alignItems: "center",
+                marginBottom: "12px",
               }}
             >
               {/* Color Palette Buttons */}
@@ -1013,7 +1105,17 @@ export default function CoderComparePage() {
                   {color.name}
                 </button>
               ))}
+            </div>
 
+            {/* Formatting Buttons Row */}
+            <div
+              style={{
+                display: "flex",
+                gap: "8px",
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
               {/* Style Buttons */}
               {styleSettings.underlineEnabled && (
                 <button
@@ -1023,18 +1125,18 @@ export default function CoderComparePage() {
                     textDecoration: "underline",
                   }}
                 >
-                  {styleSettings.boldEnabled && (
-                    <button
-                      onClick={() => markBold(editorA)}
-                      className="dashboard-btn btn-secondary btn-sm"
-                      style={{
-                        fontWeight: "bold",
-                      }}
-                    >
-                      <FaBold /> {styleSettings.boldName || "Bold"}
-                    </button>
-                  )}
                   <FaUnderline /> {styleSettings.underlineName || "Underline"}
+                </button>
+              )}
+              {styleSettings.boldEnabled && (
+                <button
+                  onClick={() => markBold(editorA)}
+                  className="dashboard-btn btn-secondary btn-sm"
+                  style={{
+                    fontWeight: "bold",
+                  }}
+                >
+                  <FaBold /> {styleSettings.boldName || "Bold"}
                 </button>
               )}
               {styleSettings.italicEnabled && (

@@ -15,7 +15,7 @@ export default function CopyChat({ copyId }) {
     deleteCopyMessage,
   } = useCopyMessage();
   const messagesEndRef = useRef(null);
-  const markedAsReadRef = useRef(new Set()); // Track messages already marked as read
+  const markedAsReadRef = useRef(new Set()); 
 
   const copyMessages = getMessagesForCopy(copyId);
 
@@ -156,15 +156,13 @@ export default function CopyChat({ copyId }) {
                   <div className="message-bubble">
                     {msg?.text}
                     <div className="message-actions">
-                      {!isOwnMessage && (
-                        <button
-                          onClick={() => handleReply(msg._id)}
-                          className="message-action-btn"
-                          title="Reply"
-                        >
-                          <FaReply />
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleReply(msg._id)}
+                        className="message-action-btn"
+                        title="Reply"
+                      >
+                        <FaReply />
+                      </button>
                       {isOwnMessage && (
                         <button
                           onClick={() => handleDeleteMessage(msg._id)}
