@@ -62,18 +62,13 @@
 /* Chat Component Container */
 .task-chat-container,
 .copy-chat-container {
-  height: 600px;
-  max-height: 80vh;
+  height: 400px;
+  max-height: 50vh;
   display: flex;
   flex-direction: column;
   background: #ffffff;
   position: relative;
-}
-
-/* When chat is used in a flex container (like EditCopy sidebar), allow it to fill available space */
-.copy-chat-container {
-  flex: 1;
-  min-height: 0; /* Allow shrinking in flex container */
+  overflow: hidden;
 }
 
 /* Chat Messages Area */
@@ -402,8 +397,8 @@
 
   .task-chat-container,
   .copy-chat-container {
-    height: 500px;
-    max-height: 70vh;
+    height: 350px;
+    max-height: 45vh;
   }
 
   .chat-message {
@@ -433,8 +428,8 @@
 
   .task-chat-container,
   .copy-chat-container {
-    height: 400px;
-    max-height: 60vh;
+    height: 300px;
+    max-height: 40vh;
   }
 
   .chat-message {

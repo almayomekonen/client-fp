@@ -608,7 +608,7 @@ export default function ViewStatementWithComments() {
             overflow: "hidden",
           }}
         >
-          {/* Chat - Takes space */}
+          {/* Chat - Compact fixed height */}
           <div
             style={{
               background: "#fff",
@@ -616,11 +616,7 @@ export default function ViewStatementWithComments() {
               padding: "8px",
               marginBottom: "8px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              flex: 1,
-              minHeight: 0,
-              display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
+              flexShrink: 0,
             }}
           >
             <h3
@@ -628,19 +624,11 @@ export default function ViewStatementWithComments() {
                 fontSize: "14px",
                 fontWeight: "600",
                 marginBottom: "8px",
-                flexShrink: 0,
               }}
             >
               <FaComment /> Chat
             </h3>
-            <div
-              style={{
-                flex: 1,
-                overflowY: "auto",
-              }}
-            >
-              <CopyChat copyId={copyId} />
-            </div>
+            <CopyChat copyId={copyId} />
           </div>
 
           {/* Comments Section - Compact */}
