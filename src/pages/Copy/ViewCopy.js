@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { createEditor, Path } from "slate";
+import { createEditor, Path, Transforms, Editor } from "slate";
 import { Slate, Editable, withReact } from "slate-react";
 import {
   FaEye,
@@ -281,14 +281,28 @@ export default function ViewStatementWithComments() {
       });
     });
     
-    // ✅ CRITICAL: Immediately update Slate editor to show changes LIVE
+    // ✅ CRITICAL: Use Slate Transforms to properly update editor content
+    // This ensures immediate rendering without needing page reload
+    if (commentCountChanged) {
+      console.log("🔄 Updating editor with Transforms API");
+      // Replace all children at once
+      Transforms.delete(editor, {
+        at: {
+          anchor: Editor.start(editor, []),
+          focus: Editor.end(editor, []),
+        },
+      });
+      Transforms.insertNodes(editor, decoratedText, { at: [0] });
+    }
+    
+    // Also update the value state for other parts of the component
     setValue(decoratedText);
     
     // Update ref for next comparison
     prevCommentCountRef.current = currentCommentCount;
     
     console.log("✅ Viewer updated with decorated text - LIVE rendering complete");
-  }, [localComments, copy, statementsMap, applyHighlightsToText]);
+  }, [localComments, copy, statementsMap, applyHighlightsToText, editor]);
 
   // Update results tables when data changes
   useEffect(() => {
@@ -332,7 +346,7 @@ export default function ViewStatementWithComments() {
     calculateAdditionalStats,
   ]);
 
-  // Calculate global offset from Slate selection
+  // ✅ Calculate global offset from Slate selection - IGNORES comment markers
   const getGlobalOffsetFromValue = (value, anchorPath, anchorOffset) => {
     let globalOffset = 0;
     const traverse = (nodes, path = []) => {
@@ -340,11 +354,20 @@ export default function ViewStatementWithComments() {
         const node = nodes[i];
         const currentPath = [...path, i];
         if (node.text !== undefined) {
+          // ✅ CRITICAL: Skip comment marker nodes (zero-width spaces with comments)
+          const isCommentMarker = node.comments && node.comments.length > 0;
+          
           if (Path.equals(currentPath, anchorPath)) {
-            globalOffset += anchorOffset;
+            if (!isCommentMarker) {
+              globalOffset += anchorOffset;
+            }
+            console.log("✅ Offset calculated (excluding comment markers):", globalOffset);
             throw "FOUND"; // eslint-disable-line no-throw-literal
           } else {
-            globalOffset += node.text.length;
+            // Not the target node, add its length if it's not a comment marker
+            if (!isCommentMarker) {
+              globalOffset += node.text.length;
+            }
           }
         }
         if (node.children) traverse(node.children, currentPath);
@@ -470,7 +493,7 @@ export default function ViewStatementWithComments() {
 
   if (!currentUser) return null;
 
-  // ✅ CRITICAL FIX: Simplified comment addition
+  // ✅ CRITICAL FIX: Simplified comment addition - refresh from backend
   const handleAddComment = async () => {
     if (!editor.selection)
       return alert(
@@ -480,43 +503,50 @@ export default function ViewStatementWithComments() {
 
     const { anchor } = editor.selection;
     const offset = getGlobalOffsetFromValue(value, anchor.path, anchor.offset);
+    
+    console.log("📝 Adding comment at offset:", offset, "Text:", newComment);
 
     try {
-      const createdComment = await addComment(
+      // ✅ Save to backend - socket will handle state update for all clients
+      await addComment(
         currentUser._id,
         copyId,
         newComment,
         offset
       );
       
-      // ✅ CRITICAL: Just update localComments - useEffect will handle re-render
-      setLocalComments((prev) => [...prev, createdComment]);
-      
       // Clear selection and form
       editor.selection = null;
       setNewComment("");
       setIsAddingComment(false);
       
-      console.log("✅ Comment added at offset:", offset, createdComment);
+      console.log("✅ Comment saved to backend at offset:", offset);
+      
+      // ✅ Force refresh comments from backend to ensure consistency
+      const refreshedComments = await fetchCommentsByCopyId(copyId);
+      setLocalComments(refreshedComments);
+      console.log("✅ Comments refreshed from backend:", refreshedComments.length);
     } catch (error) {
       console.error("❌ Error adding comment:", error);
       alert("Failed to add comment. Please try again.");
     }
   };
 
-  // ✅ CRITICAL FIX: Simplified comment removal
+  // ✅ CRITICAL FIX: Simplified comment removal - refresh from backend
   const handleRemoveComment = async (commentId) => {
     try {
       await deleteComment(commentId);
-      
-      // ✅ CRITICAL: Just update localComments - useEffect will handle re-render
-      setLocalComments((prev) => prev.filter((c) => c._id !== commentId));
       
       // Clear selection and modal
       editor.selection = null;
       setActiveComment(null);
       
       console.log("✅ Comment removed:", commentId);
+      
+      // ✅ Force refresh comments from backend to ensure consistency
+      const refreshedComments = await fetchCommentsByCopyId(copyId);
+      setLocalComments(refreshedComments);
+      console.log("✅ Comments refreshed from backend:", refreshedComments.length);
     } catch (error) {
       console.error("❌ Error removing comment:", error);
       alert("Failed to remove comment. Please try again.");
@@ -628,7 +658,6 @@ export default function ViewStatementWithComments() {
               key={`slate-${copy?._id}`}
               editor={editor}
               initialValue={value}
-              value={value}
               onChange={setValue}
             >
               <div

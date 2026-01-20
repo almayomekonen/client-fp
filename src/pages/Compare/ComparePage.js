@@ -581,6 +581,7 @@ export default function ComparePage() {
       );
     };
 
+  // ✅ Calculate global offset - IGNORES comment markers
   const getGlobalOffsetFromValue = (value, anchorPath, anchorOffset) => {
     let globalOffset = 0;
 
@@ -590,11 +591,20 @@ export default function ComparePage() {
         const currentPath = [...path, i];
 
         if (node.text !== undefined) {
+          // ✅ CRITICAL: Skip comment marker nodes (zero-width spaces with comments)
+          const isCommentMarker = node.comments && node.comments.length > 0;
+          
           if (Path.equals(currentPath, anchorPath)) {
-            globalOffset += anchorOffset;
+            if (!isCommentMarker) {
+              globalOffset += anchorOffset;
+            }
+            console.log("✅ Offset calculated (excluding comment markers):", globalOffset);
             throw new Error("FOUND");
           } else {
-            globalOffset += node.text.length;
+            // Not the target node, add its length if it's not a comment marker
+            if (!isCommentMarker) {
+              globalOffset += node.text.length;
+            }
           }
         }
 
@@ -617,6 +627,7 @@ export default function ComparePage() {
     return globalOffset;
   };
 
+  // ✅ CRITICAL FIX: Comment addition with backend refresh
   const handleAddComment = async (
     editor,
     value,
@@ -645,31 +656,45 @@ export default function ComparePage() {
 
     const { anchor } = selection;
     const offset = getGlobalOffsetFromValue(value, anchor.path, anchor.offset);
+    
+    console.log("📝 Adding comment at offset:", offset, "Text:", newComment);
 
-    const createdComment = await addComment(
-      currentUser._id,
-      copyId,
-      newComment,
-      offset
-    );
-    const updatedLocalComments = [...localComments, createdComment];
-    setLocalComments(updatedLocalComments);
-    setCommentKey((prev) => prev + 1);
+    try {
+      // ✅ Save to backend
+      await addComment(
+        currentUser._id,
+        copyId,
+        newComment,
+        offset
+      );
+      
+      console.log("✅ Comment saved to backend at offset:", offset);
+      
+      // ✅ Force refresh comments from backend to ensure consistency
+      const refreshedComments = await fetchCommentsByCopyId(copyId);
+      setLocalComments(refreshedComments);
+      setCommentKey((prev) => prev + 1);
+      console.log("✅ Comments refreshed from backend:", refreshedComments.length);
 
-    const { highlights } = extractHighlightsFromValue(value);
+      const { highlights } = extractHighlightsFromValue(value);
 
-    const decoratedText = applyHighlightsToText(
-      statement?.text || [{ type: "paragraph", children: [{ text: "" }] }],
-      highlights,
-      diffs,
-      updatedLocalComments
-    );
-    editor.selection = null;
+      const decoratedText = applyHighlightsToText(
+        statement?.text || [{ type: "paragraph", children: [{ text: "" }] }],
+        highlights,
+        diffs,
+        refreshedComments
+      );
+      editor.selection = null;
 
-    setValue(decoratedText);
-    setNewComment("");
+      setValue(decoratedText);
+      setNewComment("");
+    } catch (error) {
+      console.error("❌ Error adding comment:", error);
+      alert("Failed to add comment. Please try again.");
+    }
   };
 
+  // ✅ CRITICAL FIX: Comment removal with backend refresh
   const handleRemoveComment = async (
     commentId,
     localComments,
@@ -679,27 +704,36 @@ export default function ComparePage() {
     value,
     setCommentKey,
     editor,
-    setActiveComment
+    setActiveComment,
+    copyId
   ) => {
-    await deleteComment(commentId);
-    const updatedLocalComments = localComments.filter(
-      (c) => c._id !== commentId
-    );
-    setLocalComments(updatedLocalComments);
-    setCommentKey((prev) => prev + 1);
+    try {
+      await deleteComment(commentId);
+      
+      console.log("✅ Comment removed:", commentId);
+      
+      // ✅ Force refresh comments from backend to ensure consistency
+      const refreshedComments = await fetchCommentsByCopyId(copyId);
+      setLocalComments(refreshedComments);
+      setCommentKey((prev) => prev + 1);
+      console.log("✅ Comments refreshed from backend:", refreshedComments.length);
 
-    const { highlights } = extractHighlightsFromValue(value);
+      const { highlights } = extractHighlightsFromValue(value);
 
-    const decoratedText = applyHighlightsToText(
-      statement?.text || [{ type: "paragraph", children: [{ text: "" }] }],
-      highlights,
-      diffs,
-      updatedLocalComments
-    );
-    editor.selection = null;
+      const decoratedText = applyHighlightsToText(
+        statement?.text || [{ type: "paragraph", children: [{ text: "" }] }],
+        highlights,
+        diffs,
+        refreshedComments
+      );
+      editor.selection = null;
 
-    setValue(decoratedText);
-    setActiveComment(null);
+      setValue(decoratedText);
+      setActiveComment(null);
+    } catch (error) {
+      console.error("❌ Error removing comment:", error);
+      alert("Failed to remove comment. Please try again.");
+    }
   };
 
   const handleSave = async (editor, copy, value, setCounts) => {
@@ -1756,7 +1790,8 @@ export default function ComparePage() {
                             valueA,
                             setCommentKeyA,
                             editorA,
-                            setActiveCommentA
+                            setActiveCommentA,
+                            copyA?._id
                           );
                           const updated = localCommentsA.filter(
                             (cm) => cm._id !== c._id
@@ -1826,7 +1861,8 @@ export default function ComparePage() {
                             valueB,
                             setCommentKeyB,
                             editorB,
-                            setActiveCommentB
+                            setActiveCommentB,
+                            copyB?._id
                           );
                           const updated = localCommentsB.filter(
                             (cm) => cm._id !== c._id
