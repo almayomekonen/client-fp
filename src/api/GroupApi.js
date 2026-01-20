@@ -6,8 +6,9 @@ export const createGroupOnServer = async ({
   description,
   experimentId,
 }) => {
-  if (!name || !description) {
-    return { success: false, message: "Please fill in all required fields" };
+  // ✅ Only name is required, description is optional
+  if (!name) {
+    return { success: false, message: "Please enter a group name" };
   }
 
   const res = await fetchWithRoleCheck(`${API_BASE_URL}/api/groups`, {
