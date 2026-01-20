@@ -104,7 +104,7 @@
 .investigator-nav-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   background: #f8f9fa;
   padding: 16px 24px;
   border-radius: 12px;

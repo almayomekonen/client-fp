@@ -23,6 +23,16 @@ const isLightColor = (hexColor) => {
   return brightness > 155;
 };
 
+/**
+ * Detect if text contains Hebrew characters (RTL)
+ */
+const isHebrewText = (text) => {
+  if (!text) return false;
+  // Hebrew Unicode range: \u0590-\u05FF
+  const hebrewRegex = /[\u0590-\u05FF]/;
+  return hebrewRegex.test(text);
+};
+
 
 const createHeader = (title, subtitle) => {
   return [
@@ -160,6 +170,11 @@ const createCodedTextSection = (slateValue) => {
 
               const highlight = child.highlight || child.backgroundColor || child.bgColor;
 
+              // Detect if this text run is Hebrew (RTL)
+              if (isHebrewText(child.text)) {
+                runProps.rightToLeft = true;
+              }
+
               if (child.bold) runProps.bold = true;
               if (child.italic) runProps.italics = true;
               if (child.underline) runProps.underline = { type: "single" };
@@ -192,11 +207,18 @@ const createCodedTextSection = (slateValue) => {
 
         // Create paragraph with all text runs
         if (textRuns.length > 0) {
+          // Detect text direction from the paragraph's text content
+          const paragraphText = node.children
+            .map((child) => child.text || "")
+            .join("");
+          const isRTL = isHebrewText(paragraphText);
+
           sections.push(
             new Paragraph({
               children: textRuns,
               spacing: { before: 120, after: 120 },
-              alignment: AlignmentType.START,
+              alignment: isRTL ? AlignmentType.RIGHT : AlignmentType.LEFT,
+              bidirectional: isRTL,
             })
           );
         }
@@ -528,6 +550,7 @@ const createCommentsSection = (comments, users = []) => {
     );
 
     // Comment text
+    const isCommentRTL = isHebrewText(comment.text);
     sections.push(
       new Paragraph({
         children: [
@@ -535,10 +558,13 @@ const createCommentsSection = (comments, users = []) => {
             text: comment.text,
             size: 24,
             font: "Calibri",
+            rightToLeft: isCommentRTL,
           }),
         ],
         spacing: { after: 200 },
         indent: { left: convertInchesToTwip(0.35) },
+        alignment: isCommentRTL ? AlignmentType.RIGHT : AlignmentType.LEFT,
+        bidirectional: isCommentRTL,
         border: {
           left: {
             color: "5B9BD5",
@@ -581,6 +607,7 @@ const createCommentsSection = (comments, users = []) => {
           minute: "2-digit",
         });
 
+        const isReplyRTL = isHebrewText(reply.text);
         sections.push(
           new Paragraph({
             children: [
@@ -602,10 +629,13 @@ const createCommentsSection = (comments, users = []) => {
                 text: reply.text,
                 size: 22,
                 font: "Calibri",
+                rightToLeft: isReplyRTL,
               }),
             ],
             spacing: { after: 100 },
             indent: { left: convertInchesToTwip(0.85) },
+            alignment: isReplyRTL ? AlignmentType.RIGHT : AlignmentType.LEFT,
+            bidirectional: isReplyRTL,
           })
         );
       });

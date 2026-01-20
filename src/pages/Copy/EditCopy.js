@@ -921,13 +921,12 @@ export default function StatementEditor() {
             >
               <div
                 style={{
-                  flex: 1,
+                  height: "500px",
                   overflowY: "auto",
                   border: "1px solid #ddd",
                   borderRadius: "4px",
                   padding: "15px",
                   backgroundColor: "#fafafa",
-                  minHeight: "350px",
                   textAlign: "left",
                 }}
               >
