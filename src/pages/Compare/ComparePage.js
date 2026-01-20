@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { createEditor, Path } from "slate";
+import { createEditor, Path, Transforms, Editor } from "slate";
 import { Slate, Editable, withReact } from "slate-react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -417,6 +417,7 @@ export default function ComparePage() {
   }, [socket, copyA, copyB, navigate]);
 
   // Re-render Slate value A when localCommentsA change (e.g., from real-time updates)
+  // ✅ CRITICAL: Update Copy A editor when comments change
   useEffect(() => {
     if (!copyA || !localCommentsA || !statement || !valueA) return;
 
@@ -434,11 +435,25 @@ export default function ComparePage() {
       localCommentsA
     );
     
+    console.log("🔄 Updating Copy A with Transforms API");
+    // ✅ Use Transforms to update editor for immediate rendering
+    try {
+      Transforms.delete(editorA, {
+        at: {
+          anchor: Editor.start(editorA, []),
+          focus: Editor.end(editorA, []),
+        },
+      });
+      Transforms.insertNodes(editorA, decoratedTextA, { at: [0] });
+    } catch (error) {
+      console.warn("⚠️ Transforms failed, using setValue fallback:", error);
+    }
+    
     setValueA(decoratedTextA);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localCommentsA, commentKeyA]); // Only re-render when comments actually change
 
-  // Re-render Slate value B when localCommentsB change (e.g., from real-time updates)
+  // ✅ CRITICAL: Update Copy B editor when comments change
   useEffect(() => {
     if (!copyB || !localCommentsB || !statement || !valueB) return;
 
@@ -455,6 +470,20 @@ export default function ComparePage() {
       diffs,
       localCommentsB
     );
+    
+    console.log("🔄 Updating Copy B with Transforms API");
+    // ✅ Use Transforms to update editor for immediate rendering
+    try {
+      Transforms.delete(editorB, {
+        at: {
+          anchor: Editor.start(editorB, []),
+          focus: Editor.end(editorB, []),
+        },
+      });
+      Transforms.insertNodes(editorB, decoratedTextB, { at: [0] });
+    } catch (error) {
+      console.warn("⚠️ Transforms failed, using setValue fallback:", error);
+    }
     
     setValueB(decoratedTextB);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -558,6 +587,7 @@ export default function ComparePage() {
       const tooltip = [colorName, ...styleNames].filter(Boolean).join(", ");
 
       const hasComments = leaf.comments?.length > 0;
+      const commentCount = leaf.comments?.length || 0;
 
       return (
         <span {...attributes} style={style} title={tooltip}>
@@ -565,16 +595,40 @@ export default function ComparePage() {
 
           {hasComments && (
             <span
-              onClick={() => setActiveComment(leaf.comments)}
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveComment(leaf.comments);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.stopPropagation();
+                  setActiveComment(leaf.comments);
+                }
+              }}
               style={{
                 cursor: "pointer",
                 color: "blue",
                 fontWeight: "bold",
                 marginInlineStart: "5px",
+                display: "inline-block",
                 verticalAlign: "middle",
+                zIndex: 10,
+                userSelect: "none",
+                // ✅ Stack multiple comments vertically
+                ...(commentCount > 1 && {
+                  position: "relative",
+                  padding: "2px 4px",
+                  background: "rgba(255, 255, 255, 0.9)",
+                  borderRadius: "3px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.2)"
+                })
               }}
+              aria-label={`View ${commentCount} comment${commentCount > 1 ? 's' : ''}`}
+              title={`${commentCount} comment${commentCount > 1 ? 's' : ''}`}
             >
-              📝
+              📝{commentCount > 1 && <sup style={{ fontSize: "10px" }}>{commentCount}</sup>}
             </span>
           )}
         </span>

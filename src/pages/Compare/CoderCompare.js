@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { createEditor, Path } from "slate";
+import { createEditor, Path, Transforms, Editor } from "slate";
 import { Slate, Editable, withReact } from "slate-react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -17,6 +17,7 @@ import {
   FaTrash,
   FaEye,
   FaUser,
+  FaPlus,
 } from "react-icons/fa";
 
 import { useEdit } from "../../context/EditContext";
@@ -58,7 +59,7 @@ export default function CoderComparePage() {
   const { getComparisonsForCopy, compareCopies } = useComparison();
   const { currentUser, users, isAuthChecked, copies } = useData();
   const { statementById } = useStatement();
-  const { deleteComment, fetchCommentsByCopyId } = useComment();
+  const { addComment, deleteComment, fetchCommentsByCopyId } = useComment();
   const { getColors } = useColor(); // Add this function from ColorContext
   const { socket } = useSocket();
 
@@ -73,6 +74,8 @@ export default function CoderComparePage() {
   const [localCommentsA, setLocalCommentsA] = useState([]);
   const [activeCommentA, setActiveCommentA] = useState(null);
   const [commentKeyA, setCommentKeyA] = useState(0);
+  const [isAddingCommentA, setIsAddingCommentA] = useState(false);
+  const [newCommentA, setNewCommentA] = useState("");
 
   const [valueB, setValueB] = useState(null);
   const [countsB, setCountsB] = useState({});
@@ -83,6 +86,11 @@ export default function CoderComparePage() {
   const [localCommentsB, setLocalCommentsB] = useState([]);
   const [activeCommentB, setActiveCommentB] = useState(null);
   const [commentKeyB, setCommentKeyB] = useState(0);
+  const [isAddingCommentB, setIsAddingCommentB] = useState(false);
+  const [newCommentB, setNewCommentB] = useState("");
+
+  const [storedSelectionA, setStoredSelectionA] = useState(null);
+  const [storedSelectionB, setStoredSelectionB] = useState(null);
 
   const [statement, setStatement] = useState(null);
   const [diffs, setDiffs] = useState([]);
@@ -357,7 +365,7 @@ export default function CoderComparePage() {
     };
   }, [socket, copyA, copyB, navigate]);
 
-  // Re-render Slate value A when localCommentsA change (e.g., from real-time updates)
+  // ✅ CRITICAL: Update Copy A editor when comments change
   useEffect(() => {
     if (!copyA || !localCommentsA || !statement || !valueA) return;
 
@@ -375,11 +383,25 @@ export default function CoderComparePage() {
       localCommentsA
     );
     
+    console.log("🔄 Updating Copy A with Transforms API");
+    // ✅ Use Transforms to update editor for immediate rendering
+    try {
+      Transforms.delete(editorA, {
+        at: {
+          anchor: Editor.start(editorA, []),
+          focus: Editor.end(editorA, []),
+        },
+      });
+      Transforms.insertNodes(editorA, decoratedTextA, { at: [0] });
+    } catch (error) {
+      console.warn("⚠️ Transforms failed, using setValue fallback:", error);
+    }
+    
     setValueA(decoratedTextA);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localCommentsA, commentKeyA]); // Only re-render when comments actually change
 
-  // Re-render Slate value B when localCommentsB change (e.g., from real-time updates)
+  // ✅ CRITICAL: Update Copy B editor when comments change
   useEffect(() => {
     if (!copyB || !localCommentsB || !statement || !valueB) return;
 
@@ -396,6 +418,20 @@ export default function CoderComparePage() {
       diffs,
       localCommentsB
     );
+    
+    console.log("🔄 Updating Copy B with Transforms API");
+    // ✅ Use Transforms to update editor for immediate rendering
+    try {
+      Transforms.delete(editorB, {
+        at: {
+          anchor: Editor.start(editorB, []),
+          focus: Editor.end(editorB, []),
+        },
+      });
+      Transforms.insertNodes(editorB, decoratedTextB, { at: [0] });
+    } catch (error) {
+      console.warn("⚠️ Transforms failed, using setValue fallback:", error);
+    }
     
     setValueB(decoratedTextB);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -499,6 +535,7 @@ export default function CoderComparePage() {
       const tooltip = [colorName, ...styleNames].filter(Boolean).join(", ");
 
       const hasComments = leaf.comments?.length > 0;
+      const commentCount = leaf.comments?.length || 0;
 
       return (
         <span {...attributes} style={style} title={tooltip}>
@@ -506,16 +543,40 @@ export default function CoderComparePage() {
 
           {hasComments && (
             <span
-              onClick={() => setActiveComment(leaf.comments)}
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveComment(leaf.comments);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.stopPropagation();
+                  setActiveComment(leaf.comments);
+                }
+              }}
               style={{
                 cursor: "pointer",
                 color: "blue",
                 fontWeight: "bold",
                 marginInlineStart: "5px",
+                display: "inline-block",
                 verticalAlign: "middle",
+                zIndex: 10,
+                userSelect: "none",
+                // ✅ Stack multiple comments vertically
+                ...(commentCount > 1 && {
+                  position: "relative",
+                  padding: "2px 4px",
+                  background: "rgba(255, 255, 255, 0.9)",
+                  borderRadius: "3px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.2)"
+                })
               }}
+              aria-label={`View ${commentCount} comment${commentCount > 1 ? 's' : ''}`}
+              title={`${commentCount} comment${commentCount > 1 ? 's' : ''}`}
             >
-              📝
+              📝{commentCount > 1 && <sup style={{ fontSize: "10px" }}>{commentCount}</sup>}
             </span>
           )}
         </span>
@@ -662,65 +723,6 @@ export default function CoderComparePage() {
 
     setCommentKeyA((prev) => prev + 1);
     setCommentKeyB((prev) => prev + 1);
-  };
-
-  const handleCopyASelection = async (id) => {
-    const selected = availableCopies.find((c) => c._id === id);
-    if (!selected || !statement) return;
-    
-    // Only allow selecting copies that belong to the current user
-    if (selected.coderId !== currentUser?._id) {
-      alert("You can only edit your own codings");
-      return;
-    }
-
-    const baseText = statement.text;
-
-    const nextCopyA = selected;
-    const nextCopyB = copyB;
-
-    const updatedDiffs = compareCopies(
-      nextCopyA,
-      nextCopyB,
-      baseText[0].children[0].text
-    );
-    setDiffs(updatedDiffs);
-    setDiffKey((prev) => prev + 1);
-
-    const commentsForA = nextCopyA
-      ? await fetchCommentsByCopyId(nextCopyA._id)
-      : [];
-    const commentsForB = nextCopyB
-      ? await fetchCommentsByCopyId(nextCopyB._id)
-      : [];
-    setLocalCommentsA(commentsForA);
-    setLocalCommentsB(commentsForB);
-
-    const newValueA = applyHighlightsToText(
-      baseText,
-      nextCopyA.highlights || [],
-      updatedDiffs,
-      commentsForA
-    );
-    const newValueB = applyHighlightsToText(
-      baseText,
-      nextCopyB.highlights || [],
-      updatedDiffs,
-      commentsForB
-    );
-    editorA.selection = null;
-    editorB.selection = null;
-    setValueA(newValueA);
-    setValueB(newValueB);
-
-    setCommentKeyA((prev) => prev + 1);
-    setCommentKeyB((prev) => prev + 1);
-
-    setCopyA(nextCopyA);
-    setCountsA(nextCopyA.colorCounts || {});
-
-    const wordCountsResultA = calculateWordCounts(newValueA);
-    setWordCountsA(wordCountsResultA);
   };
 
   const handleCopyBSelection = async (id) => {
@@ -977,36 +979,7 @@ export default function CoderComparePage() {
           <FaUser /> Select Codings for Comparison
         </h3>
         
-        {/* Select Copy A */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            marginTop: "16px",
-            marginBottom: "12px",
-          }}
-        >
-          <label style={{ fontWeight: "600", minWidth: "150px" }}>
-            Copy A:
-          </label>
-          <select
-            value={copyA?._id || ""}
-            onChange={(e) => handleCopyASelection(e.target.value)}
-            className="form-select"
-            style={{ flex: 1, maxWidth: "400px" }}
-          >
-            {!copyA && <option value="">-- Select Copy A --</option>}
-            {availableCopies
-              .filter((c) => c.coderId === currentUser?._id)
-              .map((c) => (
-                <option key={c._id} value={c._id}>
-                  {users.find((u) => u._id === c.coderId)?.username ||
-                    "Unknown Coder"}
-                </option>
-              ))}
-          </select>
-        </div>
+        
         
         {/* Select Copy B */}
         <div
@@ -1188,6 +1161,183 @@ export default function CoderComparePage() {
             </div>
           </div>
         )}
+
+        {/* Comments Sections - Side by Side */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "16px", minWidth: "300px" }}>
+          {/* Comments for A */}
+          {copyA && (
+            <div className="dashboard-card" style={{ padding: "20px" }}>
+              <h3
+                className="card-title"
+                style={{ fontSize: "15px", marginBottom: "14px" }}
+              >
+                <FaComment /> Comments A
+              </h3>
+              {!isAddingCommentA && (
+                <button
+                  onClick={() => {
+                    if (!editorA.selection) {
+                      alert("Please select text in editor A first before adding a comment");
+                      return;
+                    }
+                    // Store the current selection
+                    setStoredSelectionA(editorA.selection);
+                    setIsAddingCommentA(true);
+                  }}
+                  className="dashboard-btn btn-primary btn-sm"
+                  style={{ width: "100%", fontSize: "13px", padding: "8px" }}
+                >
+                  <FaPlus /> Add Comment to A
+                </button>
+              )}
+              {isAddingCommentA && (
+                <div>
+                  <textarea
+                    value={newCommentA}
+                    onChange={(e) => setNewCommentA(e.target.value)}
+                    placeholder="Select text in A and add comment..."
+                    className="form-textarea"
+                    style={{
+                      marginBottom: "10px",
+                      minHeight: "70px",
+                      fontSize: "13px",
+                      width: "100%",
+                    }}
+                  />
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      onClick={async () => {
+                        if (!newCommentA.trim()) {
+                          alert("Please enter comment text");
+                          return;
+                        }
+                        const offset = getGlobalOffsetFromValue(
+                          valueA,
+                          storedSelectionA.anchor.path,
+                          storedSelectionA.anchor.offset
+                        );
+                        try {
+                          await addComment(currentUser._id, copyA._id, newCommentA, offset);
+                          const refreshedComments = await fetchCommentsByCopyId(copyA._id);
+                          setLocalCommentsA(refreshedComments);
+                          setCommentKeyA((prev) => prev + 1);
+                          setIsAddingCommentA(false);
+                          setNewCommentA("");
+                          setStoredSelectionA(null);
+                        } catch (error) {
+                          console.error("Error adding comment:", error);
+                          alert("Failed to add comment");
+                        }
+                      }}
+                      className="dashboard-btn btn-success btn-sm"
+                      style={{ flex: 1, fontSize: "12px" }}
+                    >
+                      <FaSave /> Save
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsAddingCommentA(false);
+                        setNewCommentA("");
+                        setStoredSelectionA(null);
+                      }}
+                      className="dashboard-btn btn-secondary btn-sm"
+                      style={{ flex: 1, fontSize: "12px" }}
+                    >
+                      <FaTimes /> Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Comments for B */}
+          {copyB && (
+            <div className="dashboard-card" style={{ padding: "20px" }}>
+              <h3
+                className="card-title"
+                style={{ fontSize: "15px", marginBottom: "14px" }}
+              >
+                <FaComment /> Comments B
+              </h3>
+              {!isAddingCommentB && (
+                <button
+                  onClick={() => {
+                    if (!editorB.selection) {
+                      alert("Please select text in editor B first before adding a comment");
+                      return;
+                    }
+                    // Store the current selection
+                    setStoredSelectionB(editorB.selection);
+                    setIsAddingCommentB(true);
+                  }}
+                  className="dashboard-btn btn-primary btn-sm"
+                  style={{ width: "100%", fontSize: "13px", padding: "8px" }}
+                >
+                  <FaPlus /> Add Comment to B
+                </button>
+              )}
+              {isAddingCommentB && (
+                <div>
+                  <textarea
+                    value={newCommentB}
+                    onChange={(e) => setNewCommentB(e.target.value)}
+                    placeholder="Select text in B and add comment..."
+                    className="form-textarea"
+                    style={{
+                      marginBottom: "10px",
+                      minHeight: "70px",
+                      fontSize: "13px",
+                      width: "100%",
+                    }}
+                  />
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      onClick={async () => {
+                        if (!newCommentB.trim()) {
+                          alert("Please enter comment text");
+                          return;
+                        }
+                        const offset = getGlobalOffsetFromValue(
+                          valueB,
+                          storedSelectionB.anchor.path,
+                          storedSelectionB.anchor.offset
+                        );
+                        try {
+                          await addComment(currentUser._id, copyB._id, newCommentB, offset);
+                          const refreshedComments = await fetchCommentsByCopyId(copyB._id);
+                          setLocalCommentsB(refreshedComments);
+                          setCommentKeyB((prev) => prev + 1);
+                          setIsAddingCommentB(false);
+                          setNewCommentB("");
+                          setStoredSelectionB(null);
+                        } catch (error) {
+                          console.error("Error adding comment:", error);
+                          alert("Failed to add comment");
+                        }
+                      }}
+                      className="dashboard-btn btn-success btn-sm"
+                      style={{ flex: 1, fontSize: "12px" }}
+                    >
+                      <FaSave /> Save
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsAddingCommentB(false);
+                        setNewCommentB("");
+                        setStoredSelectionB(null);
+                      }}
+                      className="dashboard-btn btn-secondary btn-sm"
+                      style={{ flex: 1, fontSize: "12px" }}
+                    >
+                      <FaTimes /> Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Middle Section: Text Editors Side by Side */}
