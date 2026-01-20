@@ -976,7 +976,7 @@ export default function CoderComparePage() {
       {/* Copy Selector */}
       <div className="dashboard-card" style={{ marginBottom: "20px" }}>
         <h3 className="card-title">
-          <FaUser /> Select Codings for Comparison
+          <FaUser /> Select Coding for Comparison
         </h3>
         
         
@@ -990,7 +990,7 @@ export default function CoderComparePage() {
           }}
         >
           <label style={{ fontWeight: "600", minWidth: "150px" }}>
-            Copy B:
+          Compare with:
           </label>
           <select
             value={copyB?._id || ""}
