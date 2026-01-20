@@ -187,19 +187,35 @@ export const applyHighlightsToText = ({
   const splitFragmentsByComments = (fragments, comments) => {
     if (!comments || comments.length === 0) return fragments;
 
+    const allOffsets = [...new Set(comments.map(c => c.offset))].sort((a, b) => a - b);
+    console.log("🔧 splitFragmentsByComments called with:", {
+      fragmentCount: fragments.length,
+      commentCount: comments.length,
+      uniqueOffsets: allOffsets.length,
+      offsets: allOffsets
+    });
+    
+    console.log("🔧 Fragments:", fragments.map(f => ({
+      start: f.startOffset,
+      end: f.endOffset,
+      textLength: f.text?.length || 0
+    })));
+
     const result = [];
     let handledOffsets = new Set();
 
     // 🔷 Handle comments at offset 0 (start of text) that might not be in any fragment
     const minOffset = fragments[0]?.startOffset || 0;
+    // Group start comments to ensure they are merged
     const commentsAtStart = comments.filter((c) => c.offset === minOffset);
+    
     if (commentsAtStart.length > 0 && minOffset === 0) {
       // Check if offset 0 will be handled by the first fragment
       const firstFragment = fragments[0];
       if (!firstFragment || firstFragment.startOffset > 0 || (firstFragment.startOffset === 0 && firstFragment.endOffset === 0)) {
-        // Offset 0 won't be handled, add it here
+        // Offset 0 won't be handled by loop, add it here
         result.push({
-          text: "",
+          text: "\u200B", // ✅ Use Zero Width Space to prevent Slate normalization
           startOffset: 0,
           endOffset: 0,
           comments: commentsAtStart,
@@ -208,13 +224,31 @@ export const applyHighlightsToText = ({
       }
     }
 
-    fragments.forEach((fragment) => {
+    fragments.forEach((fragment, fragIndex) => {
       const { startOffset, endOffset, text } = fragment;
 
-      const offsetsInThisFragment = comments
-        .filter((c) => c.offset >= startOffset && c.offset < endOffset && !handledOffsets.has(c.offset))
-        .map((c) => c.offset)
-        .sort((a, b) => a - b);
+      // ✅ Deduplicate offsets to avoid creating duplicate comment fragments
+      // ✅ Use <= to include comments at exact endOffset
+      const commentsInRange = comments.filter(
+        (c) => c.offset >= startOffset && c.offset <= endOffset && !handledOffsets.has(c.offset)
+      );
+      
+      console.log(`🔧 Fragment ${fragIndex} [${startOffset}-${endOffset}] - filtering:`, {
+        totalComments: comments.length,
+        commentsInRange: commentsInRange.length,
+        allOffsets: comments.map(c => c.offset),
+        rangeOffsets: commentsInRange.map(c => c.offset),
+        alreadyHandled: [...handledOffsets]
+      });
+      
+      const uniqueOffsets = new Set(commentsInRange.map((c) => c.offset));
+      const offsetsInThisFragment = Array.from(uniqueOffsets).sort((a, b) => a - b);
+      
+      console.log(`🔧 Fragment ${fragIndex} [${startOffset}-${endOffset}]:`, {
+        textLength: text?.length,
+        offsetsInFragment: offsetsInThisFragment.length,
+        offsets: offsetsInThisFragment
+      });
 
       if (offsetsInThisFragment.length === 0) {
         result.push(fragment);
@@ -238,7 +272,7 @@ export const applyHighlightsToText = ({
 
         result.push({
           ...fragment,
-          text: "", // Empty point - comment only
+          text: "\u200B", // ✅ Use Zero Width Space
           startOffset: offset,
           endOffset: offset,
           comments: commentsAtOffset,
@@ -258,16 +292,31 @@ export const applyHighlightsToText = ({
     });
 
     const maxOffset = fragments[fragments.length - 1].endOffset;
-    comments
-      .filter((c) => c.offset === maxOffset && !handledOffsets.has(maxOffset))
-      .forEach((c) => {
-        result.push({
-          text: "",
-          startOffset: maxOffset,
-          endOffset: maxOffset,
-          comments: [c],
-        });
+    
+    // ✅ Group comments at the very end of the text
+    const endComments = comments.filter(
+      (c) => c.offset === maxOffset && !handledOffsets.has(maxOffset)
+    );
+    
+    if (endComments.length > 0) {
+      result.push({
+        text: "\u200B", // ✅ Use Zero Width Space
+        startOffset: maxOffset,
+        endOffset: maxOffset,
+        comments: endComments,
       });
+      handledOffsets.add(maxOffset);
+    }
+
+    const resultWithComments = result.filter(r => r.comments && r.comments.length > 0);
+    console.log("🔧 splitFragmentsByComments result:", {
+      totalFragments: result.length,
+      fragmentsWithComments: resultWithComments.length,
+      commentOffsets: resultWithComments.map(r => ({
+        offset: r.startOffset,
+        count: r.comments.length
+      }))
+    });
 
     return result;
   };
@@ -332,6 +381,21 @@ export const extractHighlightsFromValue = ({ value }) => {
 
   let globalOffset = 0;
 
+  // ✅ Helper to ignore text length of comment placeholders
+  const getEffectiveTextLength = (node) => {
+    if (!node) return 0;
+    // If it's a comment leaf (has comments), treat text length as 0
+    if (node.comments && node.comments.length > 0) return 0;
+    return node.text ? node.text.length : 0;
+  };
+  
+  // ✅ Helper to get text content excluding comment placeholders
+  const getEffectiveText = (node) => {
+    if (!node) return "";
+    if (node.comments && node.comments.length > 0) return "";
+    return node.text || "";
+  };
+
   for (let i = 0; i < value.length; i++) {
     const children = value[i].children;
 
@@ -349,28 +413,31 @@ export const extractHighlightsFromValue = ({ value }) => {
             globalOffset +
             children
               .slice(0, colorStartIndex)
-              .reduce((acc, c) => acc + c.text.length, 0);
+              .reduce((acc, c) => acc + getEffectiveTextLength(c), 0);
           const endOffset =
             startOffset +
             children
               .slice(colorStartIndex, j)
-              .reduce((acc, c) => acc + c.text.length, 0);
+              .reduce((acc, c) => acc + getEffectiveTextLength(c), 0);
           const text = children
             .slice(colorStartIndex, j)
-            .map((c) => c.text)
+            .map((c) => getEffectiveText(c))
             .join("");
 
-          highlights.push({
-            color: currentColor,
-            underline: false,
-            bold: false,
-            italic: false,
-            innerText: text,
-            startOffset,
-            endOffset,
-          });
+          // Only add highlight if it spans actual text
+          if (text.length > 0) {
+            highlights.push({
+              color: currentColor,
+              underline: false,
+              bold: false,
+              italic: false,
+              innerText: text,
+              startOffset,
+              endOffset,
+            });
 
-          colorCounts[currentColor] = (colorCounts[currentColor] || 0) + 1;
+            colorCounts[currentColor] = (colorCounts[currentColor] || 0) + 1;
+          }
         }
         colorStartIndex = j;
         currentColor = nextColor;
@@ -384,7 +451,12 @@ export const extractHighlightsFromValue = ({ value }) => {
       for (let j = 0; j <= children.length; j++) {
         const child = children[j];
         const active = child?.[property];
-        const text = child?.text || "";
+        const text = getEffectiveText(child);
+
+        // Skip comment nodes completely for start index detection if they break continuity? 
+        // No, they should just be "invisible". 
+        // If we have Bold(He)[Comment]Bold(llo), it should be one Bold(Hello).
+        // With text="", it works naturally.
 
         if (active && startIndex === null) {
           startIndex = j;
@@ -392,24 +464,32 @@ export const extractHighlightsFromValue = ({ value }) => {
         } else if (active && startIndex !== null) {
           buffer += text;
         } else if (!active && startIndex !== null) {
+          // Check if this "inactive" node is just a comment placeholder inside a highlighted section
+          // If a comment is inserted inside bold text, it might NOT have bold mark if we didn't copy marks.
+          // In splitFragmentsByComments, we spread ...fragment, so marks ARE copied.
+          // So the comment placeholder WILL have 'bold' if inserted in bold text.
+          // So logic holds.
+          
           const startOffset =
             globalOffset +
             children
               .slice(0, startIndex)
-              .reduce((acc, c) => acc + c.text.length, 0);
+              .reduce((acc, c) => acc + getEffectiveTextLength(c), 0);
           const endOffset = startOffset + buffer.length;
 
-          highlights.push({
-            color: null,
-            underline: property === "underline",
-            bold: property === "bold",
-            italic: property === "italic",
-            innerText: buffer,
-            startOffset,
-            endOffset,
-          });
+          if (buffer.length > 0) {
+            highlights.push({
+              color: null,
+              underline: property === "underline",
+              bold: property === "bold",
+              italic: property === "italic",
+              innerText: buffer,
+              startOffset,
+              endOffset,
+            });
 
-          counts[property] = (counts[property] || 0) + 1;
+            counts[property] = (counts[property] || 0) + 1;
+          }
 
           startIndex = null;
           buffer = "";
@@ -421,20 +501,22 @@ export const extractHighlightsFromValue = ({ value }) => {
           globalOffset +
           children
             .slice(0, startIndex)
-            .reduce((acc, c) => acc + c.text.length, 0);
+            .reduce((acc, c) => acc + getEffectiveTextLength(c), 0);
         const endOffset = startOffset + buffer.length;
 
-        highlights.push({
-          color: null,
-          underline: property === "underline",
-          bold: property === "bold",
-          italic: property === "italic",
-          innerText: buffer,
-          startOffset,
-          endOffset,
-        });
+        if (buffer.length > 0) {
+          highlights.push({
+            color: null,
+            underline: property === "underline",
+            bold: property === "bold",
+            italic: property === "italic",
+            innerText: buffer,
+            startOffset,
+            endOffset,
+          });
 
-        counts[property] = (counts[property] || 0) + 1;
+          counts[property] = (counts[property] || 0) + 1;
+        }
       }
     };
 
@@ -442,7 +524,7 @@ export const extractHighlightsFromValue = ({ value }) => {
     handleLayer("bold", boldCounts);
     handleLayer("italic", italicCounts);
 
-    globalOffset += children.reduce((acc, c) => acc + c.text.length, 0) + 1;
+    globalOffset += children.reduce((acc, c) => acc + getEffectiveTextLength(c), 0) + 1;
   }
 
   return {

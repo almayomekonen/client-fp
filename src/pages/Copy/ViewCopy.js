@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useCallback } from "react";
+import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { createEditor, Path } from "slate";
 import { Slate, Editable, withReact } from "slate-react";
@@ -56,10 +56,12 @@ export default function ViewStatementWithComments() {
   const [selectionWordCounts, setSelectionWordCounts] = useState(null);
   const [copy, setCopy] = useState(null);
   const [localComments, setLocalComments] = useState([]);
-  const [commentKey, setCommentKey] = useState(0);
   const [isAddingComment, setIsAddingComment] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [activeComment, setActiveComment] = useState(null);
+  
+  // ✅ Track comment count to force re-renders
+  const prevCommentCountRef = useRef(0);
   const [statementsMap, setStatementsMap] = useState({}); // statementId -> statement
   const [colors, setColors] = useState([]);
   const [styleSettings, setStyleSettings] = useState({});
@@ -149,26 +151,35 @@ export default function ViewStatementWithComments() {
   useEffect(() => {
     if (!socket || !copyId) return;
 
+    // ✅ CRITICAL: Real-time comment handlers with proper logging
     const handleCommentCreated = (data) => {
-      // Only update if the comment is for this copy
       if (data.copyId === copyId) {
         setLocalComments((prevComments) => {
-          // Avoid duplicates
           const exists = prevComments.some((c) => c._id === data.comment._id);
-          if (exists) return prevComments;
+          if (exists) {
+            console.log("⚠️ Duplicate comment ignored:", data.comment._id);
+            return prevComments;
+          }
+          console.log("✅ Real-time comment added:", {
+            id: data.comment._id,
+            offset: data.comment.offset,
+            total: prevComments.length + 1
+          });
           return [...prevComments, data.comment];
         });
-        console.log("✅ Real-time comment added:", data.comment);
       }
     };
 
     const handleCommentDeleted = (data) => {
-      // Only update if the comment is for this copy
       if (data.copyId === copyId) {
-        setLocalComments((prevComments) =>
-          prevComments.filter((c) => c._id !== data.commentId)
-        );
-        console.log("✅ Real-time comment deleted:", data.commentId);
+        setLocalComments((prevComments) => {
+          const filtered = prevComments.filter((c) => c._id !== data.commentId);
+          console.log("✅ Real-time comment deleted:", {
+            id: data.commentId,
+            remaining: filtered.length
+          });
+          return filtered;
+        });
       }
     };
 
@@ -201,9 +212,28 @@ export default function ViewStatementWithComments() {
     };
   }, [socket, copyId, navigate]);
 
-  // Re-render Slate value when localComments change (e.g., from real-time updates)
+  // ✅ CRITICAL FIX: IMMEDIATE re-render when comments change
+  // Forces LIVE update of UI with latest highlights and comments
   useEffect(() => {
-    if (!copy || !localComments || !statementsMap[copy.statementId]) return;
+    // Early exit checks
+    if (!copy || !statementsMap[copy.statementId]) return;
+    if (localComments === null || localComments === undefined) return;
+    
+    // ✅ Detect if comment count changed (added or removed)
+    const currentCommentCount = localComments.length;
+    const prevCommentCount = prevCommentCountRef.current;
+    const commentCountChanged = currentCommentCount !== prevCommentCount;
+    
+    if (commentCountChanged) {
+      console.log("🔄 LIVE UPDATE: Comment count changed from", prevCommentCount, "to", currentCommentCount);
+    }
+
+    console.log("🔄 Re-rendering viewer with comments:", {
+      commentCount: currentCommentCount,
+      copyId: copy._id,
+      hasStatement: !!statementsMap[copy.statementId],
+      commentCountChanged
+    });
 
     const statement = statementsMap[copy.statementId];
     const baseText = statement?.text || [
@@ -211,6 +241,12 @@ export default function ViewStatementWithComments() {
     ];
     const highlights = copy?.highlights || [];
 
+    console.log("🎨 Applying highlights and comments:", {
+      highlights: highlights.length,
+      comments: currentCommentCount
+    });
+
+    // ✅ CRITICAL: Apply highlights AND comments to create decorated text
     const decoratedText = applyHighlightsToText(
       baseText,
       highlights,
@@ -218,7 +254,40 @@ export default function ViewStatementWithComments() {
       localComments
     );
     
+    // ✅ Log decorated text structure with offsets
+    console.log("📄 Decorated text structure:", {
+      paragraphs: decoratedText.length,
+      totalLeaves: decoratedText.reduce((sum, para) => sum + (para.children?.length || 0), 0),
+      leavesWithComments: decoratedText.reduce((sum, para) => {
+        return sum + (para.children?.filter(child => child.comments?.length > 0).length || 0);
+      }, 0)
+    });
+    
+    // ✅ Log each leaf with comments
+    decoratedText.forEach((para, paraIndex) => {
+      para.children?.forEach((leaf, leafIndex) => {
+        if (leaf.comments?.length > 0) {
+          console.log(`📝 Leaf [${paraIndex},${leafIndex}]:`, {
+            text: leaf.text || "[empty]",
+            startOffset: leaf.startOffset,
+            endOffset: leaf.endOffset,
+            comments: leaf.comments.map(c => ({
+              id: c._id,
+              offset: c.offset,
+              text: c.text.substring(0, 30) + (c.text.length > 30 ? "..." : "")
+            }))
+          });
+        }
+      });
+    });
+    
+    // ✅ CRITICAL: Immediately update Slate editor to show changes LIVE
     setValue(decoratedText);
+    
+    // Update ref for next comparison
+    prevCommentCountRef.current = currentCommentCount;
+    
+    console.log("✅ Viewer updated with decorated text - LIVE rendering complete");
   }, [localComments, copy, statementsMap, applyHighlightsToText]);
 
   // Update results tables when data changes
@@ -290,14 +359,39 @@ export default function ViewStatementWithComments() {
     return globalOffset;
   };
 
-  // Render leaf for Slate
+  // ✅ CRITICAL: Enhanced renderLeaf with offset tracking and comment merging
+  // Supports character-level comment rendering for LTR/RTL text
   const renderLeaf = useCallback(({ leaf, attributes, children }) => {
+    // ✅ Extract offset information from leaf (set by applyHighlightsToText)
+    const startOffset = leaf.startOffset !== undefined ? leaf.startOffset : null;
+    const endOffset = leaf.endOffset !== undefined ? leaf.endOffset : null;
+    const hasComments = leaf.comments?.length > 0;
+    const commentCount = leaf.comments?.length || 0;
+    
+    // ✅ Log leaf rendering with comments
+    if (hasComments) {
+      console.log("📝 Rendering leaf with comments:", {
+        text: leaf.text,
+        startOffset,
+        endOffset,
+        commentCount,
+        comments: leaf.comments.map(c => ({ id: c._id, text: c.text.substring(0, 20) }))
+      });
+    }
+
     const style = {
       backgroundColor: leaf.highlight || undefined,
       textDecoration: leaf.underline ? "underline" : undefined,
       fontWeight: leaf.bold ? "bold" : undefined,
       fontStyle: leaf.italic ? "italic" : undefined,
       outline: leaf.isDiff ? "2px solid red" : undefined,
+      userSelect: "text",
+      WebkitUserSelect: "text",
+      MozUserSelect: "text",
+      msUserSelect: "text",
+      cursor: "text",
+      whiteSpace: "pre-wrap",
+      wordBreak: "break-word",
     };
 
     const colorName = colors.find((c) => c.code === leaf.highlight)?.name;
@@ -307,21 +401,57 @@ export default function ViewStatementWithComments() {
     if (leaf.underline) styleNames.push(styleSettings.underlineName || "Underline");
     const tooltip = [colorName, ...styleNames].filter(Boolean).join(", ");
 
-    const hasComments = leaf.comments?.length > 0;
+    // ✅ Build data attributes for offset tracking and comment detection
+    const dataAttributes = {
+      "data-slate-leaf": "true",
+      ...(startOffset !== null && { "data-start-offset": startOffset }),
+      ...(endOffset !== null && { "data-end-offset": endOffset }),
+      ...(hasComments && { 
+        "data-has-comments": "true",
+        "data-comment-count": commentCount
+      }),
+    };
+
     return (
-      <span {...attributes} style={style} title={tooltip}>
+      <span {...attributes} {...dataAttributes} style={style} title={tooltip}>
         {leaf.text !== "" ? children : "\u200B"}
         {hasComments && (
           <span
-            onClick={() => setActiveComment(leaf.comments)}
+            role="button"
+            tabIndex={0}
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log("💬 Opening comments:", leaf.comments);
+              setActiveComment(leaf.comments);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.stopPropagation();
+                setActiveComment(leaf.comments);
+              }
+            }}
             style={{
               cursor: "pointer",
               color: "blue",
               fontWeight: "bold",
-              marginInlineStart: 4,
+              marginInlineStart: "5px",
+              display: "inline-block",
+              verticalAlign: "middle",
+              zIndex: 10,
+              userSelect: "none",
+              // ✅ Stack multiple comments vertically
+              ...(commentCount > 1 && {
+                position: "relative",
+                padding: "2px 4px",
+                background: "rgba(255, 255, 255, 0.9)",
+                borderRadius: "3px",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.2)"
+              })
             }}
+            aria-label={`View ${commentCount} comment${commentCount > 1 ? 's' : ''}`}
+            title={`${commentCount} comment${commentCount > 1 ? 's' : ''} at offset ${startOffset}`}
           >
-            📝
+            📝{commentCount > 1 && <sup style={{ fontSize: "10px" }}>{commentCount}</sup>}
           </span>
         )}
       </span>
@@ -340,7 +470,7 @@ export default function ViewStatementWithComments() {
 
   if (!currentUser) return null;
 
-  // Add comment
+  // ✅ CRITICAL FIX: Simplified comment addition
   const handleAddComment = async () => {
     if (!editor.selection)
       return alert(
@@ -351,62 +481,46 @@ export default function ViewStatementWithComments() {
     const { anchor } = editor.selection;
     const offset = getGlobalOffsetFromValue(value, anchor.path, anchor.offset);
 
-    const createdComment = await addComment(
-      currentUser._id,
-      copyId,
-      newComment,
-      offset
-    );
-    const updatedLocalComments = [...localComments, createdComment];
-    setLocalComments(updatedLocalComments);
-    setCommentKey((prev) => prev + 1);
-
-    const statement = statementsMap[copy.statementId];
-    const baseText = statement?.text || [
-      { type: "paragraph", children: [{ text: "" }] },
-    ];
-    const highlights = copy?.highlights || [];
-
-    const decoratedText = applyHighlightsToText(
-      baseText,
-      highlights,
-      [],
-      updatedLocalComments
-    );
-
-    // Clear selection after adding comment
-    editor.selection = null;
-    setValue(decoratedText);
-    setNewComment("");
-    setIsAddingComment(false);
+    try {
+      const createdComment = await addComment(
+        currentUser._id,
+        copyId,
+        newComment,
+        offset
+      );
+      
+      // ✅ CRITICAL: Just update localComments - useEffect will handle re-render
+      setLocalComments((prev) => [...prev, createdComment]);
+      
+      // Clear selection and form
+      editor.selection = null;
+      setNewComment("");
+      setIsAddingComment(false);
+      
+      console.log("✅ Comment added at offset:", offset, createdComment);
+    } catch (error) {
+      console.error("❌ Error adding comment:", error);
+      alert("Failed to add comment. Please try again.");
+    }
   };
 
-  // Remove comment
+  // ✅ CRITICAL FIX: Simplified comment removal
   const handleRemoveComment = async (commentId) => {
-    await deleteComment(commentId);
-    const updatedLocalComments = localComments.filter(
-      (c) => c._id !== commentId
-    );
-    setLocalComments(updatedLocalComments);
-    setCommentKey((prev) => prev + 1);
-
-    const statement = statementsMap[copy.statementId];
-    const baseText = statement?.text || [
-      { type: "paragraph", children: [{ text: "" }] },
-    ];
-    const highlights = copy?.highlights || [];
-
-    const decoratedText = applyHighlightsToText(
-      baseText,
-      highlights,
-      [],
-      updatedLocalComments
-    );
-
-    // Clear selection to prevent invalid path errors
-    editor.selection = null;
-    setValue(decoratedText);
-    setActiveComment(null);
+    try {
+      await deleteComment(commentId);
+      
+      // ✅ CRITICAL: Just update localComments - useEffect will handle re-render
+      setLocalComments((prev) => prev.filter((c) => c._id !== commentId));
+      
+      // Clear selection and modal
+      editor.selection = null;
+      setActiveComment(null);
+      
+      console.log("✅ Comment removed:", commentId);
+    } catch (error) {
+      console.error("❌ Error removing comment:", error);
+      alert("Failed to remove comment. Please try again.");
+    }
   };
 
   // Export to Word
@@ -511,7 +625,7 @@ export default function ViewStatementWithComments() {
               <FaFileAlt /> Statement Content
             </h3>
             <Slate
-              key={`slate-${copy?._id}-${commentKey}`}
+              key={`slate-${copy?._id}`}
               editor={editor}
               initialValue={value}
               value={value}
@@ -525,7 +639,7 @@ export default function ViewStatementWithComments() {
                   borderRadius: "4px",
                   padding: "15px",
                   backgroundColor: "#fafafa",
-                  textAlign: "right",
+                  textAlign: "left",
                 }}
               >
                 <Editable
@@ -537,11 +651,25 @@ export default function ViewStatementWithComments() {
                       event.preventDefault();
                     }
                   }}
-                  dir="rtl"
+                  // ✅ Critical: Auto-detect text direction for LTR/RTL support
+                  dir="auto"
                   placeholder="No text available"
+                  // ✅ Enable perfect character-level selection
+                  data-slate-editor="true"
                   style={{
                     fontSize: "18px",
                     lineHeight: "2",
+                    // ✅ Ensure every character is selectable
+                    userSelect: "text",
+                    WebkitUserSelect: "text",
+                    MozUserSelect: "text",
+                    msUserSelect: "text",
+                    cursor: "text",
+                    // ✅ Better text rendering for accurate clicks
+                    textRendering: "geometricPrecision",
+                    // ✅ Prevent layout shift during selection
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
                   }}
                 />
               </div>
