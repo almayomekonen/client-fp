@@ -190,11 +190,29 @@ export const applyHighlightsToText = ({
     const result = [];
     let handledOffsets = new Set();
 
+    // 🔷 Handle comments at offset 0 (start of text) that might not be in any fragment
+    const minOffset = fragments[0]?.startOffset || 0;
+    const commentsAtStart = comments.filter((c) => c.offset === minOffset);
+    if (commentsAtStart.length > 0 && minOffset === 0) {
+      // Check if offset 0 will be handled by the first fragment
+      const firstFragment = fragments[0];
+      if (!firstFragment || firstFragment.startOffset > 0 || (firstFragment.startOffset === 0 && firstFragment.endOffset === 0)) {
+        // Offset 0 won't be handled, add it here
+        result.push({
+          text: "",
+          startOffset: 0,
+          endOffset: 0,
+          comments: commentsAtStart,
+        });
+        handledOffsets.add(0);
+      }
+    }
+
     fragments.forEach((fragment) => {
       const { startOffset, endOffset, text } = fragment;
 
       const offsetsInThisFragment = comments
-        .filter((c) => c.offset >= startOffset && c.offset < endOffset)
+        .filter((c) => c.offset >= startOffset && c.offset < endOffset && !handledOffsets.has(c.offset))
         .map((c) => c.offset)
         .sort((a, b) => a - b);
 

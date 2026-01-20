@@ -268,12 +268,12 @@ export default function TaskForInvestigator() {
                       </div>
                       <div className="task-meta">
                         <span className="task-meta-item">
-                          <FaChartLine />
-                          Experiment Completion: {expPercent}%
-                        </span>
-                        <span className="task-meta-item">
                           <FaUser />
                           Coder: {getCoderName(coderId)}
+                        </span>
+                        <span className="task-meta-item">
+                          <FaChartLine />
+                          Experiment Completion: {expPercent}%
                         </span>
                         {unreadCount > 0 && (
                           <span className="task-meta-item">

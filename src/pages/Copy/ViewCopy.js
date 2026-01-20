@@ -201,6 +201,26 @@ export default function ViewStatementWithComments() {
     };
   }, [socket, copyId, navigate]);
 
+  // Re-render Slate value when localComments change (e.g., from real-time updates)
+  useEffect(() => {
+    if (!copy || !localComments || !statementsMap[copy.statementId]) return;
+
+    const statement = statementsMap[copy.statementId];
+    const baseText = statement?.text || [
+      { type: "paragraph", children: [{ text: "" }] },
+    ];
+    const highlights = copy?.highlights || [];
+
+    const decoratedText = applyHighlightsToText(
+      baseText,
+      highlights,
+      [],
+      localComments
+    );
+    
+    setValue(decoratedText);
+  }, [localComments, copy, statementsMap, applyHighlightsToText]);
+
   // Update results tables when data changes
   useEffect(() => {
     if (!value || !colors.length || !styleSettings) return;
@@ -505,6 +525,7 @@ export default function ViewStatementWithComments() {
                   borderRadius: "4px",
                   padding: "15px",
                   backgroundColor: "#fafafa",
+                  textAlign: "right",
                 }}
               >
                 <Editable
@@ -516,7 +537,7 @@ export default function ViewStatementWithComments() {
                       event.preventDefault();
                     }
                   }}
-                  dir="auto"
+                  dir="rtl"
                   placeholder="No text available"
                   style={{
                     fontSize: "18px",

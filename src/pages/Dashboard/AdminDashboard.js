@@ -16,6 +16,7 @@ import {
   FaUsers,
   FaComment,
 } from "react-icons/fa";
+import "../../styles/Dashboard.css";
 import "./AdminDashboard.css";
 
 export default function AdminHomePage() {
@@ -239,14 +240,14 @@ export default function AdminHomePage() {
   };
 
   return (
-    <div className="admin-dashboard">
+    <div className="dashboard-container">
       {/* Top Navigation Bar */}
       <div className="investigator-nav-bar">
         {renderBackButton()}
         {renderBreadcrumbs()}
       </div>
 
-      <div className="dashboard-content">
+      <div>
         {/* VIEW 1: EXPERIMENTS */}
         {currentView === "experiments" && (
           <>

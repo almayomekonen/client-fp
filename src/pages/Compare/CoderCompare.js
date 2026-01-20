@@ -14,7 +14,6 @@ import {
   FaChartBar,
   FaComment,
   FaTimes,
-  FaPlus,
   FaTrash,
   FaEye,
   FaUser,
@@ -59,7 +58,7 @@ export default function CoderComparePage() {
   const { getComparisonsForCopy, compareCopies } = useComparison();
   const { currentUser, users, isAuthChecked, copies } = useData();
   const { statementById } = useStatement();
-  const { addComment, deleteComment, fetchCommentsByCopyId } = useComment();
+  const { deleteComment, fetchCommentsByCopyId } = useComment();
   const { getColors } = useColor(); // Add this function from ColorContext
   const { socket } = useSocket();
 
@@ -74,8 +73,6 @@ export default function CoderComparePage() {
   const [localCommentsA, setLocalCommentsA] = useState([]);
   const [activeCommentA, setActiveCommentA] = useState(null);
   const [commentKeyA, setCommentKeyA] = useState(0);
-  const [isAddingCommentA, setIsAddingCommentA] = useState(false);
-  const [newCommentA, setNewCommentA] = useState("");
 
   const [valueB, setValueB] = useState(null);
   const [countsB, setCountsB] = useState({});
@@ -86,8 +83,6 @@ export default function CoderComparePage() {
   const [localCommentsB, setLocalCommentsB] = useState([]);
   const [activeCommentB, setActiveCommentB] = useState(null);
   const [commentKeyB, setCommentKeyB] = useState(0);
-  const [isAddingCommentB, setIsAddingCommentB] = useState(false);
-  const [newCommentB, setNewCommentB] = useState("");
 
   const [statement, setStatement] = useState(null);
   const [diffs, setDiffs] = useState([]);
@@ -362,6 +357,50 @@ export default function CoderComparePage() {
     };
   }, [socket, copyA, copyB, navigate]);
 
+  // Re-render Slate value A when localCommentsA change (e.g., from real-time updates)
+  useEffect(() => {
+    if (!copyA || !localCommentsA || !statement || !valueA) return;
+
+    const baseText = statement?.text || [
+      { type: "paragraph", children: [{ text: "" }] },
+    ];
+    
+    // Extract current highlights from the existing value to preserve user's work
+    const { highlights: highlightsA } = extractHighlightsFromValue(valueA);
+
+    const decoratedTextA = applyHighlightsToText(
+      baseText,
+      highlightsA,
+      diffs,
+      localCommentsA
+    );
+    
+    setValueA(decoratedTextA);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localCommentsA, commentKeyA]); // Only re-render when comments actually change
+
+  // Re-render Slate value B when localCommentsB change (e.g., from real-time updates)
+  useEffect(() => {
+    if (!copyB || !localCommentsB || !statement || !valueB) return;
+
+    const baseText = statement?.text || [
+      { type: "paragraph", children: [{ text: "" }] },
+    ];
+    
+    // Extract current highlights from the existing value to preserve user's work
+    const { highlights: highlightsB } = extractHighlightsFromValue(valueB);
+
+    const decoratedTextB = applyHighlightsToText(
+      baseText,
+      highlightsB,
+      diffs,
+      localCommentsB
+    );
+    
+    setValueB(decoratedTextB);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localCommentsB, commentKeyB]); // Only re-render when comments actually change
+
   // Update results tables for Copy A
   useEffect(() => {
     if (!valueA || !colors.length || !styleSettings) return;
@@ -521,55 +560,6 @@ export default function CoderComparePage() {
     }
 
     return globalOffset;
-  };
-
-  const handleAddComment = async (
-    editor,
-    value,
-    setNewComment,
-    localComments,
-    setLocalComments,
-    setValue,
-    copyId,
-    statement,
-    setCommentKey,
-    newComment
-  ) => {
-    if (!editor.selection) {
-      alert("Please select a location in the text before adding a comment");
-      return;
-    }
-
-    if (!newComment) {
-      alert("Please enter text for the comment");
-      return;
-    }
-
-    const { anchor } = editor.selection;
-    const offset = getGlobalOffsetFromValue(value, anchor.path, anchor.offset);
-
-    const createdComment = await addComment(
-      currentUser._id,
-      copyId,
-      newComment,
-      offset
-    );
-    const updatedLocalComments = [...localComments, createdComment];
-    setLocalComments(updatedLocalComments);
-    setCommentKey((prev) => prev + 1);
-
-    const { highlights } = extractHighlightsFromValue(value);
-
-    const decoratedText = applyHighlightsToText(
-      statement?.text || [{ type: "paragraph", children: [{ text: "" }] }],
-      highlights,
-      diffs,
-      updatedLocalComments
-    );
-    editor.selection = null;
-
-    setValue(decoratedText);
-    setNewComment("");
   };
 
   const handleRemoveComment = async (
@@ -967,7 +957,7 @@ export default function CoderComparePage() {
           <FaUser /> Select Codings for Comparison
         </h3>
         
-        {/* Select Your Coding (Copy A) */}
+        {/* Select Copy A */}
         <div
           style={{
             display: "flex",
@@ -978,7 +968,7 @@ export default function CoderComparePage() {
           }}
         >
           <label style={{ fontWeight: "600", minWidth: "150px" }}>
-            Your Coding (Edit):
+            Copy A:
           </label>
           <select
             value={copyA?._id || ""}
@@ -986,19 +976,19 @@ export default function CoderComparePage() {
             className="form-select"
             style={{ flex: 1, maxWidth: "400px" }}
           >
-            {!copyA && <option value="">-- Select Your Coding --</option>}
+            {!copyA && <option value="">-- Select Copy A --</option>}
             {availableCopies
               .filter((c) => c.coderId === currentUser?._id)
               .map((c) => (
                 <option key={c._id} value={c._id}>
                   {users.find((u) => u._id === c.coderId)?.username ||
-                    "Your Coding"}
+                    "Unknown Coder"}
                 </option>
               ))}
           </select>
         </div>
         
-        {/* Select Comparison Coding (Copy B) */}
+        {/* Select Copy B */}
         <div
           style={{
             display: "flex",
@@ -1007,7 +997,7 @@ export default function CoderComparePage() {
           }}
         >
           <label style={{ fontWeight: "600", minWidth: "150px" }}>
-            Compare with:
+            Copy B:
           </label>
           <select
             value={copyB?._id || ""}
@@ -1015,13 +1005,13 @@ export default function CoderComparePage() {
             className="form-select"
             style={{ flex: 1, maxWidth: "400px" }}
           >
-            {!copyB && <option value="">-- Select Coder --</option>}
+            {!copyB && <option value="">-- Select Copy B --</option>}
             {availableCopies
               .filter((c) => c._id !== copyA?._id)
               .map((c) => (
                 <option key={c._id} value={c._id}>
                   {users.find((u) => u._id === c.coderId)?.username ||
-                    c.coderId}
+                    "Unknown Coder"}
                 </option>
               ))}
           </select>
@@ -1385,63 +1375,6 @@ export default function CoderComparePage() {
               </button>
             </div>
             <div className="comment-modal-body">
-              {/* Add Comment Section */}
-              {!isAddingCommentA && (
-                <button
-                  onClick={() => setIsAddingCommentA(true)}
-                  className="dashboard-btn btn-primary btn-sm"
-                  style={{ width: "100%", marginBottom: "16px" }}
-                >
-                  <FaPlus /> Add Comment
-                </button>
-              )}
-              {isAddingCommentA && (
-                <div style={{ marginBottom: "16px" }}>
-                  <textarea
-                    value={newCommentA}
-                    onChange={(e) => setNewCommentA(e.target.value)}
-                    placeholder="Write a comment..."
-                    className="dashboard-input"
-                    style={{
-                      width: "100%",
-                      minHeight: "80px",
-                      marginBottom: "8px",
-                    }}
-                  />
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <button
-                      onClick={() => {
-                        handleAddComment(
-                          editorA,
-                          valueA,
-                          setNewCommentA,
-                          localCommentsA,
-                          setLocalCommentsA,
-                          setValueA,
-                          copyA._id,
-                          statement,
-                          setCommentKeyA,
-                          newCommentA
-                        );
-                        setIsAddingCommentA(false);
-                      }}
-                      className="dashboard-btn btn-primary btn-sm"
-                    >
-                      <FaSave /> Save
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsAddingCommentA(false);
-                        setNewCommentA("");
-                      }}
-                      className="dashboard-btn btn-secondary btn-sm"
-                    >
-                      <FaTimes /> Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-
               {/* Existing Comments */}
               {activeCommentA.map((c) => (
                 <div key={c._id} className="comment-item">
@@ -1512,63 +1445,6 @@ export default function CoderComparePage() {
               </button>
             </div>
             <div className="comment-modal-body">
-              {/* Add Comment Section */}
-              {!isAddingCommentB && (
-                <button
-                  onClick={() => setIsAddingCommentB(true)}
-                  className="dashboard-btn btn-primary btn-sm"
-                  style={{ width: "100%", marginBottom: "16px" }}
-                >
-                  <FaPlus /> Add Comment
-                </button>
-              )}
-              {isAddingCommentB && (
-                <div style={{ marginBottom: "16px" }}>
-                  <textarea
-                    value={newCommentB}
-                    onChange={(e) => setNewCommentB(e.target.value)}
-                    placeholder="Write a comment..."
-                    className="dashboard-input"
-                    style={{
-                      width: "100%",
-                      minHeight: "80px",
-                      marginBottom: "8px",
-                    }}
-                  />
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <button
-                      onClick={() => {
-                        handleAddComment(
-                          editorB,
-                          valueB,
-                          setNewCommentB,
-                          localCommentsB,
-                          setLocalCommentsB,
-                          setValueB,
-                          copyB._id,
-                          statement,
-                          setCommentKeyB,
-                          newCommentB
-                        );
-                        setIsAddingCommentB(false);
-                      }}
-                      className="dashboard-btn btn-primary btn-sm"
-                    >
-                      <FaSave /> Save
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsAddingCommentB(false);
-                        setNewCommentB("");
-                      }}
-                      className="dashboard-btn btn-secondary btn-sm"
-                    >
-                      <FaTimes /> Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-
               {/* Existing Comments */}
               {activeCommentB.map((c) => (
                 <div key={c._id} className="comment-item">

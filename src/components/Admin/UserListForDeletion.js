@@ -38,7 +38,7 @@ export default function UserListForDeletion({ users, onDelete, onUpdateRole }) {
 
     if (
       !window.confirm(
-        `Are you sure you want to change ${username}'s role from "${currentRole}" to "${newRole}"?`
+        `Are you sure you want to change ${username}'s role from "${getRoleDisplayName(currentRole)}" to "${getRoleDisplayName(newRole)}"?`
       )
     ) {
       // Reset the select to the current role if the user cancels

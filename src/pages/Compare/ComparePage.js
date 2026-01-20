@@ -416,6 +416,50 @@ export default function ComparePage() {
     };
   }, [socket, copyA, copyB, navigate]);
 
+  // Re-render Slate value A when localCommentsA change (e.g., from real-time updates)
+  useEffect(() => {
+    if (!copyA || !localCommentsA || !statement || !valueA) return;
+
+    const baseText = statement?.text || [
+      { type: "paragraph", children: [{ text: "" }] },
+    ];
+    
+    // Extract current highlights from the existing value to preserve user's work
+    const { highlights: highlightsA } = extractHighlightsFromValue(valueA);
+
+    const decoratedTextA = applyHighlightsToText(
+      baseText,
+      highlightsA,
+      diffs,
+      localCommentsA
+    );
+    
+    setValueA(decoratedTextA);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localCommentsA, commentKeyA]); // Only re-render when comments actually change
+
+  // Re-render Slate value B when localCommentsB change (e.g., from real-time updates)
+  useEffect(() => {
+    if (!copyB || !localCommentsB || !statement || !valueB) return;
+
+    const baseText = statement?.text || [
+      { type: "paragraph", children: [{ text: "" }] },
+    ];
+    
+    // Extract current highlights from the existing value to preserve user's work
+    const { highlights: highlightsB } = extractHighlightsFromValue(valueB);
+
+    const decoratedTextB = applyHighlightsToText(
+      baseText,
+      highlightsB,
+      diffs,
+      localCommentsB
+    );
+    
+    setValueB(decoratedTextB);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localCommentsB, commentKeyB]); // Only re-render when comments actually change
+
   // Update results tables for Copy A
   useEffect(() => {
     if (!valueA || !colors.length || !styleSettings) return;

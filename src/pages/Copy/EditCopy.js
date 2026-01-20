@@ -199,6 +199,26 @@ export default function StatementEditor() {
     };
   }, [socket, copyId, navigate]);
 
+  // Re-render Slate value when localComments change (e.g., from real-time updates)
+  useEffect(() => {
+    if (!copy || !localComments || !statementsMap[copy.statementId]) return;
+
+    const statement = statementsMap[copy.statementId];
+    const baseText = statement?.slateText || [
+      { type: "paragraph", children: [{ text: "" }] },
+    ];
+    const highlights = copy?.highlights || [];
+
+    const decoratedText = applyHighlightsToText(
+      baseText,
+      highlights,
+      [],
+      localComments
+    );
+    
+    setValue(decoratedText);
+  }, [localComments, copy, statementsMap, applyHighlightsToText]);
+
   useEffect(() => {
     if (!value || !colors.length || !styleSettings) return;
 
@@ -701,6 +721,7 @@ export default function StatementEditor() {
                   padding: "15px",
                   backgroundColor: "#fafafa",
                   minHeight: "350px",
+                  textAlign: "right",
                 }}
               >
                 <Editable
@@ -713,7 +734,7 @@ export default function StatementEditor() {
                       event.preventDefault();
                     }
                   }}
-                  dir="auto"
+                  dir="rtl"
                   style={{
                     fontSize: "18px",
                     lineHeight: "2",
