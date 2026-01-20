@@ -205,7 +205,10 @@ export default function InvestigatorHomePage() {
       groupName,
       groupDesc
     );
-    if (newGroup) setGroups((prev) => [...prev, newGroup]);
+    if (newGroup) {
+      setGroups((prev) => [...prev, newGroup]);
+      setAllGroups((prev) => [...prev, newGroup]); // ✅ Update global groups list
+    }
     setGroupName("");
     setGroupDesc("");
     setShowGroupForm(false);
@@ -312,6 +315,7 @@ export default function InvestigatorHomePage() {
       try {
         await deleteGroup(groupId);
         setGroups((prev) => prev.filter((g) => g._id !== groupId));
+        setAllGroups((prev) => prev.filter((g) => g._id !== groupId)); // ✅ Update global groups list
         if (selectedGroup && selectedGroup._id === groupId) {
           setSelectedGroup(null);
           setStatements([]);
