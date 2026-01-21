@@ -897,10 +897,11 @@ export default function StatementEditor() {
               padding: "10px",
               marginBottom: "8px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              flex: 1,
+              flex: "0 1 45%",
+              minHeight: "250px",
+              maxHeight: "70vh",
               display: "flex",
               flexDirection: "column",
-              minHeight: "400px",
             }}
           >
             <h3
@@ -921,7 +922,7 @@ export default function StatementEditor() {
             >
               <div
                 style={{
-                  height: "500px",
+                  flex: 1,
                   overflowY: "auto",
                   border: "1px solid #ddd",
                   borderRadius: "4px",
