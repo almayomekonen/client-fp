@@ -639,7 +639,7 @@ export default function ViewStatementWithComments() {
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
               flex: "0 1 45%",
               minHeight: "250px",
-              maxHeight: "50vh",
+              maxHeight: "60vh",
               display: "flex",
               flexDirection: "column",
             }}
@@ -753,6 +753,7 @@ export default function ViewStatementWithComments() {
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
               flex: "1 1 auto",
               minHeight: "300px",
+              maxHeight: "calc(100vh - 50vh - 120px)", // Remaining space after viewer
               overflowY: "auto", // Scrollable
             }}
           >

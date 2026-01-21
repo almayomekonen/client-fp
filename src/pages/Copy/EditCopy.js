@@ -899,7 +899,7 @@ export default function StatementEditor() {
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
               flex: "0 1 45%",
               minHeight: "250px",
-              maxHeight: "70vh",
+              maxHeight: "60vh",
               display: "flex",
               flexDirection: "column",
             }}
@@ -1027,8 +1027,9 @@ export default function StatementEditor() {
               padding: "8px",
               marginTop: "8px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              flexShrink: 0,
-              height: "180px",
+              flex: "1 1 auto",
+              minHeight: "300px",
+              maxHeight: "calc(100vh - 70vh - 120px)", // Remaining space after viewer
               overflowY: "auto",
             }}
           >
