@@ -13,7 +13,6 @@ import {
 } from "docx";
 import { saveAs } from "file-saver";
 
-
 const isLightColor = (hexColor) => {
   const hex = hexColor.replace("#", "");
   const r = parseInt(hex.substr(0, 2), 16);
@@ -32,7 +31,6 @@ const isHebrewText = (text) => {
   const hebrewRegex = /[\u0590-\u05FF]/;
   return hebrewRegex.test(text);
 };
-
 
 const createHeader = (title, subtitle) => {
   return [
@@ -75,7 +73,6 @@ const createHeader = (title, subtitle) => {
     }),
   ];
 };
-
 
 const createMetadata = () => {
   return new Paragraph({
@@ -129,7 +126,7 @@ const createSectionHeading = (title) => {
 };
 
 /**
- * Create coded text section with proper paragraph structure
+ * Create coded text section with proper paragraph structure and RTL support
  */
 const createCodedTextSection = (slateValue) => {
   const sections = [createSectionHeading("Coded Text")];
@@ -147,7 +144,7 @@ const createCodedTextSection = (slateValue) => {
           }),
         ],
         spacing: { before: 200, after: 400 },
-      })
+      }),
     );
     return sections;
   }
@@ -157,7 +154,7 @@ const createCodedTextSection = (slateValue) => {
     for (const node of nodes) {
       if (node.type === "paragraph" && node.children) {
         const textRuns = [];
-        
+
         // Process all text nodes in this paragraph
         const processChildren = (children) => {
           for (const child of children) {
@@ -165,33 +162,26 @@ const createCodedTextSection = (slateValue) => {
               const runProps = {
                 text: child.text || " ",
                 size: 24,
-                font: "Calibri",
+                font: "Arial",
               };
 
-              const highlight = child.highlight || child.backgroundColor || child.bgColor;
-
-              // Detect if this text run is Hebrew (RTL)
-              if (isHebrewText(child.text)) {
-                runProps.rightToLeft = true;
-              }
+              const highlight =
+                child.highlight || child.backgroundColor || child.bgColor;
 
               if (child.bold) runProps.bold = true;
               if (child.italic) runProps.italics = true;
               if (child.underline) runProps.underline = { type: "single" };
 
-              // Apply highlight as background color - MUST have the color!
+              // Apply highlight as background color
               if (highlight) {
                 const highlightColor = highlight.replace("#", "").toUpperCase();
-                // Apply background highlight
                 runProps.shading = {
                   fill: highlightColor,
                   type: "clear",
                 };
-                // Set text color for contrast
                 const brightness = isLightColor(highlightColor);
                 runProps.color = brightness ? "000000" : "FFFFFF";
               } else {
-                // Default text color when no highlight
                 runProps.color = "000000";
               }
 
@@ -207,19 +197,31 @@ const createCodedTextSection = (slateValue) => {
 
         // Create paragraph with all text runs
         if (textRuns.length > 0) {
-          // Detect text direction from the paragraph's text content
-          const paragraphText = node.children
-            .map((child) => child.text || "")
-            .join("");
+          // Extract ALL text from the entire paragraph recursively to detect RTL
+          const extractText = (children) => {
+            let text = "";
+            for (const child of children) {
+              if (child.text !== undefined) {
+                text += child.text;
+              }
+              if (child.children) {
+                text += extractText(child.children);
+              }
+            }
+            return text;
+          };
+
+          const paragraphText = extractText(node.children);
           const isRTL = isHebrewText(paragraphText);
 
+          // PURE RTL setup - just bidirectional and right alignment
           sections.push(
             new Paragraph({
               children: textRuns,
               spacing: { before: 120, after: 120 },
-              alignment: isRTL ? AlignmentType.RIGHT : AlignmentType.LEFT,
-              bidirectional: isRTL,
-            })
+              alignment: AlignmentType.RIGHT,
+              bidirectional: true,
+            }),
           );
         }
       } else if (node.children) {
@@ -235,14 +237,11 @@ const createCodedTextSection = (slateValue) => {
   return sections;
 };
 
-/**
- * Create statistics table (simplified, like website)
- */
 const createStatisticsTable = (
   counts,
   wordCounts,
   colors = [],
-  styleSettings = {}
+  styleSettings = {},
 ) => {
   const hasData =
     (counts && Object.keys(counts).length > 0) ||
@@ -265,7 +264,7 @@ const createStatisticsTable = (
 
   const rows = [];
 
-  // Simple header row
+  // Header row with 3 columns: Category, Count, Words
   rows.push(
     new TableRow({
       children: [
@@ -295,12 +294,35 @@ const createStatisticsTable = (
             new Paragraph({
               children: [
                 new TextRun({
-                  text: "Count",
+                  text: "Number of Codings",
                   bold: true,
                   size: 24,
                   font: "Calibri",
                 }),
               ],
+              alignment: AlignmentType.CENTER,
+            }),
+          ],
+          shading: { fill: "F0F0F0" },
+          margins: {
+            top: 100,
+            bottom: 100,
+            left: 150,
+            right: 150,
+          },
+        }),
+        new TableCell({
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Number of Words",
+                  bold: true,
+                  size: 24,
+                  font: "Calibri",
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
             }),
           ],
           shading: { fill: "F0F0F0" },
@@ -312,158 +334,116 @@ const createStatisticsTable = (
           },
         }),
       ],
-    })
+    }),
   );
 
-  // Coding counts section
-  if (counts && Object.keys(counts).length > 0) {
-    const sortedCounts = Object.entries(counts).sort(([keyA], [keyB]) => {
-      const nameA = keyA.startsWith("#")
-        ? colors.find((c) => c.code === keyA)?.name || keyA
-        : keyA;
-      const nameB = keyB.startsWith("#")
-        ? colors.find((c) => c.code === keyB)?.name || keyB
-        : keyB;
-      return nameA.localeCompare(nameB);
-    });
+  // Get all unique categories from both counts and wordCounts
+  const allCategories = new Set([
+    ...Object.keys(counts || {}),
+    ...Object.keys(wordCounts || {}),
+  ]);
 
-    sortedCounts.forEach(([key, value]) => {
-      let displayName = key;
+  // Sort categories
+  const sortedCategories = Array.from(allCategories).sort((keyA, keyB) => {
+    const nameA = keyA.startsWith("#")
+      ? colors.find((c) => c.code === keyA)?.name || keyA
+      : keyA;
+    const nameB = keyB.startsWith("#")
+      ? colors.find((c) => c.code === keyB)?.name || keyB
+      : keyB;
+    return nameA.localeCompare(nameB);
+  });
 
-      if (key.startsWith("#")) {
-        const colorObj = colors.find((c) => c.code === key);
-        displayName = colorObj ? colorObj.name : key;
-      } else if (key === "bold") {
-        displayName = styleSettings.boldName || "Bold";
-      } else if (key === "italic") {
-        displayName = styleSettings.italicName || "Italic";
-      } else if (key === "underline") {
-        displayName = styleSettings.underlineName || "Underline";
-      }
+  // Create rows with category name, count, and word count
+  sortedCategories.forEach((key) => {
+    let displayName = key;
 
-      rows.push(
-        new TableRow({
-          children: [
-            new TableCell({
-              children: [
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: displayName,
-                      size: 22,
-                      font: "Calibri",
-                    }),
-                  ],
-                }),
-              ],
-              margins: {
-                top: 80,
-                bottom: 80,
-                left: 150,
-                right: 150,
-              },
-            }),
-            new TableCell({
-              children: [
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: value.toString(),
-                      size: 22,
-                      font: "Calibri",
-                    }),
-                  ],
-                }),
-              ],
-              margins: {
-                top: 80,
-                bottom: 80,
-                left: 150,
-                right: 150,
-              },
-            }),
-          ],
-        })
-      );
-    });
-  }
+    if (key.startsWith("#")) {
+      const colorObj = colors.find((c) => c.code === key);
+      displayName = colorObj ? colorObj.name : key;
+    } else if (key === "bold") {
+      displayName = styleSettings.boldName || "Bold";
+    } else if (key === "italic") {
+      displayName = styleSettings.italicName || "Italic";
+    } else if (key === "underline") {
+      displayName = styleSettings.underlineName || "Underline";
+    }
 
-  // Word counts section
-  if (wordCounts && Object.keys(wordCounts).length > 0) {
-    const sortedWordCounts = Object.entries(wordCounts).sort(
-      ([keyA], [keyB]) => {
-        const nameA = keyA.startsWith("#")
-          ? colors.find((c) => c.code === keyA)?.name || keyA
-          : keyA;
-        const nameB = keyB.startsWith("#")
-          ? colors.find((c) => c.code === keyB)?.name || keyB
-          : keyB;
-        return nameA.localeCompare(nameB);
-      }
+    const isNameRTL = isHebrewText(displayName);
+    const countValue = counts?.[key] || 0;
+    const wordCountValue = wordCounts?.[key] || 0;
+
+    rows.push(
+      new TableRow({
+        children: [
+          // Category name cell
+          new TableCell({
+            children: [
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: displayName,
+                    size: 22,
+                    font: "Arial",
+                  }),
+                ],
+                alignment: isNameRTL ? AlignmentType.RIGHT : AlignmentType.LEFT,
+                bidirectional: isNameRTL,
+              }),
+            ],
+            margins: {
+              top: 80,
+              bottom: 80,
+              left: 150,
+              right: 150,
+            },
+          }),
+          // Count cell
+          new TableCell({
+            children: [
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: countValue.toString(),
+                    size: 22,
+                    font: "Calibri",
+                  }),
+                ],
+                alignment: AlignmentType.CENTER,
+              }),
+            ],
+            margins: {
+              top: 80,
+              bottom: 80,
+              left: 150,
+              right: 150,
+            },
+          }),
+          // Word count cell
+          new TableCell({
+            children: [
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: wordCountValue.toString(),
+                    size: 22,
+                    font: "Calibri",
+                  }),
+                ],
+                alignment: AlignmentType.CENTER,
+              }),
+            ],
+            margins: {
+              top: 80,
+              bottom: 80,
+              left: 150,
+              right: 150,
+            },
+          }),
+        ],
+      }),
     );
-
-    sortedWordCounts.forEach(([key, value]) => {
-      let displayName = key;
-
-      if (key.startsWith("#")) {
-        const colorObj = colors.find((c) => c.code === key);
-        displayName = colorObj ? `${colorObj.name} (words)` : `${key} (words)`;
-      } else if (key === "bold") {
-        displayName = `${styleSettings.boldName || "Bold"} (words)`;
-      } else if (key === "italic") {
-        displayName = `${styleSettings.italicName || "Italic"} (words)`;
-      } else if (key === "underline") {
-        displayName = `${styleSettings.underlineName || "Underline"} (words)`;
-      } else {
-        displayName = `${key} (words)`;
-      }
-
-      rows.push(
-        new TableRow({
-          children: [
-            new TableCell({
-              children: [
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: displayName,
-                      size: 22,
-                      font: "Calibri",
-                    }),
-                  ],
-                }),
-              ],
-              margins: {
-                top: 80,
-                bottom: 80,
-                left: 150,
-                right: 150,
-              },
-            }),
-            new TableCell({
-              children: [
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: value.toString(),
-                      size: 22,
-                      font: "Calibri",
-                    }),
-                  ],
-                }),
-              ],
-              margins: {
-                top: 80,
-                bottom: 80,
-                left: 150,
-                right: 150,
-              },
-            }),
-          ],
-        })
-      );
-    });
-  }
+  });
 
   return new Table({
     rows,
@@ -471,7 +451,7 @@ const createStatisticsTable = (
       size: 100,
       type: WidthType.PERCENTAGE,
     },
-    columnWidths: [7000, 2500],
+    columnWidths: [5000, 2500, 2500],
     borders: {
       top: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
       bottom: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
@@ -502,7 +482,7 @@ const createCommentsSection = (comments, users = []) => {
           }),
         ],
         spacing: { before: 200, after: 400 },
-      })
+      }),
     );
     return sections;
   }
@@ -546,35 +526,36 @@ const createCommentsSection = (comments, users = []) => {
           }),
         ],
         spacing: { before: 300, after: 120 },
-      })
+      }),
     );
 
     // Comment text
     const isCommentRTL = isHebrewText(comment.text);
-    sections.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: comment.text,
-            size: 24,
-            font: "Calibri",
-            rightToLeft: isCommentRTL,
-          }),
-        ],
-        spacing: { after: 200 },
-        indent: { left: convertInchesToTwip(0.35) },
-        alignment: isCommentRTL ? AlignmentType.RIGHT : AlignmentType.LEFT,
-        bidirectional: isCommentRTL,
-        border: {
-          left: {
-            color: "5B9BD5",
-            space: 4,
-            style: BorderStyle.SINGLE,
-            size: 16,
-          },
+
+    const commentParagraphProps = {
+      children: [
+        new TextRun({
+          text: comment.text,
+          size: 24,
+          font: "Arial",
+          ...(isCommentRTL && { rightToLeft: true }),
+        }),
+      ],
+      spacing: { after: 200 },
+      indent: { left: convertInchesToTwip(0.35) },
+      alignment: isCommentRTL ? AlignmentType.RIGHT : AlignmentType.LEFT,
+      bidirectional: isCommentRTL, // CORRECT PROPERTY for RTL paragraphs
+      border: {
+        left: {
+          color: "5B9BD5",
+          space: 4,
+          style: BorderStyle.SINGLE,
+          size: 16,
         },
-      })
-    );
+      },
+    };
+
+    sections.push(new Paragraph(commentParagraphProps));
 
     // Replies
     const replies = comments.filter((r) => r.replyTo === comment._id);
@@ -594,7 +575,7 @@ const createCommentsSection = (comments, users = []) => {
           ],
           spacing: { before: 120, after: 100 },
           indent: { left: convertInchesToTwip(0.55) },
-        })
+        }),
       );
 
       replies.forEach((reply) => {
@@ -608,36 +589,37 @@ const createCommentsSection = (comments, users = []) => {
         });
 
         const isReplyRTL = isHebrewText(reply.text);
-        sections.push(
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `↪ ${replyUsername}`,
-                bold: true,
-                size: 22,
-                color: "70AD47",
-                font: "Calibri",
-              }),
-              new TextRun({
-                text: ` (${replyDate}): `,
-                italics: true,
-                size: 20,
-                color: "7F7F7F",
-                font: "Calibri",
-              }),
-              new TextRun({
-                text: reply.text,
-                size: 22,
-                font: "Calibri",
-                rightToLeft: isReplyRTL,
-              }),
-            ],
-            spacing: { after: 100 },
-            indent: { left: convertInchesToTwip(0.85) },
-            alignment: isReplyRTL ? AlignmentType.RIGHT : AlignmentType.LEFT,
-            bidirectional: isReplyRTL,
-          })
-        );
+
+        const replyParagraphProps = {
+          children: [
+            new TextRun({
+              text: `↪ ${replyUsername}`,
+              bold: true,
+              size: 22,
+              color: "70AD47",
+              font: "Calibri",
+            }),
+            new TextRun({
+              text: ` (${replyDate}): `,
+              italics: true,
+              size: 20,
+              color: "7F7F7F",
+              font: "Calibri",
+            }),
+            new TextRun({
+              text: reply.text,
+              size: 22,
+              font: "Arial",
+              ...(isReplyRTL && { rightToLeft: true }),
+            }),
+          ],
+          spacing: { after: 100 },
+          indent: { left: convertInchesToTwip(0.85) },
+          alignment: isReplyRTL ? AlignmentType.RIGHT : AlignmentType.LEFT,
+          bidirectional: isReplyRTL, // CORRECT PROPERTY for RTL paragraphs
+        };
+
+        sections.push(new Paragraph(replyParagraphProps));
       });
     }
   });
@@ -671,8 +653,10 @@ export const exportCopyToWord = async ({
     sections.push(
       ...createHeader(
         copyName,
-        statementName ? `Statement: ${statementName}` : "Coding Analysis Report"
-      )
+        statementName
+          ? `Statement: ${statementName}`
+          : "Coding Analysis Report",
+      ),
     );
 
     // Metadata
@@ -684,7 +668,7 @@ export const exportCopyToWord = async ({
     // Statistics
     sections.push(createSectionHeading("Statistics"));
     sections.push(
-      createStatisticsTable(counts, wordCounts, colors, styleSettings)
+      createStatisticsTable(counts, wordCounts, colors, styleSettings),
     );
     sections.push(new Paragraph({ text: "", spacing: { after: 400 } }));
 
@@ -704,6 +688,8 @@ export const exportCopyToWord = async ({
                 left: convertInchesToTwip(1),
               },
             },
+            // Enable bidirectional text at section level for Word to recognize RTL
+            bidirectional: true,
           },
           children: sections,
         },
@@ -756,8 +742,8 @@ export const exportComparisonToWord = async ({
         "Comparison Report",
         statementName
           ? `Statement: ${statementName}`
-          : "Side-by-Side Coding Analysis"
-      )
+          : "Side-by-Side Coding Analysis",
+      ),
     );
 
     // Metadata
@@ -784,13 +770,13 @@ export const exportComparisonToWord = async ({
             size: 16,
           },
         },
-      })
+      }),
     );
 
     sections.push(...createCodedTextSection(slateValueA));
     sections.push(createSectionHeading("Statistics - Copy A"));
     sections.push(
-      createStatisticsTable(countsA, wordCountsA, colors, styleSettings)
+      createStatisticsTable(countsA, wordCountsA, colors, styleSettings),
     );
     sections.push(new Paragraph({ text: "", spacing: { after: 400 } }));
     sections.push(...createCommentsSection(commentsA, users));
@@ -801,7 +787,7 @@ export const exportComparisonToWord = async ({
         text: "",
         pageBreakBefore: true,
         spacing: { before: 480 },
-      })
+      }),
     );
 
     // === COPY B ===
@@ -825,13 +811,13 @@ export const exportComparisonToWord = async ({
             size: 16,
           },
         },
-      })
+      }),
     );
 
     sections.push(...createCodedTextSection(slateValueB));
     sections.push(createSectionHeading("Statistics - Copy B"));
     sections.push(
-      createStatisticsTable(countsB, wordCountsB, colors, styleSettings)
+      createStatisticsTable(countsB, wordCountsB, colors, styleSettings),
     );
     sections.push(new Paragraph({ text: "", spacing: { after: 400 } }));
     sections.push(...createCommentsSection(commentsB, users));
@@ -849,6 +835,8 @@ export const exportComparisonToWord = async ({
                 left: convertInchesToTwip(1),
               },
             },
+            // Enable bidirectional text at section level for Word to recognize RTL
+            bidirectional: true,
           },
           children: sections,
         },
