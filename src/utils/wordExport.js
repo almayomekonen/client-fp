@@ -252,9 +252,14 @@ const createStatisticsTable = (
   colors = [],
   styleSettings = {},
 ) => {
+  // Show table if there are defined colors OR if there's any data
   const hasData =
+    colors.length > 0 ||
     (counts && Object.keys(counts).length > 0) ||
-    (wordCounts && Object.keys(wordCounts).length > 0);
+    (wordCounts && Object.keys(wordCounts).length > 0) ||
+    styleSettings.boldName ||
+    styleSettings.italicName ||
+    styleSettings.underlineName;
 
   if (!hasData) {
     return new Paragraph({
@@ -360,8 +365,17 @@ const createStatisticsTable = (
   if (styleSettings.underlineName) allCategories.add("underline");
 
   // Also add any categories from actual counts (in case there are extras)
-  Object.keys(counts || {}).forEach((key) => allCategories.add(key));
-  Object.keys(wordCounts || {}).forEach((key) => allCategories.add(key));
+  // BUT exclude "total" or "Total" to avoid duplication with the summary row
+  Object.keys(counts || {}).forEach((key) => {
+    if (key.toLowerCase() !== "total") {
+      allCategories.add(key);
+    }
+  });
+  Object.keys(wordCounts || {}).forEach((key) => {
+    if (key.toLowerCase() !== "total") {
+      allCategories.add(key);
+    }
+  });
 
   // Sort categories
   const sortedCategories = Array.from(allCategories).sort((keyA, keyB) => {
@@ -374,13 +388,13 @@ const createStatisticsTable = (
     return nameA.localeCompare(nameB);
   });
 
-  // Calculate totals
+  // Calculate totals - sum all actual counts (not zeros from missing categories)
   const totalCount = Object.values(counts || {}).reduce(
-    (sum, val) => sum + val,
+    (sum, val) => sum + (Number(val) || 0),
     0,
   );
   const totalWords = Object.values(wordCounts || {}).reduce(
-    (sum, val) => sum + val,
+    (sum, val) => sum + (Number(val) || 0),
     0,
   );
 
