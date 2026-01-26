@@ -12,6 +12,7 @@ import {
   Packer,
 } from "docx";
 import { saveAs } from "file-saver";
+import JSZip from "jszip";
 
 const isLightColor = (hexColor) => {
   const hex = hexColor.replace("#", "");
@@ -149,11 +150,37 @@ const createCodedTextSection = (slateValue) => {
     return sections;
   }
 
+  // Right-to-Left Mark and Override characters
+  const RLM = "\u200F"; // Right-to-Left Mark
+  const RLO = "\u202E"; // Right-to-Left Override
+
   // Convert Slate structure to Word paragraphs
   const traverse = (nodes) => {
     for (const node of nodes) {
       if (node.type === "paragraph" && node.children) {
         const textRuns = [];
+
+        // Extract all text first to detect RTL
+        const extractText = (children) => {
+          let text = "";
+          for (const child of children) {
+            if (child.text !== undefined) {
+              text += child.text;
+            }
+            if (child.children) {
+              text += extractText(child.children);
+            }
+          }
+          return text;
+        };
+
+        const paragraphText = extractText(node.children);
+        const isRTL = isHebrewText(paragraphText);
+
+        // Add RLM at the start of RTL paragraphs
+        if (isRTL) {
+          textRuns.push(new TextRun({ text: RLM, size: 24, font: "Arial" }));
+        }
 
         // Process all text nodes in this paragraph
         const processChildren = (children) => {
@@ -195,32 +222,14 @@ const createCodedTextSection = (slateValue) => {
 
         processChildren(node.children);
 
-        // Create paragraph with all text runs
+        // Create paragraph with RTL properties
         if (textRuns.length > 0) {
-          // Extract ALL text from the entire paragraph recursively to detect RTL
-          const extractText = (children) => {
-            let text = "";
-            for (const child of children) {
-              if (child.text !== undefined) {
-                text += child.text;
-              }
-              if (child.children) {
-                text += extractText(child.children);
-              }
-            }
-            return text;
-          };
-
-          const paragraphText = extractText(node.children);
-          const isRTL = isHebrewText(paragraphText);
-
-          // PURE RTL setup - just bidirectional and right alignment
           sections.push(
             new Paragraph({
               children: textRuns,
               spacing: { before: 120, after: 120 },
-              alignment: AlignmentType.RIGHT,
-              bidirectional: true,
+              alignment: isRTL ? AlignmentType.RIGHT : AlignmentType.LEFT,
+              bidirectional: isRTL,
             }),
           );
         }
@@ -337,11 +346,22 @@ const createStatisticsTable = (
     }),
   );
 
-  // Get all unique categories from both counts and wordCounts
-  const allCategories = new Set([
-    ...Object.keys(counts || {}),
-    ...Object.keys(wordCounts || {}),
-  ]);
+  // Get ALL defined categories - including those not used
+  const allCategories = new Set();
+
+  // Add all colors from the colors array (system-defined colors)
+  colors.forEach((color) => {
+    allCategories.add(color.code);
+  });
+
+  // Add style categories (bold, italic, underline) if they exist in settings
+  if (styleSettings.boldName) allCategories.add("bold");
+  if (styleSettings.italicName) allCategories.add("italic");
+  if (styleSettings.underlineName) allCategories.add("underline");
+
+  // Also add any categories from actual counts (in case there are extras)
+  Object.keys(counts || {}).forEach((key) => allCategories.add(key));
+  Object.keys(wordCounts || {}).forEach((key) => allCategories.add(key));
 
   // Sort categories
   const sortedCategories = Array.from(allCategories).sort((keyA, keyB) => {
@@ -353,6 +373,89 @@ const createStatisticsTable = (
       : keyB;
     return nameA.localeCompare(nameB);
   });
+
+  // Calculate totals
+  const totalCount = Object.values(counts || {}).reduce(
+    (sum, val) => sum + val,
+    0,
+  );
+  const totalWords = Object.values(wordCounts || {}).reduce(
+    (sum, val) => sum + val,
+    0,
+  );
+
+  // Add TOTAL row first
+  rows.push(
+    new TableRow({
+      children: [
+        new TableCell({
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Total",
+                  bold: true,
+                  size: 22,
+                  font: "Arial",
+                }),
+              ],
+            }),
+          ],
+          shading: { fill: "E7E6E6" },
+          margins: {
+            top: 80,
+            bottom: 80,
+            left: 150,
+            right: 150,
+          },
+        }),
+        new TableCell({
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: totalCount.toString(),
+                  bold: true,
+                  size: 22,
+                  font: "Calibri",
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+            }),
+          ],
+          shading: { fill: "E7E6E6" },
+          margins: {
+            top: 80,
+            bottom: 80,
+            left: 150,
+            right: 150,
+          },
+        }),
+        new TableCell({
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: totalWords.toString(),
+                  bold: true,
+                  size: 22,
+                  font: "Calibri",
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+            }),
+          ],
+          shading: { fill: "E7E6E6" },
+          margins: {
+            top: 80,
+            bottom: 80,
+            left: 150,
+            right: 150,
+          },
+        }),
+      ],
+    }),
+  );
 
   // Create rows with category name, count, and word count
   sortedCategories.forEach((key) => {
@@ -703,9 +806,34 @@ export const exportCopyToWord = async ({
       .replace(/\s+/g, "_");
     const filename = `${safeFileName}_${timestamp}.docx`;
 
-    // Save file
+    // Save file with manual RTL XML patching
     const blob = await Packer.toBlob(doc);
-    saveAs(blob, filename);
+
+    // WORKAROUND: Manually add RTL support by patching the XML
+    try {
+      const zip = await JSZip.loadAsync(blob);
+
+      // Read the document.xml file
+      const documentXml = await zip.file("word/document.xml").async("string");
+
+      // Patch: Add <w:bidi/> to paragraph properties that need RTL
+      // Find all <w:pPr> and add <w:bidi/> right after it
+      const patchedXml = documentXml.replace(
+        /(<w:pPr>)(?![\s\S]*?<w:bidi\/>)/g,
+        "$1<w:bidi/>",
+      );
+
+      // Update the file in the zip
+      zip.file("word/document.xml", patchedXml);
+
+      // Generate the patched blob
+      const patchedBlob = await zip.generateAsync({ type: "blob" });
+      saveAs(patchedBlob, filename);
+    } catch (patchError) {
+      console.error("Error patching RTL:", patchError);
+      // Fallback to original blob if patching fails
+      saveAs(blob, filename);
+    }
 
     return { success: true, filename };
   } catch (error) {
@@ -847,9 +975,33 @@ export const exportComparisonToWord = async ({
     const timestamp = new Date().toISOString().slice(0, 10);
     const filename = `Comparison_${timestamp}.docx`;
 
-    // Save file
+    // Save file with manual RTL XML patching
     const blob = await Packer.toBlob(doc);
-    saveAs(blob, filename);
+
+    // WORKAROUND: Manually add RTL support by patching the XML
+    try {
+      const zip = await JSZip.loadAsync(blob);
+
+      // Read the document.xml file
+      const documentXml = await zip.file("word/document.xml").async("string");
+
+      // Patch: Add <w:bidi/> to paragraph properties that need RTL
+      const patchedXml = documentXml.replace(
+        /(<w:pPr>)(?![\s\S]*?<w:bidi\/>)/g,
+        "$1<w:bidi/>",
+      );
+
+      // Update the file in the zip
+      zip.file("word/document.xml", patchedXml);
+
+      // Generate the patched blob
+      const patchedBlob = await zip.generateAsync({ type: "blob" });
+      saveAs(patchedBlob, filename);
+    } catch (patchError) {
+      console.error("Error patching RTL:", patchError);
+      // Fallback to original blob if patching fails
+      saveAs(blob, filename);
+    }
 
     return { success: true, filename };
   } catch (error) {
