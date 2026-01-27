@@ -570,6 +570,8 @@ export default function ViewStatementWithComments() {
         users: [],
         copyName: `Statement_View_${currentUser?.username || "User"}`,
         statementName,
+        totalWordsInText: additionalStats?.totalWordsFullText || 0,
+        totalColoredWords: additionalStats?.totalColoredWordsFullText || 0,
       });
     } catch (error) {
       console.error("❌ Export error:", error);

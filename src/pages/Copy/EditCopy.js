@@ -732,6 +732,8 @@ export default function StatementEditor() {
         users: [],
         copyName: `Coding_${currentUser?.username || "User"}`,
         statementName,
+        totalWordsInText: additionalStats?.totalWordsFullText || 0,
+        totalColoredWords: additionalStats?.totalColoredWordsFullText || 0,
       });
     } catch (error) {
       console.error("Export error:", error);

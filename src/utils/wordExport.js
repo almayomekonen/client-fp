@@ -23,9 +23,6 @@ const isLightColor = (hexColor) => {
   return brightness > 155;
 };
 
-/**
- * Detect if text contains Hebrew characters (RTL)
- */
 const isHebrewText = (text) => {
   if (!text) return false;
   // Hebrew Unicode range: \u0590-\u05FF
@@ -251,6 +248,8 @@ const createStatisticsTable = (
   wordCounts,
   colors = [],
   styleSettings = {},
+  totalWordsInText = 0,
+  totalColoredWords = 0,
 ) => {
   // Show table if there are defined colors OR if there's any data
   const hasData =
@@ -276,129 +275,177 @@ const createStatisticsTable = (
     });
   }
 
-  const rows = [];
-
-  // Header row with 3 columns: Category, Count, Words
-  rows.push(
-    new TableRow({
-      children: [
-        new TableCell({
-          children: [
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: "Category",
-                  bold: true,
-                  size: 24,
-                  font: "Calibri",
-                }),
-              ],
-            }),
-          ],
-          shading: { fill: "F0F0F0" },
-          margins: {
-            top: 100,
-            bottom: 100,
-            left: 150,
-            right: 150,
-          },
-        }),
-        new TableCell({
-          children: [
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: "Number of Codings",
-                  bold: true,
-                  size: 24,
-                  font: "Calibri",
-                }),
-              ],
-              alignment: AlignmentType.CENTER,
-            }),
-          ],
-          shading: { fill: "F0F0F0" },
-          margins: {
-            top: 100,
-            bottom: 100,
-            left: 150,
-            right: 150,
-          },
-        }),
-        new TableCell({
-          children: [
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: "Number of Words",
-                  bold: true,
-                  size: 24,
-                  font: "Calibri",
-                }),
-              ],
-              alignment: AlignmentType.CENTER,
-            }),
-          ],
-          shading: { fill: "F0F0F0" },
-          margins: {
-            top: 100,
-            bottom: 100,
-            left: 150,
-            right: 150,
-          },
-        }),
-      ],
-    }),
-  );
-
   // Get ALL defined categories - including those not used
-  const allCategories = new Set();
+  const allCategories = [];
 
   // Add all colors from the colors array (system-defined colors)
   colors.forEach((color) => {
-    allCategories.add(color.code);
+    allCategories.push({ key: color.code, name: color.name, type: "color" });
   });
 
   // Add style categories (bold, italic, underline) if they exist in settings
-  if (styleSettings.boldName) allCategories.add("bold");
-  if (styleSettings.italicName) allCategories.add("italic");
-  if (styleSettings.underlineName) allCategories.add("underline");
+  if (styleSettings.boldName) {
+    allCategories.push({
+      key: "bold",
+      name: styleSettings.boldName,
+      type: "style",
+    });
+  }
+  if (styleSettings.italicName) {
+    allCategories.push({
+      key: "italic",
+      name: styleSettings.italicName,
+      type: "style",
+    });
+  }
+  if (styleSettings.underlineName) {
+    allCategories.push({
+      key: "underline",
+      name: styleSettings.underlineName,
+      type: "style",
+    });
+  }
 
-  // Also add any categories from actual counts (in case there are extras)
-  // BUT exclude "total" or "Total" to avoid duplication with the summary row
-  Object.keys(counts || {}).forEach((key) => {
-    if (key.toLowerCase() !== "total") {
-      allCategories.add(key);
-    }
+  const rows = [];
+
+  // Scale font sizes based on number of categories for professional look
+  const numCategories = allCategories.length;
+  const headerFontSize = numCategories > 12 ? 16 : numCategories > 8 ? 18 : 20;
+  const dataFontSize = numCategories > 12 ? 16 : numCategories > 8 ? 18 : 20;
+
+  // HEADER ROW: Metric | Color1 | Color2 | Color3 | ...
+  const headerCells = [
+    new TableCell({
+      children: [
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: "Metric",
+              bold: true,
+              size: 24,
+              font: "Calibri",
+            }),
+          ],
+        }),
+      ],
+      shading: { fill: "F0F0F0" },
+      margins: { top: 150, bottom: 150, left: 200, right: 200 },
+    }),
+  ];
+
+  // Add column header for each category - NO bidirectional to avoid Word rendering issues
+  allCategories.forEach((category) => {
+    headerCells.push(
+      new TableCell({
+        children: [
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: category.name,
+                bold: true,
+                size: headerFontSize,
+                font: "Arial",
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+            wordWrap: false, // Prevent text wrapping
+          }),
+        ],
+        shading: { fill: "F0F0F0" },
+        margins: { top: 150, bottom: 150, left: 80, right: 80 },
+      }),
+    );
   });
-  Object.keys(wordCounts || {}).forEach((key) => {
-    if (key.toLowerCase() !== "total") {
-      allCategories.add(key);
-    }
+
+  rows.push(new TableRow({ children: headerCells }));
+
+  // ROW 1: Number of codings
+  const codingsCells = [
+    new TableCell({
+      children: [
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: "Number of codings",
+              size: dataFontSize,
+              font: "Arial",
+            }),
+          ],
+        }),
+      ],
+      margins: { top: 100, bottom: 100, left: 200, right: 200 },
+    }),
+  ];
+
+  // Add count for each category (NO Total column)
+  allCategories.forEach((category) => {
+    const countValue = counts?.[category.key] || 0;
+    codingsCells.push(
+      new TableCell({
+        children: [
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: countValue.toString(),
+                size: dataFontSize,
+                font: "Calibri",
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+            wordWrap: false,
+          }),
+        ],
+        margins: { top: 100, bottom: 100, left: 80, right: 80 },
+      }),
+    );
   });
 
-  // Sort categories
-  const sortedCategories = Array.from(allCategories).sort((keyA, keyB) => {
-    const nameA = keyA.startsWith("#")
-      ? colors.find((c) => c.code === keyA)?.name || keyA
-      : keyA;
-    const nameB = keyB.startsWith("#")
-      ? colors.find((c) => c.code === keyB)?.name || keyB
-      : keyB;
-    return nameA.localeCompare(nameB);
+  rows.push(new TableRow({ children: codingsCells }));
+
+  // ROW 2: Number of words
+  const wordsCells = [
+    new TableCell({
+      children: [
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: "Number of words",
+              size: dataFontSize,
+              font: "Arial",
+            }),
+          ],
+        }),
+      ],
+      margins: { top: 100, bottom: 100, left: 200, right: 200 },
+    }),
+  ];
+
+  // Add word count for each category (NO Total column)
+  allCategories.forEach((category) => {
+    const wordCountValue = wordCounts?.[category.key] || 0;
+    wordsCells.push(
+      new TableCell({
+        children: [
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: wordCountValue.toString(),
+                size: dataFontSize,
+                font: "Calibri",
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+            wordWrap: false,
+          }),
+        ],
+        margins: { top: 100, bottom: 100, left: 80, right: 80 },
+      }),
+    );
   });
 
-  // Calculate totals - sum all actual counts (not zeros from missing categories)
-  const totalCount = Object.values(counts || {}).reduce(
-    (sum, val) => sum + (Number(val) || 0),
-    0,
-  );
-  const totalWords = Object.values(wordCounts || {}).reduce(
-    (sum, val) => sum + (Number(val) || 0),
-    0,
-  );
+  rows.push(new TableRow({ children: wordsCells }));
 
-  // Add TOTAL row first
+  // ROW 3: Total words in entire text
   rows.push(
     new TableRow({
       children: [
@@ -407,160 +454,97 @@ const createStatisticsTable = (
             new Paragraph({
               children: [
                 new TextRun({
-                  text: "Total",
-                  bold: true,
-                  size: 22,
+                  text: "Total words in entire text",
+                  size: dataFontSize,
                   font: "Arial",
                 }),
               ],
             }),
           ],
-          shading: { fill: "E7E6E6" },
-          margins: {
-            top: 80,
-            bottom: 80,
-            left: 150,
-            right: 150,
-          },
+          margins: { top: 100, bottom: 100, left: 200, right: 200 },
         }),
         new TableCell({
           children: [
             new Paragraph({
               children: [
                 new TextRun({
-                  text: totalCount.toString(),
+                  text: totalWordsInText.toString(),
                   bold: true,
-                  size: 22,
+                  size: dataFontSize,
                   font: "Calibri",
                 }),
               ],
               alignment: AlignmentType.CENTER,
+              wordWrap: false,
             }),
           ],
-          shading: { fill: "E7E6E6" },
-          margins: {
-            top: 80,
-            bottom: 80,
-            left: 150,
-            right: 150,
-          },
-        }),
-        new TableCell({
-          children: [
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: totalWords.toString(),
-                  bold: true,
-                  size: 22,
-                  font: "Calibri",
-                }),
-              ],
-              alignment: AlignmentType.CENTER,
-            }),
-          ],
-          shading: { fill: "E7E6E6" },
-          margins: {
-            top: 80,
-            bottom: 80,
-            left: 150,
-            right: 150,
-          },
+          margins: { top: 100, bottom: 100, left: 80, right: 80 },
+          columnSpan: allCategories.length,
         }),
       ],
     }),
   );
 
-  // Create rows with category name, count, and word count
-  sortedCategories.forEach((key) => {
-    let displayName = key;
+  // ROW 4: Total colored words in entire text
+  rows.push(
+    new TableRow({
+      children: [
+        new TableCell({
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Total colored words in entire text",
+                  size: dataFontSize,
+                  font: "Arial",
+                }),
+              ],
+            }),
+          ],
+          margins: { top: 100, bottom: 100, left: 200, right: 200 },
+        }),
+        new TableCell({
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: totalColoredWords.toString(),
+                  bold: true,
+                  size: dataFontSize,
+                  font: "Calibri",
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+              wordWrap: false,
+            }),
+          ],
+          margins: { top: 100, bottom: 100, left: 80, right: 80 },
+          columnSpan: allCategories.length,
+        }),
+      ],
+    }),
+  );
 
-    if (key.startsWith("#")) {
-      const colorObj = colors.find((c) => c.code === key);
-      displayName = colorObj ? colorObj.name : key;
-    } else if (key === "bold") {
-      displayName = styleSettings.boldName || "Bold";
-    } else if (key === "italic") {
-      displayName = styleSettings.italicName || "Italic";
-    } else if (key === "underline") {
-      displayName = styleSettings.underlineName || "Underline";
-    }
+  // Calculate column widths dynamically: wider columns to prevent text breaking
+  const numColumns = allCategories.length + 1; // +1 for Metric column
 
-    const isNameRTL = isHebrewText(displayName);
-    const countValue = counts?.[key] || 0;
-    const wordCountValue = wordCounts?.[key] || 0;
+  // First column width (Metric) - wider to fit "Total colored words in entire text"
+  const firstColumnWidth = 3500;
 
-    rows.push(
-      new TableRow({
-        children: [
-          // Category name cell
-          new TableCell({
-            children: [
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: displayName,
-                    size: 22,
-                    font: "Arial",
-                  }),
-                ],
-                alignment: isNameRTL ? AlignmentType.RIGHT : AlignmentType.LEFT,
-                bidirectional: isNameRTL,
-              }),
-            ],
-            margins: {
-              top: 80,
-              bottom: 80,
-              left: 150,
-              right: 150,
-            },
-          }),
-          // Count cell
-          new TableCell({
-            children: [
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: countValue.toString(),
-                    size: 22,
-                    font: "Calibri",
-                  }),
-                ],
-                alignment: AlignmentType.CENTER,
-              }),
-            ],
-            margins: {
-              top: 80,
-              bottom: 80,
-              left: 150,
-              right: 150,
-            },
-          }),
-          // Word count cell
-          new TableCell({
-            children: [
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: wordCountValue.toString(),
-                    size: 22,
-                    font: "Calibri",
-                  }),
-                ],
-                alignment: AlignmentType.CENTER,
-              }),
-            ],
-            margins: {
-              top: 80,
-              bottom: 80,
-              left: 150,
-              right: 150,
-            },
-          }),
-        ],
-      }),
-    );
-  });
+  // Calculate minimum width needed per column to prevent wrapping
+  // Aim for at least 1000 twips per column, scale down if too many columns
+  const totalAvailableWidth = 12000; // Increased total width
+  const remainingWidth = totalAvailableWidth - firstColumnWidth;
+  const minColumnWidth = 1000; // Minimum to prevent "Underline" breaking
+  const idealColumnWidth = Math.max(
+    minColumnWidth,
+    Math.floor(remainingWidth / allCategories.length),
+  );
+
+  const columnWidths = [firstColumnWidth];
+  for (let i = 0; i < allCategories.length; i++) {
+    columnWidths.push(idealColumnWidth);
+  }
 
   return new Table({
     rows,
@@ -568,7 +552,7 @@ const createStatisticsTable = (
       size: 100,
       type: WidthType.PERCENTAGE,
     },
-    columnWidths: [5000, 2500, 2500],
+    columnWidths,
     borders: {
       top: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
       bottom: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
@@ -762,6 +746,8 @@ export const exportCopyToWord = async ({
   users,
   copyName = "Coded Statement",
   statementName = "",
+  totalWordsInText = 0,
+  totalColoredWords = 0,
 }) => {
   try {
     const sections = [];
@@ -785,7 +771,14 @@ export const exportCopyToWord = async ({
     // Statistics
     sections.push(createSectionHeading("Statistics"));
     sections.push(
-      createStatisticsTable(counts, wordCounts, colors, styleSettings),
+      createStatisticsTable(
+        counts,
+        wordCounts,
+        colors,
+        styleSettings,
+        totalWordsInText,
+        totalColoredWords,
+      ),
     );
     sections.push(new Paragraph({ text: "", spacing: { after: 400 } }));
 
@@ -874,6 +867,10 @@ export const exportComparisonToWord = async ({
   colors,
   styleSettings = {},
   users,
+  totalWordsInTextA = 0,
+  totalColoredWordsA = 0,
+  totalWordsInTextB = 0,
+  totalColoredWordsB = 0,
 }) => {
   try {
     const sections = [];
@@ -918,7 +915,14 @@ export const exportComparisonToWord = async ({
     sections.push(...createCodedTextSection(slateValueA));
     sections.push(createSectionHeading("Statistics - Copy A"));
     sections.push(
-      createStatisticsTable(countsA, wordCountsA, colors, styleSettings),
+      createStatisticsTable(
+        countsA,
+        wordCountsA,
+        colors,
+        styleSettings,
+        totalWordsInTextA,
+        totalColoredWordsA,
+      ),
     );
     sections.push(new Paragraph({ text: "", spacing: { after: 400 } }));
     sections.push(...createCommentsSection(commentsA, users));
@@ -959,7 +963,14 @@ export const exportComparisonToWord = async ({
     sections.push(...createCodedTextSection(slateValueB));
     sections.push(createSectionHeading("Statistics - Copy B"));
     sections.push(
-      createStatisticsTable(countsB, wordCountsB, colors, styleSettings),
+      createStatisticsTable(
+        countsB,
+        wordCountsB,
+        colors,
+        styleSettings,
+        totalWordsInTextB,
+        totalColoredWordsB,
+      ),
     );
     sections.push(new Paragraph({ text: "", spacing: { after: 400 } }));
     sections.push(...createCommentsSection(commentsB, users));
