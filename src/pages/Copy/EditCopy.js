@@ -1,4 +1,10 @@
-import React, { useMemo, useCallback, useState, useEffect, useRef } from "react";
+import React, {
+  useMemo,
+  useCallback,
+  useState,
+  useEffect,
+  useRef,
+} from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { createEditor, Transforms, Editor } from "slate";
 import { Slate, Editable, withReact } from "slate-react";
@@ -75,7 +81,7 @@ export default function StatementEditor() {
   const [localComments, setLocalComments] = useState([]);
   const [activeComment, setActiveComment] = useState(null);
   const [isAddingComment, setIsAddingComment] = useState(false);
-  
+
   // ✅ Track comment count to force re-renders
   const prevCommentCountRef = useRef(0);
 
@@ -140,17 +146,17 @@ export default function StatementEditor() {
       console.log("✅ Initial load:", {
         highlights: highlights.length,
         comments: commentsForCopy.length,
-        copyId
+        copyId,
       });
 
       // ✅ Set comments first to trigger proper rendering
       setLocalComments(commentsForCopy);
-      
+
       const decoratedText = applyHighlightsToText(
         baseText,
         highlights,
         [],
-        commentsForCopy
+        commentsForCopy,
       );
 
       setValue(decoratedText);
@@ -186,7 +192,7 @@ export default function StatementEditor() {
           console.log("✅ Real-time comment added:", {
             id: data.comment._id,
             offset: data.comment.offset,
-            total: prevComments.length + 1
+            total: prevComments.length + 1,
           });
           return [...prevComments, data.comment];
         });
@@ -199,7 +205,7 @@ export default function StatementEditor() {
           const filtered = prevComments.filter((c) => c._id !== data.commentId);
           console.log("✅ Real-time comment deleted:", {
             id: data.commentId,
-            remaining: filtered.length
+            remaining: filtered.length,
           });
           return filtered;
         });
@@ -231,28 +237,33 @@ export default function StatementEditor() {
     // Early exit checks
     if (!copy || !statementsMap[copy.statementId]) return;
     if (localComments === null || localComments === undefined) return;
-    
+
     // ✅ Detect if comment count changed (added or removed)
     const currentCommentCount = localComments.length;
     const prevCommentCount = prevCommentCountRef.current;
     const commentCountChanged = currentCommentCount !== prevCommentCount;
-    
+
     if (commentCountChanged) {
-      console.log("🔄 LIVE UPDATE: Comment count changed from", prevCommentCount, "to", currentCommentCount);
+      console.log(
+        "🔄 LIVE UPDATE: Comment count changed from",
+        prevCommentCount,
+        "to",
+        currentCommentCount,
+      );
     }
-    
+
     console.log("🔄 Re-rendering editor with comments:", {
       commentCount: currentCommentCount,
       copyId: copy._id,
       hasStatement: !!statementsMap[copy.statementId],
-      commentCountChanged
+      commentCountChanged,
     });
 
     const statement = statementsMap[copy.statementId];
     const baseText = statement?.slateText || [
       { type: "paragraph", children: [{ text: "" }] },
     ];
-    
+
     // ✅ CRITICAL: Extract highlights from CURRENT editor state
     // This preserves unsaved annotations when adding comments
     const currentEditorState = editor.children;
@@ -261,12 +272,12 @@ export default function StatementEditor() {
     console.log("🎨 Applying highlights and comments:", {
       highlights: highlights.length,
       comments: currentCommentCount,
-      editorNodes: currentEditorState.length
+      editorNodes: currentEditorState.length,
     });
-    
+
     // ✅ Log all comment offsets to debug grouping issues
     const commentsByOffset = {};
-    localComments.forEach(c => {
+    localComments.forEach((c) => {
       if (!commentsByOffset[c.offset]) {
         commentsByOffset[c.offset] = [];
       }
@@ -274,11 +285,13 @@ export default function StatementEditor() {
     });
     console.log("📍 Comments grouped by offset:", {
       uniqueOffsets: Object.keys(commentsByOffset).length,
-      offsetGroups: Object.entries(commentsByOffset).map(([offset, comments]) => ({
-        offset: parseInt(offset),
-        count: comments.length,
-        ids: comments.map(c => c._id.substring(c._id.length - 4))
-      }))
+      offsetGroups: Object.entries(commentsByOffset).map(
+        ([offset, comments]) => ({
+          offset: parseInt(offset),
+          count: comments.length,
+          ids: comments.map((c) => c._id.substring(c._id.length - 4)),
+        }),
+      ),
     });
 
     // ✅ CRITICAL: Apply highlights AND comments to create decorated text
@@ -286,18 +299,25 @@ export default function StatementEditor() {
       baseText,
       highlights,
       [],
-      localComments
+      localComments,
     );
-    
+
     // ✅ Log decorated text structure with offsets
     console.log("📄 Decorated text structure:", {
       paragraphs: decoratedText.length,
-      totalLeaves: decoratedText.reduce((sum, para) => sum + (para.children?.length || 0), 0),
+      totalLeaves: decoratedText.reduce(
+        (sum, para) => sum + (para.children?.length || 0),
+        0,
+      ),
       leavesWithComments: decoratedText.reduce((sum, para) => {
-        return sum + (para.children?.filter(child => child.comments?.length > 0).length || 0);
-      }, 0)
+        return (
+          sum +
+          (para.children?.filter((child) => child.comments?.length > 0)
+            .length || 0)
+        );
+      }, 0),
     });
-    
+
     // ✅ Log each leaf with comments
     decoratedText.forEach((para, paraIndex) => {
       para.children?.forEach((leaf, leafIndex) => {
@@ -306,16 +326,16 @@ export default function StatementEditor() {
             text: leaf.text || "[empty]",
             startOffset: leaf.startOffset,
             endOffset: leaf.endOffset,
-            comments: leaf.comments.map(c => ({
+            comments: leaf.comments.map((c) => ({
               id: c._id,
               offset: c.offset,
-              text: c.text.substring(0, 30) + (c.text.length > 30 ? "..." : "")
-            }))
+              text: c.text.substring(0, 30) + (c.text.length > 30 ? "..." : ""),
+            })),
           });
         }
       });
     });
-    
+
     // ✅ CRITICAL: Use Slate Transforms to properly update editor content
     // This is better than setValue as it maintains editor state
     if (commentCountChanged) {
@@ -328,14 +348,16 @@ export default function StatementEditor() {
       });
       Transforms.insertNodes(editor, decoratedText, { at: [0] });
     }
-    
+
     // Also update the value state for other parts of the component
     setValue(decoratedText);
-    
+
     // Update ref for next comparison
     prevCommentCountRef.current = currentCommentCount;
-    
-    console.log("✅ Editor updated with decorated text - LIVE rendering complete");
+
+    console.log(
+      "✅ Editor updated with decorated text - LIVE rendering complete",
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localComments, copy, statementsMap]);
 
@@ -346,7 +368,7 @@ export default function StatementEditor() {
       counts,
       wordCounts,
       colors,
-      styleSettings
+      styleSettings,
     );
     setFullTextTable(fullTable);
 
@@ -355,7 +377,7 @@ export default function StatementEditor() {
         selectionCounts,
         selectionWordCounts,
         colors,
-        styleSettings
+        styleSettings,
       );
       setSelectionTable(selTable);
     } else {
@@ -393,7 +415,7 @@ export default function StatementEditor() {
         if (node.text !== undefined) {
           // ✅ CRITICAL: Skip comment marker nodes (zero-width spaces with comments)
           const isCommentMarker = node.comments && node.comments.length > 0;
-          
+
           if (
             currentPath.length === anchor.path.length &&
             currentPath.every((val, idx) => val === anchor.path[idx])
@@ -402,7 +424,10 @@ export default function StatementEditor() {
             if (!isCommentMarker) {
               globalOffset += anchor.offset;
             }
-            console.log("✅ Offset calculated (excluding comment markers):", globalOffset);
+            console.log(
+              "✅ Offset calculated (excluding comment markers):",
+              globalOffset,
+            );
             return true; // Found
           } else {
             // Not the target node, add its length if it's not a comment marker
@@ -433,11 +458,12 @@ export default function StatementEditor() {
   const renderLeaf = useCallback(
     ({ leaf, attributes, children }) => {
       // ✅ Extract offset information from leaf (set by applyHighlightsToText)
-      const startOffset = leaf.startOffset !== undefined ? leaf.startOffset : null;
+      const startOffset =
+        leaf.startOffset !== undefined ? leaf.startOffset : null;
       const endOffset = leaf.endOffset !== undefined ? leaf.endOffset : null;
       const hasComments = leaf.comments?.length > 0;
       const commentCount = leaf.comments?.length || 0;
-      
+
       // ✅ Log leaf rendering with comments
       if (hasComments) {
         console.log("📝 Rendering leaf with comments:", {
@@ -445,16 +471,18 @@ export default function StatementEditor() {
           startOffset,
           endOffset,
           commentCount,
-          comments: leaf.comments.map(c => ({ id: c._id, text: c.text.substring(0, 20) }))
+          comments: leaf.comments.map((c) => ({
+            id: c._id,
+            text: c.text.substring(0, 20),
+          })),
         });
       }
 
       const style = {
-        backgroundColor: leaf.highlight || undefined,
+        backgroundColor: (leaf.text !== "" && leaf.highlight) || undefined,
         textDecoration: leaf.underline ? "underline" : undefined,
         fontWeight: leaf.bold ? "bold" : undefined,
         fontStyle: leaf.italic ? "italic" : undefined,
-        outline: leaf.isDiff ? "2px solid red" : undefined,
         // ✅ Critical: Ensure text is selectable at character level
         userSelect: "text",
         WebkitUserSelect: "text",
@@ -478,9 +506,9 @@ export default function StatementEditor() {
         "data-slate-leaf": "true",
         ...(startOffset !== null && { "data-start-offset": startOffset }),
         ...(endOffset !== null && { "data-end-offset": endOffset }),
-        ...(hasComments && { 
+        ...(hasComments && {
           "data-has-comments": "true",
-          "data-comment-count": commentCount
+          "data-comment-count": commentCount,
         }),
       };
 
@@ -517,19 +545,22 @@ export default function StatementEditor() {
                   padding: "2px 4px",
                   background: "rgba(255, 255, 255, 0.9)",
                   borderRadius: "3px",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.2)"
-                })
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                }),
               }}
-              aria-label={`View ${commentCount} comment${commentCount > 1 ? 's' : ''}`}
-              title={`${commentCount} comment${commentCount > 1 ? 's' : ''} at offset ${startOffset}`}
+              aria-label={`View ${commentCount} comment${commentCount > 1 ? "s" : ""}`}
+              title={`${commentCount} comment${commentCount > 1 ? "s" : ""} at offset ${startOffset}`}
             >
-              📝{commentCount > 1 && <sup style={{ fontSize: "10px" }}>{commentCount}</sup>}
+              📝
+              {commentCount > 1 && (
+                <sup style={{ fontSize: "10px" }}>{commentCount}</sup>
+              )}
             </span>
           )}
         </span>
       );
     },
-    [colors, styleSettings]
+    [colors, styleSettings],
   );
 
   // ✅ Enhanced: Mark color with improved selection handling
@@ -603,23 +634,24 @@ export default function StatementEditor() {
   // ✅ Enhanced: Save with proper state management
   const handleSave = async () => {
     if (!copy || !value) return;
-    
+
     try {
       const editorValue = editor.children;
-      const { highlights, colorCounts } = extractHighlightsFromValue(editorValue);
-      
+      const { highlights, colorCounts } =
+        extractHighlightsFromValue(editorValue);
+
       // Save to backend
       await saveCopyWithHighlights(copy._id, highlights, colorCounts);
-      
+
       // Update local counts
       setCounts(colorCounts);
-      
+
       // Update word counts
       setWordCounts(calculateWordCounts(editorValue));
-      
+
       // Clear selection
       editor.selection = null;
-      
+
       // ✅ Re-apply with current state to refresh display
       const statement = statementsMap[copy.statementId];
       const baseText = statement?.slateText || [
@@ -629,11 +661,14 @@ export default function StatementEditor() {
         baseText,
         highlights,
         [],
-        localComments
+        localComments,
       );
       setValue(decoratedText);
-      
-      console.log("✅ Saved successfully:", { highlights: highlights.length, comments: localComments.length });
+
+      console.log("✅ Saved successfully:", {
+        highlights: highlights.length,
+        comments: localComments.length,
+      });
     } catch (error) {
       console.error("❌ Error saving:", error);
       alert("Failed to save. Please try again.");
@@ -654,7 +689,7 @@ export default function StatementEditor() {
   const handleAddComment = async () => {
     if (!editor.selection) {
       return alert(
-        "Please select a location in the text before adding a comment"
+        "Please select a location in the text before adding a comment",
       );
     }
     if (!newComment.trim()) {
@@ -670,24 +705,22 @@ export default function StatementEditor() {
 
     try {
       // ✅ Save to backend - socket will handle state update for all clients
-      await addComment(
-        currentUser._id,
-        copyId,
-        newComment,
-        offset
-      );
+      await addComment(currentUser._id, copyId, newComment, offset);
 
       // Clear selection and form
       editor.selection = null;
       setNewComment("");
       setIsAddingComment(false);
-      
+
       console.log("✅ Comment saved to backend at offset:", offset);
-      
+
       // ✅ Force refresh comments from backend to ensure consistency
       const refreshedComments = await fetchCommentsByCopyId(copyId);
       setLocalComments(refreshedComments);
-      console.log("✅ Comments refreshed from backend:", refreshedComments.length);
+      console.log(
+        "✅ Comments refreshed from backend:",
+        refreshedComments.length,
+      );
     } catch (error) {
       console.error("❌ Error adding comment:", error);
       alert("Failed to add comment. Please try again.");
@@ -698,17 +731,20 @@ export default function StatementEditor() {
   const handleRemoveComment = async (commentId) => {
     try {
       await deleteComment(commentId);
-      
+
       // Clear selection and modal
       editor.selection = null;
       setActiveComment(null);
-      
+
       console.log("✅ Comment removed:", commentId);
-      
+
       // ✅ Force refresh comments from backend to ensure consistency
       const refreshedComments = await fetchCommentsByCopyId(copyId);
       setLocalComments(refreshedComments);
-      console.log("✅ Comments refreshed from backend:", refreshedComments.length);
+      console.log(
+        "✅ Comments refreshed from backend:",
+        refreshedComments.length,
+      );
     } catch (error) {
       console.error("❌ Error removing comment:", error);
       alert("Failed to remove comment. Please try again.");
@@ -983,7 +1019,7 @@ export default function StatementEditor() {
                 calculateSelectionCounts(editor, setSelectionCounts);
                 const wordCounts = calculateWordCountsForSelection(
                   editor,
-                  value
+                  value,
                 );
                 setSelectionWordCounts(wordCounts);
               }}

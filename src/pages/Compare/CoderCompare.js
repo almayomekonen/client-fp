@@ -158,7 +158,7 @@ export default function CoderComparePage() {
       if (isViewingCancelledComparison) {
         console.log("🔔 Comparison cancelled event received");
         alert(
-          message || "This comparison has been cancelled by the researcher."
+          message || "This comparison has been cancelled by the researcher.",
         );
         navigate("/coderHome");
       }
@@ -190,7 +190,7 @@ export default function CoderComparePage() {
 
       const comparisonIds = (await getComparisonsForCopy(mainCopy._id)) || [];
       const comparisonCopies = await Promise.all(
-        comparisonIds.map((id) => copyById(id))
+        comparisonIds.map((id) => copyById(id)),
       );
       const filteredCopies = comparisonCopies.filter((c) => !!c);
 
@@ -225,7 +225,7 @@ export default function CoderComparePage() {
         baseText,
         mainCopy.highlights || [],
         comparison,
-        commentsForA
+        commentsForA,
       );
 
       setValueA(decoratedTextA);
@@ -239,7 +239,7 @@ export default function CoderComparePage() {
           baseText,
           completedForB.highlights || [],
           comparison,
-          commentsForB
+          commentsForB,
         );
         setValueB(decoratedTextB);
         setCountsB(completedForB.colorCounts || {});
@@ -281,21 +281,21 @@ export default function CoderComparePage() {
       // Delete comment from Copy A
       if (data.copyId === copyA._id) {
         setLocalCommentsA((prevComments) =>
-          prevComments.filter((c) => c._id !== data.commentId)
+          prevComments.filter((c) => c._id !== data.commentId),
         );
         console.log(
           "✅ Real-time comment deleted from Copy A:",
-          data.commentId
+          data.commentId,
         );
       }
       // Delete comment from Copy B
       if (data.copyId === copyB._id) {
         setLocalCommentsB((prevComments) =>
-          prevComments.filter((c) => c._id !== data.commentId)
+          prevComments.filter((c) => c._id !== data.commentId),
         );
         console.log(
           "✅ Real-time comment deleted from Copy B:",
-          data.commentId
+          data.commentId,
         );
       }
     };
@@ -372,7 +372,7 @@ export default function CoderComparePage() {
     const baseText = statement?.text || [
       { type: "paragraph", children: [{ text: "" }] },
     ];
-    
+
     // Extract current highlights from the existing value to preserve user's work
     const { highlights: highlightsA } = extractHighlightsFromValue(valueA);
 
@@ -380,9 +380,9 @@ export default function CoderComparePage() {
       baseText,
       highlightsA,
       diffs,
-      localCommentsA
+      localCommentsA,
     );
-    
+
     console.log("🔄 Updating Copy A with Transforms API");
     // ✅ Use Transforms to update editor for immediate rendering
     try {
@@ -396,7 +396,7 @@ export default function CoderComparePage() {
     } catch (error) {
       console.warn("⚠️ Transforms failed, using setValue fallback:", error);
     }
-    
+
     setValueA(decoratedTextA);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localCommentsA, commentKeyA]); // Only re-render when comments actually change
@@ -408,7 +408,7 @@ export default function CoderComparePage() {
     const baseText = statement?.text || [
       { type: "paragraph", children: [{ text: "" }] },
     ];
-    
+
     // Extract current highlights from the existing value to preserve user's work
     const { highlights: highlightsB } = extractHighlightsFromValue(valueB);
 
@@ -416,9 +416,9 @@ export default function CoderComparePage() {
       baseText,
       highlightsB,
       diffs,
-      localCommentsB
+      localCommentsB,
     );
-    
+
     console.log("🔄 Updating Copy B with Transforms API");
     // ✅ Use Transforms to update editor for immediate rendering
     try {
@@ -432,7 +432,7 @@ export default function CoderComparePage() {
     } catch (error) {
       console.warn("⚠️ Transforms failed, using setValue fallback:", error);
     }
-    
+
     setValueB(decoratedTextB);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localCommentsB, commentKeyB]); // Only re-render when comments actually change
@@ -445,7 +445,7 @@ export default function CoderComparePage() {
       countsA,
       wordCountsA,
       colors,
-      styleSettings
+      styleSettings,
     );
     setFullTextTableA(fullTable);
 
@@ -454,7 +454,7 @@ export default function CoderComparePage() {
         selectionCountsA,
         selectionWordCountsA,
         colors,
-        styleSettings
+        styleSettings,
       );
       setSelectionTableA(selTable);
     } else {
@@ -484,7 +484,7 @@ export default function CoderComparePage() {
       countsB,
       wordCountsB,
       colors,
-      styleSettings
+      styleSettings,
     );
     setFullTextTableB(fullTable);
 
@@ -493,7 +493,7 @@ export default function CoderComparePage() {
         selectionCountsB,
         selectionWordCountsB,
         colors,
-        styleSettings
+        styleSettings,
       );
       setSelectionTableB(selTable);
     } else {
@@ -519,11 +519,10 @@ export default function CoderComparePage() {
     (setActiveComment) =>
     ({ leaf, attributes, children }) => {
       const style = {
-        backgroundColor: leaf.highlight || undefined,
+        backgroundColor: (leaf.text !== "" && leaf.highlight) || undefined,
         textDecoration: leaf.underline ? "underline" : undefined,
         fontWeight: leaf.bold ? "bold" : undefined,
         fontStyle: leaf.italic ? "italic" : undefined,
-        outline: leaf.isDiff ? "2px solid red" : undefined,
       };
 
       const colorName = colors.find((c) => c.code === leaf.highlight)?.name;
@@ -570,13 +569,16 @@ export default function CoderComparePage() {
                   padding: "2px 4px",
                   background: "rgba(255, 255, 255, 0.9)",
                   borderRadius: "3px",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.2)"
-                })
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                }),
               }}
-              aria-label={`View ${commentCount} comment${commentCount > 1 ? 's' : ''}`}
-              title={`${commentCount} comment${commentCount > 1 ? 's' : ''}`}
+              aria-label={`View ${commentCount} comment${commentCount > 1 ? "s" : ""}`}
+              title={`${commentCount} comment${commentCount > 1 ? "s" : ""}`}
             >
-              📝{commentCount > 1 && <sup style={{ fontSize: "10px" }}>{commentCount}</sup>}
+              📝
+              {commentCount > 1 && (
+                <sup style={{ fontSize: "10px" }}>{commentCount}</sup>
+              )}
             </span>
           )}
         </span>
@@ -595,12 +597,15 @@ export default function CoderComparePage() {
         if (node.text !== undefined) {
           // ✅ CRITICAL: Skip comment marker nodes (zero-width spaces with comments)
           const isCommentMarker = node.comments && node.comments.length > 0;
-          
+
           if (Path.equals(currentPath, anchorPath)) {
             if (!isCommentMarker) {
               globalOffset += anchorOffset;
             }
-            console.log("✅ Offset calculated (excluding comment markers):", globalOffset);
+            console.log(
+              "✅ Offset calculated (excluding comment markers):",
+              globalOffset,
+            );
             throw "FOUND"; // eslint-disable-line no-throw-literal
           } else {
             // Not the target node, add its length if it's not a comment marker
@@ -644,18 +649,21 @@ export default function CoderComparePage() {
     setCommentKey,
     editor,
     setActiveComment,
-    copyId
+    copyId,
   ) => {
     try {
       await deleteComment(commentId);
-      
+
       console.log("✅ Comment removed:", commentId);
-      
+
       // ✅ Force refresh comments from backend to ensure consistency
       const refreshedComments = await fetchCommentsByCopyId(copyId);
       setLocalComments(refreshedComments);
       setCommentKey((prev) => prev + 1);
-      console.log("✅ Comments refreshed from backend:", refreshedComments.length);
+      console.log(
+        "✅ Comments refreshed from backend:",
+        refreshedComments.length,
+      );
 
       const { highlights } = extractHighlightsFromValue(value);
 
@@ -663,7 +671,7 @@ export default function CoderComparePage() {
         statement?.text || [{ type: "paragraph", children: [{ text: "" }] }],
         highlights,
         diffs,
-        refreshedComments
+        refreshedComments,
       );
       editor.selection = null;
 
@@ -700,13 +708,13 @@ export default function CoderComparePage() {
       baseText,
       nextCopyA.highlights || [],
       updatedDiffs,
-      localCommentsA
+      localCommentsA,
     );
     const newValueB = applyHighlightsToText(
       baseText,
       nextCopyB.highlights || [],
       updatedDiffs,
-      localCommentsB
+      localCommentsB,
     );
 
     editorA.selection = null;
@@ -737,7 +745,7 @@ export default function CoderComparePage() {
     const updatedDiffs = compareCopies(
       nextCopyA,
       nextCopyB,
-      baseText[0].children[0].text
+      baseText[0].children[0].text,
     );
     setDiffs(updatedDiffs);
     setDiffKey((prev) => prev + 1);
@@ -755,13 +763,13 @@ export default function CoderComparePage() {
       baseText,
       nextCopyA.highlights || [],
       updatedDiffs,
-      commentsForA
+      commentsForA,
     );
     const newValueB = applyHighlightsToText(
       baseText,
       nextCopyB.highlights || [],
       updatedDiffs,
-      commentsForB
+      commentsForB,
     );
     editorA.selection = null;
     editorB.selection = null;
@@ -799,33 +807,33 @@ export default function CoderComparePage() {
       getGlobalOffsetFromValue(
         valueA,
         selection.anchor.path,
-        selection.anchor.offset
+        selection.anchor.offset,
       ),
       getGlobalOffsetFromValue(
         valueA,
         selection.focus.path,
-        selection.focus.offset
-      )
+        selection.focus.offset,
+      ),
     );
 
     const endOffset = Math.max(
       getGlobalOffsetFromValue(
         valueA,
         selection.anchor.path,
-        selection.anchor.offset
+        selection.anchor.offset,
       ),
       getGlobalOffsetFromValue(
         valueA,
         selection.focus.path,
-        selection.focus.offset
-      )
+        selection.focus.offset,
+      ),
     );
 
     const updatedDiffs = compareCopies(
       copyA,
       copyB,
       statement.text[0].children[0].text,
-      { start: startOffset, end: endOffset }
+      { start: startOffset, end: endOffset },
     );
 
     const baseText = statement.text;
@@ -834,14 +842,14 @@ export default function CoderComparePage() {
       baseText,
       copyA.highlights || [],
       updatedDiffs,
-      localCommentsA
+      localCommentsA,
     );
 
     const newValueB = applyHighlightsToText(
       baseText,
       copyB.highlights || [],
       updatedDiffs,
-      localCommentsB
+      localCommentsB,
     );
 
     editorA.selection = null;
@@ -874,33 +882,33 @@ export default function CoderComparePage() {
       getGlobalOffsetFromValue(
         valueB,
         selection.anchor.path,
-        selection.anchor.offset
+        selection.anchor.offset,
       ),
       getGlobalOffsetFromValue(
         valueB,
         selection.focus.path,
-        selection.focus.offset
-      )
+        selection.focus.offset,
+      ),
     );
 
     const endOffset = Math.max(
       getGlobalOffsetFromValue(
         valueB,
         selection.anchor.path,
-        selection.anchor.offset
+        selection.anchor.offset,
       ),
       getGlobalOffsetFromValue(
         valueB,
         selection.focus.path,
-        selection.focus.offset
-      )
+        selection.focus.offset,
+      ),
     );
 
     const updatedDiffs = compareCopies(
       copyA,
       copyB,
       statement.text[0].children[0].text,
-      { start: startOffset, end: endOffset }
+      { start: startOffset, end: endOffset },
     );
 
     const baseText = statement.text;
@@ -909,14 +917,14 @@ export default function CoderComparePage() {
       baseText,
       copyA.highlights || [],
       updatedDiffs,
-      localCommentsA
+      localCommentsA,
     );
 
     const newValueB = applyHighlightsToText(
       baseText,
       copyB.highlights || [],
       updatedDiffs,
-      localCommentsB
+      localCommentsB,
     );
 
     editorA.selection = null;
@@ -978,9 +986,7 @@ export default function CoderComparePage() {
         <h3 className="card-title">
           <FaUser /> Select Coding for Comparison
         </h3>
-        
-        
-        
+
         {/* Select Copy B */}
         <div
           style={{
@@ -990,7 +996,7 @@ export default function CoderComparePage() {
           }}
         >
           <label style={{ fontWeight: "600", minWidth: "150px" }}>
-          Compare with:
+            Compare with:
           </label>
           <select
             value={copyB?._id || ""}
@@ -1043,7 +1049,10 @@ export default function CoderComparePage() {
       <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
         {/* Editing Tools (only for user's own copy) */}
         {currentUser?._id === copyA?.coderId && (
-          <div className="dashboard-card" style={{ flex: 1, minWidth: "350px", padding: "20px" }}>
+          <div
+            className="dashboard-card"
+            style={{ flex: 1, minWidth: "350px", padding: "20px" }}
+          >
             <h3
               className="card-title"
               style={{ fontSize: "16px", marginBottom: "16px" }}
@@ -1163,7 +1172,15 @@ export default function CoderComparePage() {
         )}
 
         {/* Comments Sections - Side by Side */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "16px", minWidth: "300px" }}>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+            minWidth: "300px",
+          }}
+        >
           {/* Comments for A */}
           {copyA && (
             <div className="dashboard-card" style={{ padding: "20px" }}>
@@ -1177,7 +1194,9 @@ export default function CoderComparePage() {
                 <button
                   onClick={() => {
                     if (!editorA.selection) {
-                      alert("Please select text in editor A first before adding a comment");
+                      alert(
+                        "Please select text in editor A first before adding a comment",
+                      );
                       return;
                     }
                     // Store the current selection
@@ -1214,11 +1233,18 @@ export default function CoderComparePage() {
                         const offset = getGlobalOffsetFromValue(
                           valueA,
                           storedSelectionA.anchor.path,
-                          storedSelectionA.anchor.offset
+                          storedSelectionA.anchor.offset,
                         );
                         try {
-                          await addComment(currentUser._id, copyA._id, newCommentA, offset);
-                          const refreshedComments = await fetchCommentsByCopyId(copyA._id);
+                          await addComment(
+                            currentUser._id,
+                            copyA._id,
+                            newCommentA,
+                            offset,
+                          );
+                          const refreshedComments = await fetchCommentsByCopyId(
+                            copyA._id,
+                          );
                           setLocalCommentsA(refreshedComments);
                           setCommentKeyA((prev) => prev + 1);
                           setIsAddingCommentA(false);
@@ -1264,7 +1290,9 @@ export default function CoderComparePage() {
                 <button
                   onClick={() => {
                     if (!editorB.selection) {
-                      alert("Please select text in editor B first before adding a comment");
+                      alert(
+                        "Please select text in editor B first before adding a comment",
+                      );
                       return;
                     }
                     // Store the current selection
@@ -1301,11 +1329,18 @@ export default function CoderComparePage() {
                         const offset = getGlobalOffsetFromValue(
                           valueB,
                           storedSelectionB.anchor.path,
-                          storedSelectionB.anchor.offset
+                          storedSelectionB.anchor.offset,
                         );
                         try {
-                          await addComment(currentUser._id, copyB._id, newCommentB, offset);
-                          const refreshedComments = await fetchCommentsByCopyId(copyB._id);
+                          await addComment(
+                            currentUser._id,
+                            copyB._id,
+                            newCommentB,
+                            offset,
+                          );
+                          const refreshedComments = await fetchCommentsByCopyId(
+                            copyB._id,
+                          );
                           setLocalCommentsB(refreshedComments);
                           setCommentKeyB((prev) => prev + 1);
                           setIsAddingCommentB(false);
@@ -1472,7 +1507,7 @@ export default function CoderComparePage() {
               calculateSelectionCounts(editorA, setSelectionCountsA);
               const wordCounts = calculateWordCountsForSelection(
                 editorA,
-                valueA
+                valueA,
               );
               setSelectionWordCountsA(wordCounts);
             }}
@@ -1508,7 +1543,7 @@ export default function CoderComparePage() {
               calculateSelectionCounts(editorB, setSelectionCountsB);
               const wordCounts = calculateWordCountsForSelection(
                 editorB,
-                valueB
+                valueB,
               );
               setSelectionWordCountsB(wordCounts);
             }}
@@ -1581,10 +1616,10 @@ export default function CoderComparePage() {
                             setCommentKeyA,
                             editorA,
                             setActiveCommentA,
-                            copyA?._id
+                            copyA?._id,
                           );
                           const updated = localCommentsA.filter(
-                            (cm) => cm._id !== c._id
+                            (cm) => cm._id !== c._id,
                           );
                           if (updated.length === 0) setActiveCommentA(null);
                         }
@@ -1652,10 +1687,10 @@ export default function CoderComparePage() {
                             setCommentKeyB,
                             editorB,
                             setActiveCommentB,
-                            copyB?._id
+                            copyB?._id,
                           );
                           const updated = localCommentsB.filter(
-                            (cm) => cm._id !== c._id
+                            (cm) => cm._id !== c._id,
                           );
                           if (updated.length === 0) setActiveCommentB(null);
                         }

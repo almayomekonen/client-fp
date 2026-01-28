@@ -182,7 +182,7 @@ export default function ComparePage() {
         if (!exists) {
           clearInterval(pollInterval);
           alert(
-            "The comparison was canceled by the investigator. You are being redirected to the home page."
+            "The comparison was canceled by the investigator. You are being redirected to the home page.",
           );
           navigate("/coderHome");
         }
@@ -209,7 +209,7 @@ export default function ComparePage() {
       if (isViewingCancelledComparison) {
         console.log("🔔 Comparison cancelled event received");
         alert(
-          message || "This comparison has been cancelled by the researcher."
+          message || "This comparison has been cancelled by the researcher.",
         );
         navigate("/coderHome");
       }
@@ -265,7 +265,7 @@ export default function ComparePage() {
         const comparison = compareCopies(
           completedCopies[0],
           completedCopies[1],
-          fullText
+          fullText,
         );
         setDiffs(comparison);
 
@@ -286,13 +286,13 @@ export default function ComparePage() {
           baseText,
           completedCopies[0].highlights || [],
           comparison,
-          commentsForA
+          commentsForA,
         );
         const valueB = applyHighlightsToText(
           baseText,
           completedCopies[1].highlights || [],
           comparison,
-          commentsForB
+          commentsForB,
         );
 
         editorA.selection = null;
@@ -342,21 +342,21 @@ export default function ComparePage() {
       // Delete comment from Copy A
       if (data.copyId === copyA._id) {
         setLocalCommentsA((prevComments) =>
-          prevComments.filter((c) => c._id !== data.commentId)
+          prevComments.filter((c) => c._id !== data.commentId),
         );
         console.log(
           "✅ Real-time comment deleted from Copy A:",
-          data.commentId
+          data.commentId,
         );
       }
       // Delete comment from Copy B
       if (data.copyId === copyB._id) {
         setLocalCommentsB((prevComments) =>
-          prevComments.filter((c) => c._id !== data.commentId)
+          prevComments.filter((c) => c._id !== data.commentId),
         );
         console.log(
           "✅ Real-time comment deleted from Copy B:",
-          data.commentId
+          data.commentId,
         );
       }
     };
@@ -398,7 +398,7 @@ export default function ComparePage() {
 
       // Update copies list (will automatically update dropdown via filter)
       setCopies((prev) =>
-        prev.map((c) => (c._id === updatedCopy._id ? updatedCopy : c))
+        prev.map((c) => (c._id === updatedCopy._id ? updatedCopy : c)),
       );
 
       // Update active copies if they are still completed
@@ -424,7 +424,7 @@ export default function ComparePage() {
     const baseText = statement?.text || [
       { type: "paragraph", children: [{ text: "" }] },
     ];
-    
+
     // Extract current highlights from the existing value to preserve user's work
     const { highlights: highlightsA } = extractHighlightsFromValue(valueA);
 
@@ -432,9 +432,9 @@ export default function ComparePage() {
       baseText,
       highlightsA,
       diffs,
-      localCommentsA
+      localCommentsA,
     );
-    
+
     console.log("🔄 Updating Copy A with Transforms API");
     // ✅ Use Transforms to update editor for immediate rendering
     try {
@@ -448,7 +448,7 @@ export default function ComparePage() {
     } catch (error) {
       console.warn("⚠️ Transforms failed, using setValue fallback:", error);
     }
-    
+
     setValueA(decoratedTextA);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localCommentsA, commentKeyA]); // Only re-render when comments actually change
@@ -460,7 +460,7 @@ export default function ComparePage() {
     const baseText = statement?.text || [
       { type: "paragraph", children: [{ text: "" }] },
     ];
-    
+
     // Extract current highlights from the existing value to preserve user's work
     const { highlights: highlightsB } = extractHighlightsFromValue(valueB);
 
@@ -468,9 +468,9 @@ export default function ComparePage() {
       baseText,
       highlightsB,
       diffs,
-      localCommentsB
+      localCommentsB,
     );
-    
+
     console.log("🔄 Updating Copy B with Transforms API");
     // ✅ Use Transforms to update editor for immediate rendering
     try {
@@ -484,7 +484,7 @@ export default function ComparePage() {
     } catch (error) {
       console.warn("⚠️ Transforms failed, using setValue fallback:", error);
     }
-    
+
     setValueB(decoratedTextB);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localCommentsB, commentKeyB]); // Only re-render when comments actually change
@@ -497,7 +497,7 @@ export default function ComparePage() {
       countsA,
       wordCountsA,
       colors,
-      styleSettings
+      styleSettings,
     );
     setFullTextTableA(fullTable);
 
@@ -506,7 +506,7 @@ export default function ComparePage() {
         selectionCountsA,
         selectionWordCountsA,
         colors,
-        styleSettings
+        styleSettings,
       );
       setSelectionTableA(selTable);
     } else {
@@ -536,7 +536,7 @@ export default function ComparePage() {
       countsB,
       wordCountsB,
       colors,
-      styleSettings
+      styleSettings,
     );
     setFullTextTableB(fullTable);
 
@@ -545,7 +545,7 @@ export default function ComparePage() {
         selectionCountsB,
         selectionWordCountsB,
         colors,
-        styleSettings
+        styleSettings,
       );
       setSelectionTableB(selTable);
     } else {
@@ -571,11 +571,10 @@ export default function ComparePage() {
     (setActiveComment) =>
     ({ leaf, attributes, children }) => {
       const style = {
-        backgroundColor: leaf.highlight || undefined,
+        backgroundColor: (leaf.text !== "" && leaf.highlight) || undefined,
         textDecoration: leaf.underline ? "underline" : undefined,
         fontWeight: leaf.bold ? "bold" : undefined,
         fontStyle: leaf.italic ? "italic" : undefined,
-        outline: leaf.isDiff ? "2px solid red" : undefined,
       };
 
       const colorName = colors.find((c) => c.code === leaf.highlight)?.name;
@@ -622,13 +621,16 @@ export default function ComparePage() {
                   padding: "2px 4px",
                   background: "rgba(255, 255, 255, 0.9)",
                   borderRadius: "3px",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.2)"
-                })
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                }),
               }}
-              aria-label={`View ${commentCount} comment${commentCount > 1 ? 's' : ''}`}
-              title={`${commentCount} comment${commentCount > 1 ? 's' : ''}`}
+              aria-label={`View ${commentCount} comment${commentCount > 1 ? "s" : ""}`}
+              title={`${commentCount} comment${commentCount > 1 ? "s" : ""}`}
             >
-              📝{commentCount > 1 && <sup style={{ fontSize: "10px" }}>{commentCount}</sup>}
+              📝
+              {commentCount > 1 && (
+                <sup style={{ fontSize: "10px" }}>{commentCount}</sup>
+              )}
             </span>
           )}
         </span>
@@ -647,12 +649,15 @@ export default function ComparePage() {
         if (node.text !== undefined) {
           // ✅ CRITICAL: Skip comment marker nodes (zero-width spaces with comments)
           const isCommentMarker = node.comments && node.comments.length > 0;
-          
+
           if (Path.equals(currentPath, anchorPath)) {
             if (!isCommentMarker) {
               globalOffset += anchorOffset;
             }
-            console.log("✅ Offset calculated (excluding comment markers):", globalOffset);
+            console.log(
+              "✅ Offset calculated (excluding comment markers):",
+              globalOffset,
+            );
             throw new Error("FOUND");
           } else {
             // Not the target node, add its length if it's not a comment marker
@@ -693,11 +698,11 @@ export default function ComparePage() {
     statement,
     setCommentKey,
     newComment,
-    storedSelection
+    storedSelection,
   ) => {
     // Use stored selection if available, otherwise check current selection
     const selection = storedSelection || editor.selection;
-    
+
     if (!selection) {
       alert("Please select a location in the text before adding a comment");
       return;
@@ -710,25 +715,23 @@ export default function ComparePage() {
 
     const { anchor } = selection;
     const offset = getGlobalOffsetFromValue(value, anchor.path, anchor.offset);
-    
+
     console.log("📝 Adding comment at offset:", offset, "Text:", newComment);
 
     try {
       // ✅ Save to backend
-      await addComment(
-        currentUser._id,
-        copyId,
-        newComment,
-        offset
-      );
-      
+      await addComment(currentUser._id, copyId, newComment, offset);
+
       console.log("✅ Comment saved to backend at offset:", offset);
-      
+
       // ✅ Force refresh comments from backend to ensure consistency
       const refreshedComments = await fetchCommentsByCopyId(copyId);
       setLocalComments(refreshedComments);
       setCommentKey((prev) => prev + 1);
-      console.log("✅ Comments refreshed from backend:", refreshedComments.length);
+      console.log(
+        "✅ Comments refreshed from backend:",
+        refreshedComments.length,
+      );
 
       const { highlights } = extractHighlightsFromValue(value);
 
@@ -736,7 +739,7 @@ export default function ComparePage() {
         statement?.text || [{ type: "paragraph", children: [{ text: "" }] }],
         highlights,
         diffs,
-        refreshedComments
+        refreshedComments,
       );
       editor.selection = null;
 
@@ -759,18 +762,21 @@ export default function ComparePage() {
     setCommentKey,
     editor,
     setActiveComment,
-    copyId
+    copyId,
   ) => {
     try {
       await deleteComment(commentId);
-      
+
       console.log("✅ Comment removed:", commentId);
-      
+
       // ✅ Force refresh comments from backend to ensure consistency
       const refreshedComments = await fetchCommentsByCopyId(copyId);
       setLocalComments(refreshedComments);
       setCommentKey((prev) => prev + 1);
-      console.log("✅ Comments refreshed from backend:", refreshedComments.length);
+      console.log(
+        "✅ Comments refreshed from backend:",
+        refreshedComments.length,
+      );
 
       const { highlights } = extractHighlightsFromValue(value);
 
@@ -778,7 +784,7 @@ export default function ComparePage() {
         statement?.text || [{ type: "paragraph", children: [{ text: "" }] }],
         highlights,
         diffs,
-        refreshedComments
+        refreshedComments,
       );
       editor.selection = null;
 
@@ -806,7 +812,7 @@ export default function ComparePage() {
     if (copy._id === copyB?._id) setCopyB(updatedCopy);
 
     setCopies((prev) =>
-      prev.map((c) => (c._id === copy._id ? updatedCopy : c))
+      prev.map((c) => (c._id === copy._id ? updatedCopy : c)),
     );
 
     const fullText = statement.text[0].children[0].text;
@@ -819,13 +825,13 @@ export default function ComparePage() {
       baseText,
       nextCopyA.highlights || [],
       updatedDiffs,
-      localCommentsA
+      localCommentsA,
     );
     const newValueB = applyHighlightsToText(
       baseText,
       nextCopyB.highlights || [],
       updatedDiffs,
-      localCommentsB
+      localCommentsB,
     );
     editorA.selection = null;
     editorB.selection = null;
@@ -864,33 +870,33 @@ export default function ComparePage() {
       getGlobalOffsetFromValue(
         valueA,
         selection.anchor.path,
-        selection.anchor.offset
+        selection.anchor.offset,
       ),
       getGlobalOffsetFromValue(
         valueA,
         selection.focus.path,
-        selection.focus.offset
-      )
+        selection.focus.offset,
+      ),
     );
 
     const endOffset = Math.max(
       getGlobalOffsetFromValue(
         valueA,
         selection.anchor.path,
-        selection.anchor.offset
+        selection.anchor.offset,
       ),
       getGlobalOffsetFromValue(
         valueA,
         selection.focus.path,
-        selection.focus.offset
-      )
+        selection.focus.offset,
+      ),
     );
 
     const updatedDiffs = compareCopies(
       copyA,
       copyB,
       statement.text[0].children[0].text,
-      { start: startOffset, end: endOffset }
+      { start: startOffset, end: endOffset },
     );
 
     const baseText = statement.text;
@@ -899,14 +905,14 @@ export default function ComparePage() {
       baseText,
       copyA.highlights || [],
       updatedDiffs,
-      localCommentsA
+      localCommentsA,
     );
 
     const newValueB = applyHighlightsToText(
       baseText,
       copyB.highlights || [],
       updatedDiffs,
-      localCommentsB
+      localCommentsB,
     );
 
     editorA.selection = null;
@@ -939,33 +945,33 @@ export default function ComparePage() {
       getGlobalOffsetFromValue(
         valueB,
         selection.anchor.path,
-        selection.anchor.offset
+        selection.anchor.offset,
       ),
       getGlobalOffsetFromValue(
         valueB,
         selection.focus.path,
-        selection.focus.offset
-      )
+        selection.focus.offset,
+      ),
     );
 
     const endOffset = Math.max(
       getGlobalOffsetFromValue(
         valueB,
         selection.anchor.path,
-        selection.anchor.offset
+        selection.anchor.offset,
       ),
       getGlobalOffsetFromValue(
         valueB,
         selection.focus.path,
-        selection.focus.offset
-      )
+        selection.focus.offset,
+      ),
     );
 
     const updatedDiffs = compareCopies(
       copyA,
       copyB,
       statement.text[0].children[0].text,
-      { start: startOffset, end: endOffset }
+      { start: startOffset, end: endOffset },
     );
 
     const baseText = statement.text;
@@ -974,14 +980,14 @@ export default function ComparePage() {
       baseText,
       copyA.highlights || [],
       updatedDiffs,
-      localCommentsA
+      localCommentsA,
     );
 
     const newValueB = applyHighlightsToText(
       baseText,
       copyB.highlights || [],
       updatedDiffs,
-      localCommentsB
+      localCommentsB,
     );
 
     editorA.selection = null;
@@ -1014,7 +1020,7 @@ export default function ComparePage() {
     const updatedDiffs = compareCopies(
       nextCopyA,
       nextCopyB,
-      baseText[0].children[0].text
+      baseText[0].children[0].text,
     );
 
     const commentsForA = nextCopyA
@@ -1031,13 +1037,13 @@ export default function ComparePage() {
       baseText,
       nextCopyA.highlights || [],
       updatedDiffs,
-      commentsForA
+      commentsForA,
     );
     const newValueB = applyHighlightsToText(
       baseText,
       nextCopyB.highlights || [],
       updatedDiffs,
-      commentsForB
+      commentsForB,
     );
 
     setCopyA(nextCopyA);
@@ -1159,7 +1165,7 @@ export default function ComparePage() {
                   (copy) =>
                     copy.status === "completed" &&
                     copy._id !== copyA?._id &&
-                    copy._id !== copyB?._id
+                    copy._id !== copyB?._id,
                 )
                 .map((copy) => (
                   <option key={copy._id} value={copy._id}>
@@ -1203,7 +1209,7 @@ export default function ComparePage() {
                   (copy) =>
                     copy.status === "completed" &&
                     copy._id !== copyB?._id &&
-                    copy._id !== copyA?._id
+                    copy._id !== copyA?._id,
                 )
                 .map((copy) => (
                   <option key={copy._id} value={copy._id}>
@@ -1229,7 +1235,10 @@ export default function ComparePage() {
         {(currentUser?._id === copyA?.coderId ||
           currentUser?._id === copyB?.coderId ||
           ["investigator", "admin"].includes(currentUser?.role)) && (
-          <div className="dashboard-card" style={{ flex: 1.2, minWidth: "350px" }}>
+          <div
+            className="dashboard-card"
+            style={{ flex: 1.2, minWidth: "350px" }}
+          >
             <h3
               className="card-title"
               style={{ fontSize: "16px", marginBottom: "16px" }}
@@ -1254,10 +1263,13 @@ export default function ComparePage() {
                     }
                   }}
                   disabled={currentUser._id !== copyA?.coderId}
-                  style={{ 
+                  style={{
                     flex: 1,
                     opacity: currentUser._id !== copyA?.coderId ? 0.5 : 1,
-                    cursor: currentUser._id !== copyA?.coderId ? "not-allowed" : "pointer"
+                    cursor:
+                      currentUser._id !== copyA?.coderId
+                        ? "not-allowed"
+                        : "pointer",
                   }}
                   title={
                     currentUser._id !== copyA?.coderId
@@ -1279,10 +1291,13 @@ export default function ComparePage() {
                     }
                   }}
                   disabled={currentUser._id !== copyB?.coderId}
-                  style={{ 
+                  style={{
                     flex: 1,
                     opacity: currentUser._id !== copyB?.coderId ? 0.5 : 1,
-                    cursor: currentUser._id !== copyB?.coderId ? "not-allowed" : "pointer"
+                    cursor:
+                      currentUser._id !== copyB?.coderId
+                        ? "not-allowed"
+                        : "pointer",
                   }}
                   title={
                     currentUser._id !== copyB?.coderId
@@ -1295,128 +1310,132 @@ export default function ComparePage() {
               </div>
             )}
 
-            {currentUser._id === (editTarget === "A" ? copyA?.coderId : copyB?.coderId) ? (
-            <div
-              style={{
-                display: "flex",
-                gap: "8px",
-                flexWrap: "wrap",
-                alignItems: "center",
-              }}
-            >
-              {/* Color Palette Buttons */}
-              {colors.map((color) => (
+            {currentUser._id ===
+            (editTarget === "A" ? copyA?.coderId : copyB?.coderId) ? (
+              <div
+                style={{
+                  display: "flex",
+                  gap: "8px",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                }}
+              >
+                {/* Color Palette Buttons */}
+                {colors.map((color) => (
+                  <button
+                    key={color._id}
+                    onClick={() =>
+                      markColor(
+                        editTarget === "A" ? editorA : editorB,
+                        color.code,
+                      )
+                    }
+                    style={{
+                      backgroundColor: color.code,
+                      border: "2px solid #000",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      padding: "4px 10px",
+                      fontWeight: "600",
+                      fontSize: "12px",
+                      color: (() => {
+                        const hex = color.code.replace("#", "");
+                        const r = parseInt(hex.substr(0, 2), 16);
+                        const g = parseInt(hex.substr(2, 2), 16);
+                        const b = parseInt(hex.substr(4, 2), 16);
+                        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                        return brightness > 155 ? "#000000" : "#FFFFFF";
+                      })(),
+                    }}
+                    title={color.name}
+                  >
+                    {color.name}
+                  </button>
+                ))}
+
+                {/* Style Buttons */}
+                {styleSettings.underlineEnabled && (
+                  <button
+                    onClick={() =>
+                      markUnderline(editTarget === "A" ? editorA : editorB)
+                    }
+                    className="dashboard-btn btn-secondary btn-sm"
+                    style={{
+                      textDecoration: "underline",
+                    }}
+                  >
+                    <FaUnderline /> {styleSettings.underlineName || "Underline"}
+                  </button>
+                )}
+                {styleSettings.boldEnabled && (
+                  <button
+                    onClick={() =>
+                      markBold(editTarget === "A" ? editorA : editorB)
+                    }
+                    className="dashboard-btn btn-secondary btn-sm"
+                    style={{
+                      fontWeight: "bold",
+                    }}
+                  >
+                    <FaBold /> {styleSettings.boldName || "Bold"}
+                  </button>
+                )}
+                {styleSettings.italicEnabled && (
+                  <button
+                    onClick={() =>
+                      markItalic(editTarget === "A" ? editorA : editorB)
+                    }
+                    className="dashboard-btn btn-secondary btn-sm"
+                    style={{
+                      fontStyle: "italic",
+                    }}
+                  >
+                    <FaItalic /> {styleSettings.italicName || "Italic"}
+                  </button>
+                )}
+
+                {/* Clear and Save Buttons */}
                 <button
-                  key={color._id}
                   onClick={() =>
-                    markColor(
+                    removeFormatting(editTarget === "A" ? editorA : editorB)
+                  }
+                  className="dashboard-btn btn-secondary btn-sm"
+                  style={{
+                    padding: "6px 12px",
+                    fontSize: "13px",
+                    color: "#dc3545",
+                    fontWeight: "500",
+                  }}
+                >
+                  <FaEraser /> Clear
+                </button>
+                <button
+                  onClick={() =>
+                    handleSave(
                       editTarget === "A" ? editorA : editorB,
-                      color.code
+                      editTarget === "A" ? copyA : copyB,
+                      editTarget === "A" ? valueA : valueB,
+                      editTarget === "A" ? setCountsA : setCountsB,
                     )
                   }
+                  className="dashboard-btn btn-primary btn-sm"
                   style={{
-                    backgroundColor: color.code,
-                    border: "2px solid #000",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                    padding: "4px 10px",
-                    fontWeight: "600",
-                    fontSize: "12px",
-                    color: (() => {
-                      const hex = color.code.replace("#", "");
-                      const r = parseInt(hex.substr(0, 2), 16);
-                      const g = parseInt(hex.substr(2, 2), 16);
-                      const b = parseInt(hex.substr(4, 2), 16);
-                      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-                      return brightness > 155 ? "#000000" : "#FFFFFF";
-                    })(),
-                  }}
-                  title={color.name}
-                >
-                  {color.name}
-                </button>
-              ))}
-
-              {/* Style Buttons */}
-              {styleSettings.underlineEnabled && (
-                <button
-                  onClick={() =>
-                    markUnderline(editTarget === "A" ? editorA : editorB)
-                  }
-                  className="dashboard-btn btn-secondary btn-sm"
-                  style={{
-                    textDecoration: "underline",
+                    padding: "6px 12px",
+                    fontSize: "13px",
+                    fontWeight: "500",
                   }}
                 >
-                  <FaUnderline /> {styleSettings.underlineName || "Underline"}
+                  <FaSave /> Save
                 </button>
-              )}
-              {styleSettings.boldEnabled && (
-                <button
-                  onClick={() =>
-                    markBold(editTarget === "A" ? editorA : editorB)
-                  }
-                  className="dashboard-btn btn-secondary btn-sm"
-                  style={{
-                    fontWeight: "bold",
-                  }}
-                >
-                  <FaBold /> {styleSettings.boldName || "Bold"}
-                </button>
-              )}
-              {styleSettings.italicEnabled && (
-                <button
-                  onClick={() =>
-                    markItalic(editTarget === "A" ? editorA : editorB)
-                  }
-                  className="dashboard-btn btn-secondary btn-sm"
-                  style={{
-                    fontStyle: "italic",
-                  }}
-                >
-                  <FaItalic /> {styleSettings.italicName || "Italic"}
-                </button>
-              )}
-
-              {/* Clear and Save Buttons */}
-              <button
-                onClick={() =>
-                  removeFormatting(editTarget === "A" ? editorA : editorB)
-                }
-                className="dashboard-btn btn-secondary btn-sm"
-                style={{
-                  padding: "6px 12px",
-                  fontSize: "13px",
-                  color: "#dc3545",
-                  fontWeight: "500",
-                }}
-              >
-                <FaEraser /> Clear
-              </button>
-              <button
-                onClick={() =>
-                  handleSave(
-                    editTarget === "A" ? editorA : editorB,
-                    editTarget === "A" ? copyA : copyB,
-                    editTarget === "A" ? valueA : valueB,
-                    editTarget === "A" ? setCountsA : setCountsB
-                  )
-                }
-                className="dashboard-btn btn-primary btn-sm"
-                style={{
-                  padding: "6px 12px",
-                  fontSize: "13px",
-                  fontWeight: "500",
-                }}
-              >
-                <FaSave /> Save
-              </button>
-            </div>
+              </div>
             ) : (
-              <div style={{ padding: "20px", textAlign: "center", color: "#888" }}>
+              <div
+                style={{ padding: "20px", textAlign: "center", color: "#888" }}
+              >
                 <p>🔒 You can only edit your own codings.</p>
                 <p style={{ fontSize: "14px", marginTop: "8px" }}>
-                  Select one of your copies using the buttons above to enable editing.
+                  Select one of your copies using the buttons above to enable
+                  editing.
                 </p>
               </div>
             )}
@@ -1424,7 +1443,15 @@ export default function ComparePage() {
         )}
 
         {/* Comments Sections - Stacked Vertically */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "16px", minWidth: "300px" }}>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+            minWidth: "300px",
+          }}
+        >
           {/* Comments for A */}
           {copyA && (
             <div className="dashboard-card" style={{ padding: "20px" }}>
@@ -1438,7 +1465,9 @@ export default function ComparePage() {
                 <button
                   onClick={() => {
                     if (!editorA.selection) {
-                      alert("Please select text in editor A first before adding a comment");
+                      alert(
+                        "Please select text in editor A first before adding a comment",
+                      );
                       return;
                     }
                     // Store the current selection
@@ -1479,7 +1508,7 @@ export default function ComparePage() {
                           statement,
                           setCommentKeyA,
                           newCommentA,
-                          storedSelectionA
+                          storedSelectionA,
                         );
                         setIsAddingCommentA(false);
                         setStoredSelectionA(null);
@@ -1519,7 +1548,9 @@ export default function ComparePage() {
                 <button
                   onClick={() => {
                     if (!editorB.selection) {
-                      alert("Please select text in editor B first before adding a comment");
+                      alert(
+                        "Please select text in editor B first before adding a comment",
+                      );
                       return;
                     }
                     // Store the current selection
@@ -1560,7 +1591,7 @@ export default function ComparePage() {
                           statement,
                           setCommentKeyB,
                           newCommentB,
-                          storedSelectionB
+                          storedSelectionB,
                         );
                         setIsAddingCommentB(false);
                         setStoredSelectionB(null);
@@ -1736,7 +1767,7 @@ export default function ComparePage() {
               calculateSelectionCounts(editorA, setSelectionCountsA);
               const wordCounts = calculateWordCountsForSelection(
                 editorA,
-                valueA
+                valueA,
               );
               setSelectionWordCountsA(wordCounts);
             }}
@@ -1772,7 +1803,7 @@ export default function ComparePage() {
               calculateSelectionCounts(editorB, setSelectionCountsB);
               const wordCounts = calculateWordCountsForSelection(
                 editorB,
-                valueB
+                valueB,
               );
               setSelectionWordCountsB(wordCounts);
             }}
@@ -1845,10 +1876,10 @@ export default function ComparePage() {
                             setCommentKeyA,
                             editorA,
                             setActiveCommentA,
-                            copyA?._id
+                            copyA?._id,
                           );
                           const updated = localCommentsA.filter(
-                            (cm) => cm._id !== c._id
+                            (cm) => cm._id !== c._id,
                           );
                           if (updated.length === 0) setActiveCommentA(null);
                         }
@@ -1916,10 +1947,10 @@ export default function ComparePage() {
                             setCommentKeyB,
                             editorB,
                             setActiveCommentB,
-                            copyB?._id
+                            copyB?._id,
                           );
                           const updated = localCommentsB.filter(
-                            (cm) => cm._id !== c._id
+                            (cm) => cm._id !== c._id,
                           );
                           if (updated.length === 0) setActiveCommentB(null);
                         }

@@ -1,4 +1,10 @@
-import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
+import React, {
+  useMemo,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { createEditor, Path, Transforms, Editor } from "slate";
 import { Slate, Editable, withReact } from "slate-react";
@@ -59,7 +65,7 @@ export default function ViewStatementWithComments() {
   const [isAddingComment, setIsAddingComment] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [activeComment, setActiveComment] = useState(null);
-  
+
   // ✅ Track comment count to force re-renders
   const prevCommentCountRef = useRef(0);
   const [statementsMap, setStatementsMap] = useState({}); // statementId -> statement
@@ -127,7 +133,7 @@ export default function ViewStatementWithComments() {
         baseText,
         highlights,
         [],
-        commentsForCopy
+        commentsForCopy,
       );
       editor.selection = null;
       setValue(decoratedText);
@@ -163,7 +169,7 @@ export default function ViewStatementWithComments() {
           console.log("✅ Real-time comment added:", {
             id: data.comment._id,
             offset: data.comment.offset,
-            total: prevComments.length + 1
+            total: prevComments.length + 1,
           });
           return [...prevComments, data.comment];
         });
@@ -176,7 +182,7 @@ export default function ViewStatementWithComments() {
           const filtered = prevComments.filter((c) => c._id !== data.commentId);
           console.log("✅ Real-time comment deleted:", {
             id: data.commentId,
-            remaining: filtered.length
+            remaining: filtered.length,
           });
           return filtered;
         });
@@ -218,21 +224,26 @@ export default function ViewStatementWithComments() {
     // Early exit checks
     if (!copy || !statementsMap[copy.statementId]) return;
     if (localComments === null || localComments === undefined) return;
-    
+
     // ✅ Detect if comment count changed (added or removed)
     const currentCommentCount = localComments.length;
     const prevCommentCount = prevCommentCountRef.current;
     const commentCountChanged = currentCommentCount !== prevCommentCount;
-    
+
     if (commentCountChanged) {
-      console.log("🔄 LIVE UPDATE: Comment count changed from", prevCommentCount, "to", currentCommentCount);
+      console.log(
+        "🔄 LIVE UPDATE: Comment count changed from",
+        prevCommentCount,
+        "to",
+        currentCommentCount,
+      );
     }
 
     console.log("🔄 Re-rendering viewer with comments:", {
       commentCount: currentCommentCount,
       copyId: copy._id,
       hasStatement: !!statementsMap[copy.statementId],
-      commentCountChanged
+      commentCountChanged,
     });
 
     const statement = statementsMap[copy.statementId];
@@ -243,7 +254,7 @@ export default function ViewStatementWithComments() {
 
     console.log("🎨 Applying highlights and comments:", {
       highlights: highlights.length,
-      comments: currentCommentCount
+      comments: currentCommentCount,
     });
 
     // ✅ CRITICAL: Apply highlights AND comments to create decorated text
@@ -251,18 +262,25 @@ export default function ViewStatementWithComments() {
       baseText,
       highlights,
       [],
-      localComments
+      localComments,
     );
-    
+
     // ✅ Log decorated text structure with offsets
     console.log("📄 Decorated text structure:", {
       paragraphs: decoratedText.length,
-      totalLeaves: decoratedText.reduce((sum, para) => sum + (para.children?.length || 0), 0),
+      totalLeaves: decoratedText.reduce(
+        (sum, para) => sum + (para.children?.length || 0),
+        0,
+      ),
       leavesWithComments: decoratedText.reduce((sum, para) => {
-        return sum + (para.children?.filter(child => child.comments?.length > 0).length || 0);
-      }, 0)
+        return (
+          sum +
+          (para.children?.filter((child) => child.comments?.length > 0)
+            .length || 0)
+        );
+      }, 0),
     });
-    
+
     // ✅ Log each leaf with comments
     decoratedText.forEach((para, paraIndex) => {
       para.children?.forEach((leaf, leafIndex) => {
@@ -271,16 +289,16 @@ export default function ViewStatementWithComments() {
             text: leaf.text || "[empty]",
             startOffset: leaf.startOffset,
             endOffset: leaf.endOffset,
-            comments: leaf.comments.map(c => ({
+            comments: leaf.comments.map((c) => ({
               id: c._id,
               offset: c.offset,
-              text: c.text.substring(0, 30) + (c.text.length > 30 ? "..." : "")
-            }))
+              text: c.text.substring(0, 30) + (c.text.length > 30 ? "..." : ""),
+            })),
           });
         }
       });
     });
-    
+
     // ✅ CRITICAL: Use Slate Transforms to properly update editor content
     // This ensures immediate rendering without needing page reload
     if (commentCountChanged) {
@@ -294,14 +312,16 @@ export default function ViewStatementWithComments() {
       });
       Transforms.insertNodes(editor, decoratedText, { at: [0] });
     }
-    
+
     // Also update the value state for other parts of the component
     setValue(decoratedText);
-    
+
     // Update ref for next comparison
     prevCommentCountRef.current = currentCommentCount;
-    
-    console.log("✅ Viewer updated with decorated text - LIVE rendering complete");
+
+    console.log(
+      "✅ Viewer updated with decorated text - LIVE rendering complete",
+    );
   }, [localComments, copy, statementsMap, applyHighlightsToText, editor]);
 
   // Update results tables when data changes
@@ -313,7 +333,7 @@ export default function ViewStatementWithComments() {
       counts,
       wordCounts,
       colors,
-      styleSettings
+      styleSettings,
     );
     setFullTextTable(fullTable);
 
@@ -323,7 +343,7 @@ export default function ViewStatementWithComments() {
         selectionCounts,
         selectionWordCounts,
         colors,
-        styleSettings
+        styleSettings,
       );
       setSelectionTable(selTable);
     } else {
@@ -356,12 +376,15 @@ export default function ViewStatementWithComments() {
         if (node.text !== undefined) {
           // ✅ CRITICAL: Skip comment marker nodes (zero-width spaces with comments)
           const isCommentMarker = node.comments && node.comments.length > 0;
-          
+
           if (Path.equals(currentPath, anchorPath)) {
             if (!isCommentMarker) {
               globalOffset += anchorOffset;
             }
-            console.log("✅ Offset calculated (excluding comment markers):", globalOffset);
+            console.log(
+              "✅ Offset calculated (excluding comment markers):",
+              globalOffset,
+            );
             throw "FOUND"; // eslint-disable-line no-throw-literal
           } else {
             // Not the target node, add its length if it's not a comment marker
@@ -384,102 +407,112 @@ export default function ViewStatementWithComments() {
 
   // ✅ CRITICAL: Enhanced renderLeaf with offset tracking and comment merging
   // Supports character-level comment rendering for LTR/RTL text
-  const renderLeaf = useCallback(({ leaf, attributes, children }) => {
-    // ✅ Extract offset information from leaf (set by applyHighlightsToText)
-    const startOffset = leaf.startOffset !== undefined ? leaf.startOffset : null;
-    const endOffset = leaf.endOffset !== undefined ? leaf.endOffset : null;
-    const hasComments = leaf.comments?.length > 0;
-    const commentCount = leaf.comments?.length || 0;
-    
-    // ✅ Log leaf rendering with comments
-    if (hasComments) {
-      console.log("📝 Rendering leaf with comments:", {
-        text: leaf.text,
-        startOffset,
-        endOffset,
-        commentCount,
-        comments: leaf.comments.map(c => ({ id: c._id, text: c.text.substring(0, 20) }))
-      });
-    }
+  const renderLeaf = useCallback(
+    ({ leaf, attributes, children }) => {
+      // ✅ Extract offset information from leaf (set by applyHighlightsToText)
+      const startOffset =
+        leaf.startOffset !== undefined ? leaf.startOffset : null;
+      const endOffset = leaf.endOffset !== undefined ? leaf.endOffset : null;
+      const hasComments = leaf.comments?.length > 0;
+      const commentCount = leaf.comments?.length || 0;
 
-    const style = {
-      backgroundColor: leaf.highlight || undefined,
-      textDecoration: leaf.underline ? "underline" : undefined,
-      fontWeight: leaf.bold ? "bold" : undefined,
-      fontStyle: leaf.italic ? "italic" : undefined,
-      outline: leaf.isDiff ? "2px solid red" : undefined,
-      userSelect: "text",
-      WebkitUserSelect: "text",
-      MozUserSelect: "text",
-      msUserSelect: "text",
-      cursor: "text",
-      whiteSpace: "pre-wrap",
-      wordBreak: "break-word",
-    };
+      // ✅ Log leaf rendering with comments
+      if (hasComments) {
+        console.log("📝 Rendering leaf with comments:", {
+          text: leaf.text,
+          startOffset,
+          endOffset,
+          commentCount,
+          comments: leaf.comments.map((c) => ({
+            id: c._id,
+            text: c.text.substring(0, 20),
+          })),
+        });
+      }
 
-    const colorName = colors.find((c) => c.code === leaf.highlight)?.name;
-    const styleNames = [];
-    if (leaf.bold) styleNames.push(styleSettings.boldName || "Bold");
-    if (leaf.italic) styleNames.push(styleSettings.italicName || "Italic");
-    if (leaf.underline) styleNames.push(styleSettings.underlineName || "Underline");
-    const tooltip = [colorName, ...styleNames].filter(Boolean).join(", ");
+      const style = {
+        backgroundColor: (leaf.text !== "" && leaf.highlight) || undefined,
+        textDecoration: leaf.underline ? "underline" : undefined,
+        fontWeight: leaf.bold ? "bold" : undefined,
+        fontStyle: leaf.italic ? "italic" : undefined,
+        userSelect: "text",
+        WebkitUserSelect: "text",
+        MozUserSelect: "text",
+        msUserSelect: "text",
+        cursor: "text",
+        whiteSpace: "pre-wrap",
+        wordBreak: "break-word",
+      };
 
-    // ✅ Build data attributes for offset tracking and comment detection
-    const dataAttributes = {
-      "data-slate-leaf": "true",
-      ...(startOffset !== null && { "data-start-offset": startOffset }),
-      ...(endOffset !== null && { "data-end-offset": endOffset }),
-      ...(hasComments && { 
-        "data-has-comments": "true",
-        "data-comment-count": commentCount
-      }),
-    };
+      const colorName = colors.find((c) => c.code === leaf.highlight)?.name;
+      const styleNames = [];
+      if (leaf.bold) styleNames.push(styleSettings.boldName || "Bold");
+      if (leaf.italic) styleNames.push(styleSettings.italicName || "Italic");
+      if (leaf.underline)
+        styleNames.push(styleSettings.underlineName || "Underline");
+      const tooltip = [colorName, ...styleNames].filter(Boolean).join(", ");
 
-    return (
-      <span {...attributes} {...dataAttributes} style={style} title={tooltip}>
-        {leaf.text !== "" ? children : "\u200B"}
-        {hasComments && (
-          <span
-            role="button"
-            tabIndex={0}
-            onClick={(e) => {
-              e.stopPropagation();
-              console.log("💬 Opening comments:", leaf.comments);
-              setActiveComment(leaf.comments);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
+      // ✅ Build data attributes for offset tracking and comment detection
+      const dataAttributes = {
+        "data-slate-leaf": "true",
+        ...(startOffset !== null && { "data-start-offset": startOffset }),
+        ...(endOffset !== null && { "data-end-offset": endOffset }),
+        ...(hasComments && {
+          "data-has-comments": "true",
+          "data-comment-count": commentCount,
+        }),
+      };
+
+      return (
+        <span {...attributes} {...dataAttributes} style={style} title={tooltip}>
+          {leaf.text !== "" ? children : "\u200B"}
+          {hasComments && (
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
                 e.stopPropagation();
+                console.log("💬 Opening comments:", leaf.comments);
                 setActiveComment(leaf.comments);
-              }
-            }}
-            style={{
-              cursor: "pointer",
-              color: "blue",
-              fontWeight: "bold",
-              marginInlineStart: "5px",
-              display: "inline-block",
-              verticalAlign: "middle",
-              zIndex: 10,
-              userSelect: "none",
-              // ✅ Stack multiple comments vertically
-              ...(commentCount > 1 && {
-                position: "relative",
-                padding: "2px 4px",
-                background: "rgba(255, 255, 255, 0.9)",
-                borderRadius: "3px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.2)"
-              })
-            }}
-            aria-label={`View ${commentCount} comment${commentCount > 1 ? 's' : ''}`}
-            title={`${commentCount} comment${commentCount > 1 ? 's' : ''} at offset ${startOffset}`}
-          >
-            📝{commentCount > 1 && <sup style={{ fontSize: "10px" }}>{commentCount}</sup>}
-          </span>
-        )}
-      </span>
-    );
-  }, [colors, styleSettings]);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.stopPropagation();
+                  setActiveComment(leaf.comments);
+                }
+              }}
+              style={{
+                cursor: "pointer",
+                color: "blue",
+                fontWeight: "bold",
+                marginInlineStart: "5px",
+                display: "inline-block",
+                verticalAlign: "middle",
+                zIndex: 10,
+                userSelect: "none",
+                // ✅ Stack multiple comments vertically
+                ...(commentCount > 1 && {
+                  position: "relative",
+                  padding: "2px 4px",
+                  background: "rgba(255, 255, 255, 0.9)",
+                  borderRadius: "3px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                }),
+              }}
+              aria-label={`View ${commentCount} comment${commentCount > 1 ? "s" : ""}`}
+              title={`${commentCount} comment${commentCount > 1 ? "s" : ""} at offset ${startOffset}`}
+            >
+              📝
+              {commentCount > 1 && (
+                <sup style={{ fontSize: "10px" }}>{commentCount}</sup>
+              )}
+            </span>
+          )}
+        </span>
+      );
+    },
+    [colors, styleSettings],
+  );
 
   // Show loading while checking auth
   if (!isAuthChecked) {
@@ -497,35 +530,33 @@ export default function ViewStatementWithComments() {
   const handleAddComment = async () => {
     if (!editor.selection)
       return alert(
-        "Please select a location in the text before adding a comment"
+        "Please select a location in the text before adding a comment",
       );
     if (!newComment) return alert("Please enter text for the comment");
 
     const { anchor } = editor.selection;
     const offset = getGlobalOffsetFromValue(value, anchor.path, anchor.offset);
-    
+
     console.log("📝 Adding comment at offset:", offset, "Text:", newComment);
 
     try {
       // ✅ Save to backend - socket will handle state update for all clients
-      await addComment(
-        currentUser._id,
-        copyId,
-        newComment,
-        offset
-      );
-      
+      await addComment(currentUser._id, copyId, newComment, offset);
+
       // Clear selection and form
       editor.selection = null;
       setNewComment("");
       setIsAddingComment(false);
-      
+
       console.log("✅ Comment saved to backend at offset:", offset);
-      
+
       // ✅ Force refresh comments from backend to ensure consistency
       const refreshedComments = await fetchCommentsByCopyId(copyId);
       setLocalComments(refreshedComments);
-      console.log("✅ Comments refreshed from backend:", refreshedComments.length);
+      console.log(
+        "✅ Comments refreshed from backend:",
+        refreshedComments.length,
+      );
     } catch (error) {
       console.error("❌ Error adding comment:", error);
       alert("Failed to add comment. Please try again.");
@@ -536,17 +567,20 @@ export default function ViewStatementWithComments() {
   const handleRemoveComment = async (commentId) => {
     try {
       await deleteComment(commentId);
-      
+
       // Clear selection and modal
       editor.selection = null;
       setActiveComment(null);
-      
+
       console.log("✅ Comment removed:", commentId);
-      
+
       // ✅ Force refresh comments from backend to ensure consistency
       const refreshedComments = await fetchCommentsByCopyId(copyId);
       setLocalComments(refreshedComments);
-      console.log("✅ Comments refreshed from backend:", refreshedComments.length);
+      console.log(
+        "✅ Comments refreshed from backend:",
+        refreshedComments.length,
+      );
     } catch (error) {
       console.error("❌ Error removing comment:", error);
       alert("Failed to remove comment. Please try again.");
@@ -601,7 +635,12 @@ export default function ViewStatementWithComments() {
       {/* Header - Compact */}
       <div style={{ marginBottom: "10px", flexShrink: 0 }}>
         <h1
-          style={{ fontSize: "22px", fontWeight: "600", marginBottom: "5px", marginTop: "0" }}
+          style={{
+            fontSize: "22px",
+            fontWeight: "600",
+            marginBottom: "5px",
+            marginTop: "0",
+          }}
         >
           <FaEye /> Statement Viewer
         </h1>
@@ -721,7 +760,7 @@ export default function ViewStatementWithComments() {
                 calculateSelectionCounts(editor, setSelectionCounts);
                 const wordCounts = calculateWordCountsForSelection(
                   editor,
-                  value
+                  value,
                 );
                 setSelectionWordCounts(wordCounts);
               }}
