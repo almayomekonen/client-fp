@@ -435,6 +435,7 @@ export default function ViewStatementWithComments() {
         textDecoration: leaf.underline ? "underline" : undefined,
         fontWeight: leaf.bold ? "bold" : undefined,
         fontStyle: leaf.italic ? "italic" : undefined,
+        outline: leaf.text !== "" && leaf.isDiff ? "2px solid red" : undefined,
         userSelect: "text",
         WebkitUserSelect: "text",
         MozUserSelect: "text",

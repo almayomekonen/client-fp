@@ -523,6 +523,7 @@ export default function CoderComparePage() {
         textDecoration: leaf.underline ? "underline" : undefined,
         fontWeight: leaf.bold ? "bold" : undefined,
         fontStyle: leaf.italic ? "italic" : undefined,
+        outline: leaf.text !== "" && leaf.isDiff ? "2px solid red" : undefined,
       };
 
       const colorName = colors.find((c) => c.code === leaf.highlight)?.name;
